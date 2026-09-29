@@ -1,4 +1,4 @@
-# Event Booking System
+# Book N Go (Event Booking System)
 A secure Spring Boot REST API where customers discover and book activities (kayaking, pottery, escape rooms, etc.) and providers manage their own listings. Admins oversee providers, bookings, and account standing.
 
 Built for Project 2 of the JDB-Info Java-FT-01-Bahrain bootcamp.
