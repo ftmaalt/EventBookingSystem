@@ -51,7 +51,7 @@ public class Sessions {
     @JoinColumn(name = "activity_id", nullable = false)
     private Activities activity;
 
-    @OneToMany(mappedBy = "bookings")
+    @OneToMany(mappedBy = "session")
     private List<Bookings> bookings;
 
 

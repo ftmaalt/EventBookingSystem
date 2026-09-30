@@ -61,12 +61,12 @@ public class Users {
 
     //    --- Relationship Mapping ---
 
-    @OneToMany(mappedBy = "penalties")
+    @OneToMany(mappedBy = "user")
     private List<Penalties> penalties;
 
-    @OneToMany(mappedBy = "bookings")
+    @OneToMany(mappedBy = "user")
     private List<Bookings> bookings;
 
-    @OneToMany(mappedBy = "violations")
+    @OneToMany(mappedBy = "user")
     private List<Violations> violations;
 }

@@ -20,6 +20,6 @@ public class Category {
     private String description;
 
     //    --- Relationship Mapping ---
-    @OneToMany(mappedBy = "activities")
+    @OneToMany(mappedBy = "category")
     private List<Activities> activities;
 }

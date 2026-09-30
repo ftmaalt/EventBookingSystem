@@ -6,6 +6,7 @@ import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -26,13 +27,13 @@ public class Bookings {
     private BookingType bookingType;
 
     @Column(nullable = false, precision = 10, scale = 3)
-    private Double subtotal;
+    private BigDecimal  subtotal;
 
     @Column(precision = 5, scale = 2)
-    private Double discountPercent;
+    private BigDecimal discountPercent;
 
     @Column(nullable = false, precision = 10, scale = 3)
-    private Double totalPrice;
+    private BigDecimal totalPrice;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -64,6 +65,6 @@ public class Bookings {
     @JoinColumn(name = "session_id", nullable = false)
     private Sessions session;
 
-    @OneToMany(mappedBy = "violations")
+    @OneToMany(mappedBy = "booking")
     private List<Violations> violations;
 }

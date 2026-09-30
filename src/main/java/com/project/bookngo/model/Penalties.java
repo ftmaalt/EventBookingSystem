@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 @Data
 @Entity
@@ -18,7 +19,7 @@ public class Penalties {
     private Short strikeNumber;
 
     @Column(nullable = false, precision = 10, scale = 3)
-    private Double amount;
+    private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

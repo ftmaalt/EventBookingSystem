@@ -7,6 +7,7 @@ import com.project.bookngo.model.Users;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -25,7 +26,7 @@ public class Activities {
     private String description;
 
     @Column(nullable = false, precision = 10, scale = 3)
-    private Double pricePerPerson;
+    private BigDecimal pricePerPerson;
 
     @Column(nullable = false)
     private Integer durationMinutes;
@@ -50,6 +51,6 @@ public class Activities {
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    @OneToMany(mappedBy = "sessions")
+    @OneToMany(mappedBy = "activity")
     private List<Sessions> sessionsList;
 }
