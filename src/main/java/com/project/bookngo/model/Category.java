@@ -11,10 +11,10 @@ import java.util.List;
 public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long category_id;
 
     @Column(nullable = false, unique = true, length = 70)
-    private String name;
+    private String category_name;
 
     @Column
     private String description;
