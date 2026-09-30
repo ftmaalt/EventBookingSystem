@@ -3,6 +3,8 @@ package com.project.bookngo.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 @Entity
 @Table(name = "categories")
@@ -16,4 +18,8 @@ public class Category {
 
     @Column
     private String description;
+
+    //    --- Relationship Mapping ---
+    @OneToMany(mappedBy = "activities")
+    private List<Activities> activities;
 }
