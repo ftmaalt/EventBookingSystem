@@ -1,7 +1,10 @@
 package com.project.bookngo.model;
 
-import com.project.bookngo.enums.*;
+import com.project.bookngo.enums.BookingStatus;
+import com.project.bookngo.enums.BookingType;
+import com.project.bookngo.enums.PaymentStatus;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -19,39 +22,45 @@ public class Bookings {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column
+    @NotBlank
     private Integer participants;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column
+    @NotBlank
     private BookingType bookingType;
 
-    @Column(nullable = false, precision = 10, scale = 3)
+    @Column(precision = 10, scale = 3)
+    @NotBlank
     private BigDecimal  subtotal;
 
     @Column(precision = 5, scale = 2)
     private BigDecimal discountPercent;
 
-    @Column(nullable = false, precision = 10, scale = 3)
+    @Column(precision = 10, scale = 3)
+    @NotBlank
     private BigDecimal totalPrice;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private BookingStatus status;
+    @Column
+    @NotBlank
+    private BookingStatus bookingStatus;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column
+    @NotBlank
     private PaymentStatus paymentStatus;
 
     @Column(length = 255)
     private String cancellationReason;
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(nullable = false)
+    @Column
     private LocalDateTime updatedAt;
 
 

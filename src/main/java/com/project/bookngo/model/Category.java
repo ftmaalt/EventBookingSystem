@@ -1,6 +1,7 @@
 package com.project.bookngo.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 import java.util.List;
@@ -13,7 +14,8 @@ public class Category {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long category_id;
 
-    @Column(nullable = false, unique = true, length = 70)
+    @Column(unique = true, length = 70)
+    @NotBlank
     private String category_name;
 
     @Column

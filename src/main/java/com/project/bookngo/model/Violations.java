@@ -2,6 +2,7 @@ package com.project.bookngo.model;
 
 import com.project.bookngo.enums.ViolationType;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -16,16 +17,19 @@ public class Violations {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column
+    @NotBlank
     private ViolationType type;
 
+    @Column
+    @NotBlank
     private Boolean excused;
 
     @Column(length = 500)
     private String note;
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
@@ -36,15 +40,18 @@ public class Violations {
 //    --- Relationship Mapping ---
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "booking_id", nullable = false)
+    @JoinColumn(name = "booking_id")
+    @NotBlank
     private Bookings booking;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "session_id", nullable = false)
+    @JoinColumn(name = "session_id")
+    @NotBlank
     private Sessions session;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id")
+    @NotBlank
     private Users user;
 
 }
