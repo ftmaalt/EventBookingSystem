@@ -22,6 +22,7 @@ public class CategoryService {
             categoryObject =categoryRepository.save(categoryObject);
             return toResponse(categoryObject);
     }
+
     public CategoryResponse getCategoryById(Long category_id){
         Category category= categoryRepository.findById(category_id).orElseThrow(()->
                 new InformationNotFoundException("Category with the id:"+ category_id +" does not exist, please try again with another category id")
@@ -31,7 +32,7 @@ public class CategoryService {
     public List<CategoryResponse> getAllCategories(){
        return categoryRepository.findAll().stream().map(this::toResponse).toList();
     }
-    public CategoryResponse update(Long category_id, CategoryRequest request){
+    public CategoryResponse updateCategory(Long category_id, CategoryRequest request){
         Category category= categoryRepository.findById(category_id).orElseThrow(()->
                 new InformationNotFoundException("Category with the id:"+ category_id +" does not exist, please try again with another category id")
         );
@@ -41,7 +42,7 @@ public class CategoryService {
         return toResponse(category);
     }
 
-    public String delete(Long category_id){
+    public String deleteCategory(Long category_id){
         Category category= categoryRepository.findById(category_id).orElseThrow(()->
                 new InformationNotFoundException("Category with the id:"+ category_id +" does not exist, please try again with another category id")
         );
