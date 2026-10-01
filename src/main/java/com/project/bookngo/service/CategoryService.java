@@ -16,7 +16,8 @@ public class CategoryService {
     private CategoryRepository categoryRepository;
 
     public CategoryResponse createCategory( CategoryRequest request){
-            Category categoryObject = new Category();
+        System.out.println("SERVICE: Calling createCategory ===>");
+        Category categoryObject = new Category();
             categoryObject.setCategory_name(request.getCategory_name());
             categoryObject.setDescription(request.getDescription());
             categoryObject =categoryRepository.save(categoryObject);
@@ -24,15 +25,18 @@ public class CategoryService {
     }
 
     public CategoryResponse getCategoryById(Long category_id){
+        System.out.println("SERVICE: Calling getCategoryById ===>");
         Category category= categoryRepository.findById(category_id).orElseThrow(()->
                 new InformationNotFoundException("Category with the id:"+ category_id +" does not exist, please try again with another category id")
         );
         return toResponse(category);
     }
     public List<CategoryResponse> getAllCategories(){
-       return categoryRepository.findAll().stream().map(this::toResponse).toList();
+        System.out.println("SERVICE: Calling getAllCategories ===>");
+        return categoryRepository.findAll().stream().map(this::toResponse).toList();
     }
     public CategoryResponse updateCategory(Long category_id, CategoryRequest request){
+        System.out.println("SERVICE: Calling updateCategory ===>");
         Category category= categoryRepository.findById(category_id).orElseThrow(()->
                 new InformationNotFoundException("Category with the id:"+ category_id +" does not exist, please try again with another category id")
         );
@@ -43,11 +47,12 @@ public class CategoryService {
     }
 
     public String deleteCategory(Long category_id){
+        System.out.println("SERVICE: Calling deleteCategory ===>");
         Category category= categoryRepository.findById(category_id).orElseThrow(()->
                 new InformationNotFoundException("Category with the id:"+ category_id +" does not exist, please try again with another category id")
         );
         categoryRepository.delete(category);
-        return "Category with id"+ category_id +"has been deleted successfully";
+        return "Category with id:"+ category_id +"has been deleted successfully";
     }
 
     private CategoryResponse toResponse(Category categoryObject) {
