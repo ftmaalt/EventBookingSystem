@@ -3,6 +3,7 @@ package com.project.bookngo.model;
 import com.project.bookngo.enums.SessionStatus;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -15,34 +16,41 @@ import java.util.List;
 @Table(name = "sessions")
 public class Sessions {
     @Id
+    @NotBlank
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column
+    @NotBlank
     private LocalDateTime startTime;
 
-    @Column(nullable = false)
+    @Column
+    @NotBlank
     private LocalDateTime endTime;
 
-    @Column(nullable = false)
+    @Column
+    @NotBlank
     private Integer capacity;
 
-    @Column(nullable = false)
+    @Column
+    @NotBlank
     private Integer spotsLeft;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column
+    @NotBlank
     private SessionStatus status;
 
     @Version
     private Long version;
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @NotBlank
+    @Column(updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(nullable = false)
+    @Column
     private LocalDateTime updatedAt;
 
 //    --- Relationship Mapping ---

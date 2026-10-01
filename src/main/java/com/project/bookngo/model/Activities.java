@@ -2,8 +2,8 @@ package com.project.bookngo.model;
 
 import com.project.bookngo.enums.ActivityStatus;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
-import com.project.bookngo.model.Users;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -19,28 +19,33 @@ public class Activities {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 150)
+    @Column(length = 150)
+    @NotBlank
     private String title;
 
     @Column(columnDefinition = "TEXT")
+    @NotBlank
     private String description;
 
-    @Column(nullable = false, precision = 10, scale = 3)
+    @Column(precision = 10, scale = 3)
+    @NotBlank
     private BigDecimal pricePerPerson;
 
-    @Column(nullable = false)
+    @Column
+    @NotBlank
     private Integer durationMinutes;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column
+    @NotBlank
     private ActivityStatus status;
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(nullable = false)
+    @Column
     private LocalDateTime updatedAt;
 
 
