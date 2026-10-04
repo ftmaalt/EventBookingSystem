@@ -1,9 +1,6 @@
 package com.project.bookngo.controller;
 
-import com.project.bookngo.model.request.ForgotPasswordRequest;
-import com.project.bookngo.model.request.LoginRequest;
-import com.project.bookngo.model.request.RegisterRequest;
-import com.project.bookngo.model.request.ResetPasswordRequest;
+import com.project.bookngo.model.request.*;
 import com.project.bookngo.model.response.ForgotPasswordResponse;
 import com.project.bookngo.model.response.LoginResponse;
 import com.project.bookngo.model.response.RegisterResponse;
@@ -51,10 +48,17 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.OK).body(forgotPasswordResponse);
         }
         @PostMapping("/resetPassword")
-    public ResponseEntity<ForgotPasswordResponse> resetPassword(ResetPasswordRequest passwordRequest){
+    public ResponseEntity<ForgotPasswordResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest passwordRequest){
             System.out.println("Calling resetPassword==>");
             ForgotPasswordResponse passwordResponse= authService.resetPassword(passwordRequest);
             return ResponseEntity.status(HttpStatus.OK).body(passwordResponse);
         }
+//        Change Password
+    @PutMapping("/changePassword")
+    public ResponseEntity<ForgotPasswordResponse> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        System.out.println("Calling changePassword==>");
+        ForgotPasswordResponse passwordResponse= authService.changePassword(request);
+        return ResponseEntity.status(HttpStatus.OK).body(passwordResponse);
+    }
 
 }

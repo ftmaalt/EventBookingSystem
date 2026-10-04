@@ -10,10 +10,7 @@ import com.project.bookngo.exception.VerificationRequiredException;
 import com.project.bookngo.model.Tokens;
 import com.project.bookngo.model.User;
 import com.project.bookngo.model.enums.TokenType;
-import com.project.bookngo.model.request.ForgotPasswordRequest;
-import com.project.bookngo.model.request.LoginRequest;
-import com.project.bookngo.model.request.RegisterRequest;
-import com.project.bookngo.model.request.ResetPasswordRequest;
+import com.project.bookngo.model.request.*;
 import com.project.bookngo.model.response.ForgotPasswordResponse;
 import com.project.bookngo.model.response.LoginResponse;
 import com.project.bookngo.model.response.RegisterResponse;
@@ -23,6 +20,7 @@ import com.project.bookngo.security.MyUserDetails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authorization.method.AuthorizeReturnObject;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -111,5 +109,17 @@ public class AuthService {
         return new ForgotPasswordResponse("Password Reset Successful. You can now log in using your new password.");
 
     }
+//    --- Change Password ---
+public ForgotPasswordResponse changePassword(ChangePasswordRequest request) {
+    String email = SecurityContextHolder.getContext().getAuthentication().getName();
+    User user= usersRepository.findUserByEmail(email);
+    if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())){
+            throw new InvalidCredentials("The Password you entered is not correct. Please try again.");
+    }else{
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        usersRepository.save(user);
+        return new ForgotPasswordResponse("Password Changed Successfully.");
+    }
+}
 
 }
