@@ -4,12 +4,21 @@ import com.project.bookngo.enums.UserRole;
 import com.project.bookngo.enums.UserStatus;
 //import com.project.bookngo.enums.TokenType;
 import com.project.bookngo.exception.InformationExistsException;
+import com.project.bookngo.exception.InformationNotFoundException;
+import com.project.bookngo.exception.InvalidCredentials;
+import com.project.bookngo.exception.VerificationRequiredException;
 import com.project.bookngo.model.User;
 import com.project.bookngo.model.enums.TokenType;
+import com.project.bookngo.model.request.LoginRequest;
 import com.project.bookngo.model.request.RegisterRequest;
+import com.project.bookngo.model.response.LoginResponse;
 import com.project.bookngo.model.response.RegisterResponse;
 import com.project.bookngo.repository.UsersRepository;
+import com.project.bookngo.security.JwtUtils;
+import com.project.bookngo.security.MyUserDetails;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authorization.method.AuthorizeReturnObject;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -24,7 +33,11 @@ public class AuthService {
     private TokenService tokenService;
     @Autowired
     private EmailService emailService;
+    @Autowired
+    private JwtUtils jwtUtils;
 
+
+    // ---registration section---
     public RegisterResponse register(RegisterRequest request) {
         System.out.println("SERVICE Calling register==>");
         if (usersRepository.existsByEmail(request.getEmail())) {
@@ -46,14 +59,35 @@ public class AuthService {
 
             String emailVerificationToken = tokenService.generateToken(user, TokenType.EMAIL_VERIFICATION);
             emailService.sendVerificationEmail(user.getEmail(), emailVerificationToken);
-        return new RegisterResponse("Registration successful. Please Verify your account via email to be able to use the app.");
+            return new RegisterResponse("Registration successful. Please Verify your account via email to be able to use the app.");
         }
     }
-    public RegisterResponse verifyEmail(String token){
+
+    public RegisterResponse verifyEmail(String token) {
         System.out.println("SERVICE Calling verifyEmail==>");
-        User user= tokenService.validateToken(token, TokenType.EMAIL_VERIFICATION);
+        User user = tokenService.validateToken(token, TokenType.EMAIL_VERIFICATION);
         user.setStatus(UserStatus.ACTIVE);
         usersRepository.save(user);
         return new RegisterResponse("Email verification successful, you can now use the app.");
     }
+
+    //    ---login section---
+    public LoginResponse login(LoginRequest loginRequest) {
+        System.out.println("SERVICE Calling login");
+        User loginAttemptUser= usersRepository.findUserByEmail(loginRequest.getEmail());
+        if (loginAttemptUser == null) {
+            throw new InformationNotFoundException("The Email/Password you entered is not correct. Please try again.");
+        }
+        if (loginAttemptUser.getStatus() == UserStatus.PENDING_VERIFICATION) {
+            throw new VerificationRequiredException("Please verify your email before attempting to login.");
+
+        }
+        if (!passwordEncoder.matches(loginRequest.getPassword(), loginAttemptUser.getPasswordHash())) {
+            throw new InvalidCredentials("The Email/Password you entered is not correct. Please try again.");
+        }
+        MyUserDetails userDetails= new MyUserDetails(loginAttemptUser);
+       final String token= jwtUtils.generateJwtToken(userDetails);
+        return new LoginResponse(token, loginAttemptUser.getRole().toString());
+    }
+
 }

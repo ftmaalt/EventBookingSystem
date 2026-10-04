@@ -1,6 +1,8 @@
 package com.project.bookngo.controller;
 
+import com.project.bookngo.model.request.LoginRequest;
 import com.project.bookngo.model.request.RegisterRequest;
+import com.project.bookngo.model.response.LoginResponse;
 import com.project.bookngo.model.response.RegisterResponse;
 import com.project.bookngo.service.AuthService;
 import jakarta.validation.Valid;
@@ -29,5 +31,11 @@ public class AuthController {
         System.out.println("Calling verifyEmail==>");
        RegisterResponse registerResponse= authService.verifyEmail(token);
        return ResponseEntity.status(HttpStatus.OK).body(registerResponse);
+    }
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+        System.out.println("Calling login==>");
+        LoginResponse loginResponse= authService.login(request);
+        return ResponseEntity.status(HttpStatus.OK).body(loginResponse);
     }
 }
