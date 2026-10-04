@@ -1,7 +1,10 @@
 package com.project.bookngo.controller;
 
+import com.project.bookngo.model.request.ForgotPasswordRequest;
 import com.project.bookngo.model.request.LoginRequest;
 import com.project.bookngo.model.request.RegisterRequest;
+import com.project.bookngo.model.request.ResetPasswordRequest;
+import com.project.bookngo.model.response.ForgotPasswordResponse;
 import com.project.bookngo.model.response.LoginResponse;
 import com.project.bookngo.model.response.RegisterResponse;
 import com.project.bookngo.service.AuthService;
@@ -18,7 +21,7 @@ public class AuthController {
 
     @Autowired
     private AuthService authService;
-
+//register
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
         System.out.println("Calling register==>");
@@ -32,10 +35,26 @@ public class AuthController {
        RegisterResponse registerResponse= authService.verifyEmail(token);
        return ResponseEntity.status(HttpStatus.OK).body(registerResponse);
     }
+
+//    Login
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
         System.out.println("Calling login==>");
-        LoginResponse loginResponse= authService.login(request);
+        LoginResponse loginResponse = authService.login(request);
         return ResponseEntity.status(HttpStatus.OK).body(loginResponse);
     }
+//        Password Reset
+    @PostMapping("/forgotPassword")
+    public ResponseEntity<ForgotPasswordResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest forgotPasswordRequest) {
+        System.out.println("Calling forgotPassword==>");
+        ForgotPasswordResponse forgotPasswordResponse= authService.forgotPassword(forgotPasswordRequest);
+        return ResponseEntity.status(HttpStatus.OK).body(forgotPasswordResponse);
+        }
+        @PostMapping("/resetPassword")
+    public ResponseEntity<ForgotPasswordResponse> resetPassword(ResetPasswordRequest passwordRequest){
+            System.out.println("Calling resetPassword==>");
+            ForgotPasswordResponse passwordResponse= authService.resetPassword(passwordRequest);
+            return ResponseEntity.status(HttpStatus.OK).body(passwordResponse);
+        }
+
 }

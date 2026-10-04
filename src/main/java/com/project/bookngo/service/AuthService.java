@@ -7,10 +7,14 @@ import com.project.bookngo.exception.InformationExistsException;
 import com.project.bookngo.exception.InformationNotFoundException;
 import com.project.bookngo.exception.InvalidCredentials;
 import com.project.bookngo.exception.VerificationRequiredException;
+import com.project.bookngo.model.Tokens;
 import com.project.bookngo.model.User;
 import com.project.bookngo.model.enums.TokenType;
+import com.project.bookngo.model.request.ForgotPasswordRequest;
 import com.project.bookngo.model.request.LoginRequest;
 import com.project.bookngo.model.request.RegisterRequest;
+import com.project.bookngo.model.request.ResetPasswordRequest;
+import com.project.bookngo.model.response.ForgotPasswordResponse;
 import com.project.bookngo.model.response.LoginResponse;
 import com.project.bookngo.model.response.RegisterResponse;
 import com.project.bookngo.repository.UsersRepository;
@@ -68,7 +72,7 @@ public class AuthService {
         User user = tokenService.validateToken(token, TokenType.EMAIL_VERIFICATION);
         user.setStatus(UserStatus.ACTIVE);
         usersRepository.save(user);
-        return new RegisterResponse("Email verification successful, you can now use the app.");
+        return new RegisterResponse("Email verification successful, Please log in again to use the app.");
     }
 
     //    ---login section---
@@ -88,6 +92,24 @@ public class AuthService {
         MyUserDetails userDetails= new MyUserDetails(loginAttemptUser);
        final String token= jwtUtils.generateJwtToken(userDetails);
         return new LoginResponse(token, loginAttemptUser.getRole().toString());
+    }
+
+//    --- Reset Password ---
+    public ForgotPasswordResponse forgotPassword(ForgotPasswordRequest forgotPasswordRequest) {
+        User user = usersRepository.findUserByEmail(forgotPasswordRequest.getEmail());
+        if (user != null) {
+            String resetToken = tokenService.generateToken(user, TokenType.PASSWORD_RESET);
+            emailService.sendPasswordResetEmail(user.getEmail(), resetToken);
+        }
+            // sending a valid message without actually sending the email to ensure that no data leak happen
+    return new ForgotPasswordResponse("An message was sent to the email with the password reset link.");
+    }
+    public ForgotPasswordResponse resetPassword(ResetPasswordRequest passwordRequest){
+        User user = tokenService.validateToken(passwordRequest.getToken(), TokenType.PASSWORD_RESET);
+        user.setPasswordHash(passwordEncoder.encode(passwordRequest.getNewPassword()));
+        usersRepository.save(user);
+        return new ForgotPasswordResponse("Password Reset Successful. You can now log in using your new password.");
+
     }
 
 }

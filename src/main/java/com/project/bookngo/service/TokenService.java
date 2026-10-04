@@ -30,7 +30,7 @@ public class TokenService {
         token.setUser(user);
         //    - set user, token (the random string), type
         if (type == EMAIL_VERIFICATION) {
-            token.setExpires_at(LocalDateTime.now().plusHours(2));
+            token.setExpires_at(LocalDateTime.now().plusHours(24));
         }else if(type == PASSWORD_RESET){
             token.setExpires_at(LocalDateTime.now().plusMinutes(6));
         }
