@@ -52,6 +52,6 @@ public class Violations {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     @NotBlank
-    private Users user;
+    private User user;
 
 }

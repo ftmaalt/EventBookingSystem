@@ -1,5 +1,6 @@
 package com.project.bookngo.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.project.bookngo.enums.SessionStatus;
 
 import jakarta.persistence.*;
@@ -55,6 +56,7 @@ public class Sessions {
 
 //    --- Relationship Mapping ---
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "activity_id", nullable = false)
     private Activities activity;

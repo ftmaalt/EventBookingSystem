@@ -4,6 +4,7 @@ import com.project.bookngo.enums.UserRole;
 import com.project.bookngo.enums.UserStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -14,7 +15,7 @@ import java.util.List;
 @Data
 @Entity
 @Table(name = "users")
-public class Users {
+public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,14 +39,13 @@ public class Users {
 
     @Enumerated(EnumType.STRING)
     @Column
-    @NotBlank
+    @NotNull
     private UserRole role;
 
     @Enumerated(EnumType.STRING)
     @Column
-    @NotBlank
-    private UserStatus status;
 
+    private UserStatus status;
     @Column(length = 255)
     private String profilePicturePath;
 

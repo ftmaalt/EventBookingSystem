@@ -16,7 +16,7 @@ public class Category {
 
     @Column(unique = true, length = 70)
     @NotBlank
-    private String category_name;
+    private String categoryName;
 
     @Column
     private String description;

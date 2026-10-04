@@ -40,6 +40,6 @@ public class Penalties {
 //    --- Relationship Mapping ---
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    private Users user;
+    private User user;
 
 }
