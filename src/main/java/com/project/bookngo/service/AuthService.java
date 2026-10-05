@@ -122,4 +122,13 @@ public ForgotPasswordResponse changePassword(ChangePasswordRequest request) {
     }
 }
 
+// User Role and Authorization
+    public RegisterResponse updateUserRole(Long userId, UpdateUserRoleRequest request){
+        User user= usersRepository.findById(userId).orElseThrow(() -> new InformationNotFoundException("The Email/Password you entered is not correct. Please try again."));
+        user.setRole(request.getRole());
+        usersRepository.save(user);
+        return new RegisterResponse("Your Role has been updated successfully");
+    }
+
+
 }
