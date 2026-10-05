@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ActivitiesRepository extends JpaRepository<Activities,Long> {
-    List<Activities> findActivitiesByCategoryName(Category category_name);
+    List<Activities> findActivitiesByCategoryName(String categoryName);
     List<Activities> findByProviderId(Long providerId);
     Optional<Activities> findByIdAndProviderId(Long id, Long providerId);
 }
