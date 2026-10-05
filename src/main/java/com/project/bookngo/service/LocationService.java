@@ -74,11 +74,12 @@ public class LocationService {
         return toResponse(updatedLocation);
     }
 
-    public void delete(Long id) {
+    public String delete(Long id) {
         System.out.println("SERVICE: Calling update ===>");
         Location location = locationRepository.findById(id).orElseThrow(() ->
                 new InformationNotFoundException("Location with the id:" + id + " does not exist, please try again with another id"));
         locationRepository.delete(location);
+        return "Location with id:"+ id +"has been deleted successfully";
     }
 
     private LocationResponse toResponse(Location location) {
