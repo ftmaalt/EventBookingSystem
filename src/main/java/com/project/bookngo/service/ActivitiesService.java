@@ -1,6 +1,7 @@
 package com.project.bookngo.service;
 
 import com.project.bookngo.exception.InformationNotFoundException;
+import com.project.bookngo.exception.InvalidCredentials;
 import com.project.bookngo.model.Activities;
 import com.project.bookngo.model.Category;
 import com.project.bookngo.model.Location;
@@ -94,6 +95,9 @@ public class ActivitiesService {
     public String deleteActivity(Long id) {
         Activities activity = activitiesRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Activity with the id:" + id + " does not exist."));
+        if (!activity.getProvider().getId().equals(getCurrentUser().getId())) {
+            throw new InvalidCredentials("You are not authorized to modify this activity.");
+        }
         activitiesRepository.delete(activity);
         return "Activity with id:" + id + " has been deleted successfully.";
     }
