@@ -25,6 +25,12 @@ public class Location {
     @Column(nullable = false)
     private Boolean active;
 
+    @Column(nullable = false)
+    private Double latitude;
+
+    @Column(nullable = false)
+    private Double longitude;
+
 
 //    --- Relationship Mapping ---
     @JsonIgnore
