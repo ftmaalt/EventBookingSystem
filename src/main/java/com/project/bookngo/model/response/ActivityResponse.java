@@ -10,7 +10,7 @@ import com.project.bookngo.enums.ActivityStatus;
 @AllArgsConstructor
 @Getter
 public class ActivityResponse {
-    private Long id;
+    private Long activity_id;
 
     private String title;
     private String description;

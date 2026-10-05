@@ -18,7 +18,7 @@ import java.util.List;
 public class Activities {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long activity_id;
 
     @Column(length = 150)
     @NotBlank

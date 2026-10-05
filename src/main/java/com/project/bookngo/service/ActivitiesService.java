@@ -38,7 +38,7 @@ public class ActivitiesService {
         return usersRepository.findUserByEmail(email);
     }
 
-    public ActivityResponse create(ActivityRequest request) {
+    public ActivityResponse createActivity(ActivityRequest request) {
         User provider = getCurrentUser();
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new InformationNotFoundException(
@@ -70,7 +70,7 @@ public class ActivitiesService {
         return activitiesRepository.findAll().stream().map(this::toResponse).toList();
     }
 
-    public ActivityResponse update(Long id, ActivityRequest request) {
+    public ActivityResponse updateActivity(Long id, ActivityRequest request) {
         Activities activity = activitiesRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Activity with the id:" + id + " does not exist."));
 
@@ -91,7 +91,7 @@ public class ActivitiesService {
         return toResponse(updated);
     }
 
-    public String delete(Long id) {
+    public String deleteActivity(Long id) {
         Activities activity = activitiesRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Activity with the id:" + id + " does not exist."));
         activitiesRepository.delete(activity);
@@ -100,7 +100,7 @@ public class ActivitiesService {
 
     private ActivityResponse toResponse(Activities activities) {
         return new ActivityResponse(
-                activities.getId(),
+                activities.getActivity_id(),
                 activities.getTitle(),
                 activities.getDescription(),
                 activities.getPricePerPerson(),
