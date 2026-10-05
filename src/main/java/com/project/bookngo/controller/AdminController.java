@@ -1,7 +1,7 @@
 package com.project.bookngo.controller;
 
 import com.project.bookngo.model.request.UpdateUserRoleRequest;
-import com.project.bookngo.model.response.RegisterResponse;
+import com.project.bookngo.model.response.GenericMessageResponse;
 import com.project.bookngo.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,9 +20,9 @@ public class AdminController {
     //    Update User Role
     @PutMapping("/{id}/role")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<RegisterResponse> updateUserRole(@PathVariable Long id, @Valid @RequestBody UpdateUserRoleRequest request) {
+    public ResponseEntity<GenericMessageResponse> updateUserRole(@PathVariable Long id, @Valid @RequestBody UpdateUserRoleRequest request) {
         System.out.println("Calling updateUserRole==>");
-        RegisterResponse registerResponse= authService.updateUserRole(id, request);
+        GenericMessageResponse registerResponse= authService.updateUserRole(id, request);
         return ResponseEntity.status(HttpStatus.OK).body(registerResponse);
 
     }

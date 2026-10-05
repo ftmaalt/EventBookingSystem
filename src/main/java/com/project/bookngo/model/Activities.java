@@ -3,6 +3,7 @@ package com.project.bookngo.model;
 import com.project.bookngo.enums.ActivityStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -17,7 +18,7 @@ import java.util.List;
 public class Activities {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long activity_id;
 
     @Column(length = 150)
     @NotBlank
@@ -28,11 +29,11 @@ public class Activities {
     private String description;
 
     @Column(precision = 10, scale = 3)
-    @NotBlank
+    @NotNull
     private BigDecimal pricePerPerson;
 
     @Column
-    @NotBlank
+    @NotNull
     private Integer durationMinutes;
 
     @Enumerated(EnumType.STRING)
@@ -51,10 +52,17 @@ public class Activities {
 
 //    --- Relationship Mapping ---
 
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "provider_id", nullable = false)
+    private User provider;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "location_id", nullable = false)
+    private Location location;
 
     @OneToMany(mappedBy = "activity")
     private List<Sessions> sessionsList;

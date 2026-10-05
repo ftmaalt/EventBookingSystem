@@ -1,8 +1,9 @@
-package com.project.bookngo.enums;
+package com.project.bookngo.model.enums;
 
 public enum SessionStatus {
     SCHEDULED,
     FULL,
     CANCELLED,
-    IN_PROGRESS
+    IN_PROGRESS,
+    COMPLETED
 }
