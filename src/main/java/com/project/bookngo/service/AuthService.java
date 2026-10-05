@@ -89,24 +89,24 @@ public class AuthService {
     }
 
 //    --- Reset Password ---
-    public ForgotPasswordResponse forgotPassword(ForgotPasswordRequest forgotPasswordRequest) {
+    public GenericMessageResponse forgotPassword(ForgotPasswordRequest forgotPasswordRequest) {
         User user = usersRepository.findUserByEmail(forgotPasswordRequest.getEmail());
         if (user != null) {
             String resetToken = tokenService.generateToken(user, TokenType.PASSWORD_RESET);
             emailService.sendPasswordResetEmail(user.getEmail(), resetToken);
         }
             // sending a valid message without actually sending the email to ensure that no data leak happen
-    return new ForgotPasswordResponse("An message was sent to the email with the password reset link.");
+    return new GenericMessageResponse("An message was sent to the email with the password reset link.");
     }
-    public ForgotPasswordResponse resetPassword(ResetPasswordRequest passwordRequest){
+    public GenericMessageResponse resetPassword(ResetPasswordRequest passwordRequest){
         User user = tokenService.validateToken(passwordRequest.getToken(), TokenType.PASSWORD_RESET);
         user.setPasswordHash(passwordEncoder.encode(passwordRequest.getNewPassword()));
         usersRepository.save(user);
-        return new ForgotPasswordResponse("Password Reset Successful. You can now log in using your new password.");
+        return new GenericMessageResponse("Password Reset Successful. You can now log in using your new password.");
 
     }
 //    --- Change Password ---
-public ForgotPasswordResponse changePassword(ChangePasswordRequest request) {
+public GenericMessageResponse changePassword(ChangePasswordRequest request) {
     String email = SecurityContextHolder.getContext().getAuthentication().getName();
     User user= usersRepository.findUserByEmail(email);
     if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())){
@@ -114,7 +114,7 @@ public ForgotPasswordResponse changePassword(ChangePasswordRequest request) {
     }else{
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         usersRepository.save(user);
-        return new ForgotPasswordResponse("Password Changed Successfully.");
+        return new GenericMessageResponse("Password Changed Successfully.");
     }
 }
 

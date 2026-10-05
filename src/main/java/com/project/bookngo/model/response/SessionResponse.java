@@ -2,7 +2,7 @@ package com.project.bookngo.model.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import com.project.bookngo.enums.SessionStatus;
+import com.project.bookngo.model.enums.SessionStatus;
 
 import java.time.LocalDateTime;
 

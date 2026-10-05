@@ -1,7 +1,7 @@
 package com.project.bookngo.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.project.bookngo.enums.SessionStatus;
+import com.project.bookngo.model.enums.SessionStatus;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
