@@ -3,6 +3,7 @@ package com.project.bookngo.model;
 import com.project.bookngo.enums.ActivityStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -28,11 +29,11 @@ public class Activities {
     private String description;
 
     @Column(precision = 10, scale = 3)
-    @NotBlank
+    @NotNull
     private BigDecimal pricePerPerson;
 
     @Column
-    @NotBlank
+    @NotNull
     private Integer durationMinutes;
 
     @Enumerated(EnumType.STRING)
