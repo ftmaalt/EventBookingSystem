@@ -94,6 +94,7 @@ public class SessionsService {
 
         session.setStartTime(request.getStartTime());
         session.setEndTime(request.getEndTime());
+        session.setUpdatedAt(LocalDateTime.now());
         if (session.getSpotsLeft().equals(session.getCapacity())) {
             // TODO:Update For booking.. safe to update both together
             session.setCapacity(request.getCapacity());
