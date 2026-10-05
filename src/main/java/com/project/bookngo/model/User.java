@@ -1,6 +1,6 @@
 package com.project.bookngo.model;
 
-import com.project.bookngo.enums.UserRole;
+import com.project.bookngo.model.enums.UserRole;
 import com.project.bookngo.enums.UserStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;

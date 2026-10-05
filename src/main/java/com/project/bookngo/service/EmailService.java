@@ -22,7 +22,7 @@ public class EmailService {
         verificationMessage.setSubject("Verify your BooknGo email");
         verificationMessage.setText(
                 "Hello," +
-                        "\nhere is your verification link:" + baseUrl + "/api/auth/verify?token=" + token+
+                        "\nHere is your verification link:\n" + baseUrl + "/api/auth/verify?token=" + token+
                         "\n\nThis email verification link will expire after 24 hours. If you did not create an account on BooknGo, no further action is required.\n" +
                         "\n" +
                         "Regards,\n" +

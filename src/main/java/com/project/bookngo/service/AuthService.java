@@ -1,6 +1,6 @@
 package com.project.bookngo.service;
 
-import com.project.bookngo.enums.UserRole;
+import com.project.bookngo.model.enums.UserRole;
 import com.project.bookngo.enums.UserStatus;
 //import com.project.bookngo.enums.TokenType;
 import com.project.bookngo.exception.InformationExistsException;
