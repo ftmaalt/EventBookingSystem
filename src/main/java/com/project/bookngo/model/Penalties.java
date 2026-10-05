@@ -2,6 +2,7 @@ package com.project.bookngo.model;
 
 import com.project.bookngo.enums.PenaltyStatus;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -15,18 +16,21 @@ public class Penalties {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column
+    @NotBlank
     private Short strikeNumber;
 
-    @Column(nullable = false, precision = 10, scale = 3)
+    @Column(precision = 10, scale = 3)
     private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column
+    @NotBlank
     private PenaltyStatus status;
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(updatable = false)
+    @NotBlank
     private LocalDateTime createdAt;
 
     @Column
@@ -35,7 +39,7 @@ public class Penalties {
 
 //    --- Relationship Mapping ---
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private Users user;
+    @JoinColumn(name = "user_id")
+    private User user;
 
 }

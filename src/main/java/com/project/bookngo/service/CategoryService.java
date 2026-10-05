@@ -40,7 +40,7 @@ public class CategoryService {
         Category category= categoryRepository.findById(category_id).orElseThrow(()->
                 new InformationNotFoundException("Category with the id:"+ category_id +" does not exist, please try again with another category id")
         );
-        category.setCategory_name(request.getCategory_name());
+        category.setCategoryName(request.getCategory_name());
         category.setDescription(request.getDescription());
         categoryRepository.save(category);
         return toResponse(category);
@@ -56,6 +56,6 @@ public class CategoryService {
     }
 
     private CategoryResponse toResponse(Category categoryObject) {
-        return new CategoryResponse(categoryObject.getCategory_id(), categoryObject.getCategory_name(), categoryObject.getDescription());
+        return new CategoryResponse(categoryObject.getCategory_id(), categoryObject.getCategoryName(), categoryObject.getDescription());
     }
 }

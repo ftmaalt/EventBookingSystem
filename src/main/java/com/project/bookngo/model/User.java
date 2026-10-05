@@ -1,8 +1,10 @@
 package com.project.bookngo.model;
 
-import com.project.bookngo.enums.UserRole;
+import com.project.bookngo.model.enums.UserRole;
 import com.project.bookngo.enums.UserStatus;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -13,50 +15,55 @@ import java.util.List;
 @Data
 @Entity
 @Table(name = "users")
-public class Users {
+public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 100)
+
+    @Column(length = 100)
+    @NotBlank
     private String fullName;
 
-    @Column(nullable = false, unique = true, length = 150)
+    @Column(unique = true, length = 150)
+    @NotBlank
     private String email;
 
-    @Column(nullable = false, length = 255)
+    @Column(length = 255)
+    @NotBlank
     private String passwordHash;
 
     @Column(length = 20)
     private String phone;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column
+    @NotNull
     private UserRole role;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private UserStatus status;
+    @Column
 
+    private UserStatus status;
     @Column(length = 255)
     private String profilePicturePath;
 
-    @Column(nullable = false)
+    @Column
     private Boolean mustChangePassword;
 
-    @Column(nullable = false)
+    @Column
     private Short strikeCount;
 
-    @Column(nullable = false)
+    @Column
     private Short consecutiveViolations;
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(nullable = false)
+    @Column
     private LocalDateTime updatedAt;
 
     //    --- Relationship Mapping ---
