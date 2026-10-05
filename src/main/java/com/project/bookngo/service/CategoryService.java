@@ -18,7 +18,7 @@ public class CategoryService {
     public CategoryResponse createCategory( CategoryRequest request){
         System.out.println("SERVICE: Calling createCategory ===>");
         Category categoryObject = new Category();
-            categoryObject.setCategoryName(request.getCategory_name());
+            categoryObject.setCategory_name(request.getCategory_name());
             categoryObject.setDescription(request.getDescription());
             categoryObject =categoryRepository.save(categoryObject);
             return toResponse(categoryObject);
