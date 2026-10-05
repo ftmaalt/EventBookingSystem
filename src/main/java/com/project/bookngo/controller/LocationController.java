@@ -2,13 +2,11 @@ package com.project.bookngo.controller;
 
 import com.project.bookngo.model.request.LocationRequest;
 import com.project.bookngo.model.response.LocationResponse;
-import com.project.bookngo.model.response.RegisterResponse;
 import com.project.bookngo.service.LocationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.project.bookngo.model.response.LocationResponse;
 
 import java.util.List;
 

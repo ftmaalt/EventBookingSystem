@@ -6,7 +6,7 @@ import lombok.Getter;
 @AllArgsConstructor
 
 @Getter
-public class RegisterResponse {
+public class GenericMessageResponse {
     private String message;
 
 }

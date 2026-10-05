@@ -17,36 +17,29 @@ import java.util.List;
 @Table(name = "sessions")
 public class Sessions {
     @Id
-    @NotBlank
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column
-    @NotBlank
+    @Column(nullable = false)
     private LocalDateTime startTime;
 
-    @Column
-    @NotBlank
+    @Column(nullable = false)
     private LocalDateTime endTime;
 
-    @Column
-    @NotBlank
+    @Column(nullable = false)
     private Integer capacity;
 
-    @Column
-    @NotBlank
+    @Column(nullable = false)
     private Integer spotsLeft;
 
     @Enumerated(EnumType.STRING)
-    @Column
-    @NotBlank
+    @Column(nullable = false)
     private SessionStatus status;
 
     @Version
     private Long version;
 
     @CreationTimestamp
-    @NotBlank
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
