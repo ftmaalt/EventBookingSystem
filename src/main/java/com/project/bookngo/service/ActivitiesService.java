@@ -8,7 +8,7 @@ import com.project.bookngo.model.Location;
 import com.project.bookngo.model.User;
 import com.project.bookngo.model.request.ActivityRequest;
 import com.project.bookngo.model.response.ActivityResponse;
-import com.project.bookngo.enums.ActivityStatus;
+import com.project.bookngo.model.enums.ActivityStatus;
 import com.project.bookngo.repository.ActivitiesRepository;
 import com.project.bookngo.repository.CategoryRepository;
 import com.project.bookngo.repository.LocationRepository;

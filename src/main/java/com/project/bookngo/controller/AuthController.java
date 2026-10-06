@@ -40,22 +40,22 @@ public class AuthController {
     }
 //        Password Reset
     @PostMapping("/forgotPassword")
-    public ResponseEntity<ForgotPasswordResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest forgotPasswordRequest) {
+    public ResponseEntity<GenericMessageResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest forgotPasswordRequest) {
         System.out.println("Calling forgotPassword==>");
-        ForgotPasswordResponse forgotPasswordResponse= authService.forgotPassword(forgotPasswordRequest);
+        GenericMessageResponse forgotPasswordResponse= authService.forgotPassword(forgotPasswordRequest);
         return ResponseEntity.status(HttpStatus.OK).body(forgotPasswordResponse);
         }
         @PostMapping("/resetPassword")
-    public ResponseEntity<ForgotPasswordResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest passwordRequest){
+    public ResponseEntity<GenericMessageResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest passwordRequest){
             System.out.println("Calling resetPassword==>");
-            ForgotPasswordResponse passwordResponse= authService.resetPassword(passwordRequest);
+            GenericMessageResponse passwordResponse= authService.resetPassword(passwordRequest);
             return ResponseEntity.status(HttpStatus.OK).body(passwordResponse);
         }
 //        Change Password
     @PutMapping("/changePassword")
-    public ResponseEntity<ForgotPasswordResponse> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+    public ResponseEntity<GenericMessageResponse> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         System.out.println("Calling changePassword==>");
-        ForgotPasswordResponse passwordResponse= authService.changePassword(request);
+        GenericMessageResponse passwordResponse= authService.changePassword(request);
         return ResponseEntity.status(HttpStatus.OK).body(passwordResponse);
     }
 }
