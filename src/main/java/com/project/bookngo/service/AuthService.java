@@ -75,7 +75,7 @@ public class AuthService {
         if (loginAttemptUser == null) {
             throw new InformationNotFoundException("The Email/Password you entered is not correct. Please try again.");
         }
-        if (loginAttemptUser.getStatus() == UserStatus.PENDING_VERIFICATION) {
+        if (loginAttemptUser.getStatus() == UserStatus.PENDING_VERIFICATION || loginAttemptUser.getStatus() == UserStatus.BLACKLISTED || loginAttemptUser.getStatus() == UserStatus.DEACTIVATED) {
             throw new VerificationRequiredException("Please verify your email before attempting to login.");
 
         }
