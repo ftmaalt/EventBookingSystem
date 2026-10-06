@@ -26,12 +26,14 @@ public class ProviderProfileService {
     }
 
     public ProviderProfileResponse getMyProfile() {
+        System.out.println("SERVICE Calling getMyProfile==>");
         User user= getCurrentUser();
         ProviderProfile profile= providerProfileRepository.findByUserId(user.getId()).orElseThrow(()-> new InformationNotFoundException("Provider Profile Doesn't exist for this user."));
         return toResponse(profile);
     }
 
     public ProviderProfileResponse updateMyProfile(ProviderProfileRequest request) {
+        System.out.println("SERVICE Calling updateMyProfile==>");
         User user= getCurrentUser();
         ProviderProfile profile= providerProfileRepository.findByUserId(user.getId()).orElseThrow(()-> new InformationNotFoundException("Provider Profile Doesn't exist for this user."));
         profile.setDescription(request.getDescription());
