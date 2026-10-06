@@ -53,17 +53,17 @@ public class ProviderApplicationController {
 
     @PatchMapping(value = "/{application_id}/status", params = "action=approve")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ProviderApplicationResponse> approveApplication(@PathVariable Long id, @Valid @RequestBody ReviewApplicationRequest request) {
+    public ResponseEntity<ProviderApplicationResponse> approveApplication(@PathVariable Long application_id, @Valid @RequestBody ReviewApplicationRequest request) {
         System.out.println("Calling approveApplication==>");
-        ProviderApplicationResponse applicationResponse = applicationService.approveApplication(id, request);
+        ProviderApplicationResponse applicationResponse = applicationService.approveApplication(application_id, request);
         return ResponseEntity.ok().body(applicationResponse);
     }
 
     @PatchMapping(value = "/{application_id}/status", params = "action=reject")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ProviderApplicationResponse> rejectApplication(@PathVariable Long id, @Valid @RequestBody ReviewApplicationRequest request) {
+    public ResponseEntity<ProviderApplicationResponse> rejectApplication(@PathVariable Long application_id, @Valid @RequestBody ReviewApplicationRequest request) {
         System.out.println("Calling rejectApplication==>");
-        ProviderApplicationResponse applicationResponse = applicationService.rejectApplication(id, request);
+        ProviderApplicationResponse applicationResponse = applicationService.rejectApplication(application_id, request);
         return ResponseEntity.ok().body(applicationResponse);
     }
 
