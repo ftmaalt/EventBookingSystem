@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class ActivitiesController {
     private ActivitiesService activitiesService;
 
     @PostMapping
+    @PreAuthorize("hasRole('PROVIDER')")
     public ResponseEntity<ActivityResponse> createActivity(@Valid @RequestBody ActivityRequest request) {
         System.out.println("Calling createActivity ===>");
         ActivityResponse response = activitiesService.createActivity(request);
@@ -40,6 +42,7 @@ public class ActivitiesController {
     }
 
     @PutMapping("/{activity_id}")
+    @PreAuthorize("hasRole('PROVIDER')")
     public ResponseEntity<ActivityResponse> updateActivity(@PathVariable Long id, @Valid @RequestBody ActivityRequest request) {
         System.out.println("Calling updateActivity ===>");
         ActivityResponse response=activitiesService.updateActivity(id, request);
@@ -47,6 +50,7 @@ public class ActivitiesController {
     }
 
     @DeleteMapping("/{activity_id}")
+    @PreAuthorize("hasRole('PROVIDER')")
     public ResponseEntity<String> deleteActivity(@PathVariable Long activity_id) {
         System.out.println("Calling deleteActivity ===>");
         String message= activitiesService.deleteActivity(activity_id);

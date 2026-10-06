@@ -1,4 +1,4 @@
-package com.project.bookngo.enums;
+package com.project.bookngo.model.enums;
 
 public enum PenaltyStatus {
     PENDING,
