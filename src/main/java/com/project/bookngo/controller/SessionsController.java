@@ -3,8 +3,8 @@ package com.project.bookngo.controller;
 import com.project.bookngo.model.request.SessionRequest;
 import com.project.bookngo.model.response.SessionResponse;
 import com.project.bookngo.service.SessionsService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.QualifierAnnotationAutowireCandidateResolver;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +20,7 @@ public class SessionsController {
 
 
     @PostMapping
-    public ResponseEntity<SessionResponse> createSession(@RequestBody SessionRequest request) {
+    public ResponseEntity<SessionResponse> createSession(@Valid @RequestBody SessionRequest request) {
         SessionResponse createdSession = sessionsService.createSession(request);
         return new ResponseEntity<>(createdSession, HttpStatus.CREATED);
     }
@@ -38,9 +38,7 @@ public class SessionsController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<SessionResponse> updateSession(
-            @PathVariable Long id,
-            @RequestBody SessionRequest request) {
+    public ResponseEntity<SessionResponse> updateSession(@PathVariable Long id, @Valid @RequestBody SessionRequest request) {
         SessionResponse updatedSession = sessionsService.updateSession(id, request);
         return ResponseEntity.ok(updatedSession);
     }

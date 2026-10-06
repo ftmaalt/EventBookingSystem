@@ -38,7 +38,7 @@ public class Activities {
 
     @Enumerated(EnumType.STRING)
     @Column
-    @NotBlank
+    @NotNull
     private ActivityStatus status;
 
     @CreationTimestamp

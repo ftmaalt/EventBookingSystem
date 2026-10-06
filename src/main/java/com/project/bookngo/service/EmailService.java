@@ -42,5 +42,6 @@ public class EmailService {
                 "\n" +
                 "Regards,\n" +
                 "BooknGo Team");
+        mailSender.send(passwordResetMessage);
     }
 }
