@@ -38,8 +38,8 @@ public class BookingsService {
 
     @Transactional
     public BookingResponse createBooking(BookingRequest request) {
+        System.out.println("SERVICE Calling createBooking ==>");
         User user = getCurrentUser();
-
         Sessions session = sessionsRepository.findByIdForUpdate(request.getSessionId())
                 .orElseThrow(() -> new InformationNotFoundException("Session with ID: " + request.getSessionId() + " not found."));
 
@@ -81,6 +81,7 @@ public class BookingsService {
     }
 
     public BookingResponse getById(Long id) {
+        System.out.println("SERVICE Calling getById ==>");
         Bookings booking = bookingsRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Booking with the id:" + id + " does not exist."));
         checkOwnershipOrAdmin(booking);
@@ -88,12 +89,14 @@ public class BookingsService {
     }
 
     public List<BookingResponse> getMyBookings() {
+        System.out.println("SERVICE Calling getMyBookings ==>");
         User user = getCurrentUser();
         return bookingsRepository.findByUserId(user.getId()).stream().map(this::toResponse).toList();
     }
 
     @Transactional
     public String cancelBooking(Long id) {
+        System.out.println("SERVICE Calling cancelBooking ==>");
         Bookings booking = bookingsRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Booking with the id:" + id + " does not exist."));
         checkOwnershipOrAdmin(booking);

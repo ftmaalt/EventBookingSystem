@@ -1,8 +1,7 @@
 package com.project.bookngo.service;
 
 import com.project.bookngo.model.enums.UserRole;
-import com.project.bookngo.enums.UserStatus;
-//import com.project.bookngo.enums.TokenType;
+import com.project.bookngo.model.enums.UserStatus;
 import com.project.bookngo.exception.InformationExistsException;
 import com.project.bookngo.exception.InformationNotFoundException;
 import com.project.bookngo.exception.InvalidCredentials;
@@ -90,6 +89,7 @@ public class AuthService {
 
 //    --- Reset Password ---
     public GenericMessageResponse forgotPassword(ForgotPasswordRequest forgotPasswordRequest) {
+        System.out.println("SERVICE Calling forgotPassword ==>");
         User user = usersRepository.findUserByEmail(forgotPasswordRequest.getEmail());
         if (user != null) {
             String resetToken = tokenService.generateToken(user, TokenType.PASSWORD_RESET);
@@ -99,6 +99,7 @@ public class AuthService {
     return new GenericMessageResponse("An message was sent to the email with the password reset link.");
     }
     public GenericMessageResponse resetPassword(ResetPasswordRequest passwordRequest){
+        System.out.println("SERVICE Calling resetPassword ==>");
         User user = tokenService.validateToken(passwordRequest.getToken(), TokenType.PASSWORD_RESET);
         user.setPasswordHash(passwordEncoder.encode(passwordRequest.getNewPassword()));
         usersRepository.save(user);
@@ -107,6 +108,7 @@ public class AuthService {
     }
 //    --- Change Password ---
 public GenericMessageResponse changePassword(ChangePasswordRequest request) {
+    System.out.println("SERVICE Calling changePassword ==>");
     String email = SecurityContextHolder.getContext().getAuthentication().getName();
     User user= usersRepository.findUserByEmail(email);
     if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())){

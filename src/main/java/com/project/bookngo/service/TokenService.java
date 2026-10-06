@@ -22,6 +22,7 @@ public class TokenService {
 
 
     public String generateToken(User user, TokenType type) {
+        System.out.println("SERVICE Calling generateToken ==>");
        String tokenString = UUID.randomUUID().toString();
         // 2. create a new Tokens entity
         Tokens token = new Tokens();
@@ -39,6 +40,7 @@ public class TokenService {
     }
 
     public User validateToken(String tokenString, TokenType expectedType) {
+        System.out.println("SERVICE Calling validateToken ==>");
         Tokens token = tokensRepository.findByToken(tokenString).orElseThrow(() -> new InformationNotFoundException("Invalid token."));
 
         if (token.getType() != expectedType) {

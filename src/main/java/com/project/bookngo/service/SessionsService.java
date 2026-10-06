@@ -38,6 +38,7 @@ public class SessionsService {
     }
 
     public SessionResponse createSession(SessionRequest request) {
+        System.out.println("SERVICE Calling createSession ==>");
         Activities activity = activitiesRepository.findById(request.getActivity_id())
                 .orElseThrow(() -> new InformationNotFoundException("Activity with ID: " + request.getActivity_id() + " not found."));
 
@@ -60,12 +61,14 @@ public class SessionsService {
     }
 
     public SessionResponse getById(Long id) {
+        System.out.println("SERVICE Calling getById ==>");
         Sessions session = sessionsRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Session with the id:" + id + " does not exist."));
         return toResponse(session);
     }
 
     public List<SessionResponse> getAllByActivityId(Long activityId) {
+        System.out.println("SERVICE Calling getAllByActivityId ==>");
         if (!activitiesRepository.existsById(activityId)) {
             throw new InformationNotFoundException("Activity with ID: " + activityId + " not found.");
         }
@@ -73,6 +76,7 @@ public class SessionsService {
     }
 
     public SessionResponse updateSession(Long id, SessionRequest request) {
+        System.out.println("SERVICE Calling updateSession ==>");
         Sessions session = sessionsRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Session with the id:" + id + " does not exist."));
 
@@ -106,6 +110,7 @@ public class SessionsService {
     }
 
     public SessionResponse updateSessionStatus(Long id) {
+        System.out.println("SERVICE Calling updateSessionStatus ==>");
         Sessions session = sessionsRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Session with the id:" + id + " does not exist."));
 
@@ -122,6 +127,7 @@ public class SessionsService {
     }
 
     public String cancelSession(Long id) {
+        System.out.println("SERVICE Calling cancelSession ==>");
         Sessions session = sessionsRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Session with ID: " + id + " not found."));
 

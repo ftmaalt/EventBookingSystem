@@ -40,6 +40,7 @@ public class ActivitiesService {
     }
 
     public ActivityResponse createActivity(ActivityRequest request) {
+        System.out.println("SERVICE Calling createActivity ==>");
         User provider = getCurrentUser();
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new InformationNotFoundException(
@@ -62,16 +63,19 @@ public class ActivitiesService {
     }
 
     public ActivityResponse getById(Long id) {
+        System.out.println("SERVICE Calling getById ==>");
         Activities activity = activitiesRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Activity with the id:" + id + " does not exist."));
         return toResponse(activity);
     }
 
     public List<ActivityResponse> getAllActivities() {
+        System.out.println("SERVICE Calling getAllActivities ==>");
         return activitiesRepository.findAll().stream().map(this::toResponse).toList();
     }
 
     public ActivityResponse updateActivity(Long id, ActivityRequest request) {
+        System.out.println("SERVICE Calling updateActivity ==>");
         Activities activity = activitiesRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Activity with the id:" + id + " does not exist."));
 
@@ -93,6 +97,7 @@ public class ActivitiesService {
     }
 
     public String deleteActivity(Long id) {
+        System.out.println("SERVICE Calling deleteActivity ==>");
         Activities activity = activitiesRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Activity with the id:" + id + " does not exist."));
         if (!activity.getProvider().getId().equals(getCurrentUser().getId())) {
