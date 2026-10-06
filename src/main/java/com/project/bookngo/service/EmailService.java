@@ -101,80 +101,40 @@ public class EmailService {
         bookingConfirmedMessage.setText(emailText);
         mailSender.send(bookingConfirmedMessage);
     }
-    public void sendBookingReminders(String toEmail, Bookings booking ) {
+    public void sendBookingReminders(String toEmail, Bookings booking, String timeFrameLabel) {
         System.out.println("SERVICE Calling sendBookingReminders");
-            if (booking == null || booking.getSession() == null) {
-                return;
-            }
-            SessionStatus sessionStatus = booking.getSession().getStatus();
-            if (sessionStatus == SessionStatus.COMPLETED || sessionStatus == SessionStatus.CANCELLED) {
-                return;
-            }
-            LocalDateTime startTime = booking.getSession().getStartTime();
-            if (startTime == null) {
-                return;
-            }
-            long minutesToBooking = Duration.between(LocalDateTime.now(), startTime).toMinutes();
-            if (minutesToBooking <= 0) {
-                return;
-            }
+        if (booking == null || booking.getSession() == null) return;
 
-            String timeFrameLabel = null;
-            if (minutesToBooking > 0 && minutesToBooking <= 30) {
-                timeFrameLabel = "30 minutes";
-            } else if (minutesToBooking > 30 && minutesToBooking <= 60) {
-                timeFrameLabel = "1 hour";
-            } else if (minutesToBooking > 60 && minutesToBooking <= 360) {
-                timeFrameLabel = "6 hours";
-            } else if (minutesToBooking > 360 && minutesToBooking <= 1440) {
-                timeFrameLabel = "24 hours";
-            }
-            if (timeFrameLabel == null) {
-                return;
-            }
-            String activityTitle = (booking.getSession().getActivity() != null)
-                    ? booking.getSession().getActivity().getTitle()
-                    : "N/A";
+        String activityTitle = (booking.getSession().getActivity() != null)
+                ? booking.getSession().getActivity().getTitle() : "N/A";
+        String userName = (booking.getUser() != null && booking.getUser().getFullName() != null)
+                ? booking.getUser().getFullName() : "Customer";
 
-            String userName = (booking.getUser() != null && booking.getUser().getFullName() != null)
-                    ? booking.getUser().getFullName()
-                    : "Customer";
+        SimpleMailMessage reminderMessage = new SimpleMailMessage();
+        reminderMessage.setTo(toEmail);
+        reminderMessage.setSubject("Booking Reminder - Session Starts in " + timeFrameLabel);
 
-            SimpleMailMessage reminderMessage = new SimpleMailMessage();
-            reminderMessage.setTo(toEmail);
-            reminderMessage.setSubject("Booking Reminder - Session Starts in " + timeFrameLabel);
+        String emailText = String.format(
+                "Hello %s,\n\nThis is a reminder that your booking for session: %s starts in %s.\n\n" +
+                        "==========================================\n" +
+                        "             BOOKING DETAILS              \n" +
+                        "==========================================\n" +
+                        "Booking Reference : #%d\n" +
+                        "Session           : %s\n" +
+                        "Date & Time       : %s\n" +
+                        "Booking Type      : %s\n" +
+                        "Participants      : %d\n" +
+                        "Booking Status    : %s\n\n" +
+                        "Please make sure to arrive on time for your session.\n\n" +
+                        "Thank you for choosing BookNGo!\n\nBest regards,\nThe BookNGo Team",
+                userName, activityTitle, timeFrameLabel, booking.getId(), activityTitle,
+                booking.getSession().getStartTime(), booking.getBookingType(),
+                booking.getParticipants(), booking.getStatus()
+        );
 
-            String emailText = String.format(
-                    "Hello %s,\n\n" +
-                            "This is a reminder that your booking for session: %s starts in %s.\n\n" +
-                            "==========================================\n" +
-                            "             BOOKING DETAILS              \n" +
-                            "==========================================\n" +
-                            "Booking Reference : #%d\n" +
-                            "Session           : %s\n" +
-                            "Date & Time       : %s\n" +
-                            "Booking Type      : %s\n" +
-                            "Participants      : %d\n" +
-                            "Booking Status    : %s\n\n" +
-                            "Please make sure to arrive on time for your session.\n\n" +
-                            "Thank you for choosing BookNGo!\n\n" +
-                            "Best regards,\n" +
-                            "The BookNGo Team",
-
-                    userName,
-                    activityTitle,
-                    timeFrameLabel,
-                    booking.getId(),
-                    activityTitle,
-                    startTime,
-                    booking.getBookingType(),
-                    booking.getParticipants(),
-                    booking.getStatus()
-            );
-
-            reminderMessage.setText(emailText);
-            mailSender.send(reminderMessage);
-        }
+        reminderMessage.setText(emailText);
+        mailSender.send(reminderMessage);
+    }
     public void sendSessionCancelledEmail(String toEmail, Bookings booking) {
         System.out.println("SERVICE Calling sendSessionCancelledEmail");
 

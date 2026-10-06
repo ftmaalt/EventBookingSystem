@@ -56,6 +56,8 @@ public class Bookings {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+    @Column(length = 20)
+    private String lastReminderStage;
 
 
 //    --- Relationship Mapping ---
