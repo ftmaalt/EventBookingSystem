@@ -28,9 +28,9 @@ public class ActivitiesController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     @GetMapping("/{activity_id}")
-    public ResponseEntity<ActivityResponse> getById(@PathVariable Long id) {
+    public ResponseEntity<ActivityResponse> getById(@PathVariable Long activity_id) {
         System.out.println("Calling getById ===>");
-        ActivityResponse response=activitiesService.getById(id);
+        ActivityResponse response=activitiesService.getById(activity_id);
         return ResponseEntity.ok().body(response);
     }
 
@@ -43,9 +43,9 @@ public class ActivitiesController {
 
     @PutMapping("/{activity_id}")
     @PreAuthorize("hasRole('PROVIDER')")
-    public ResponseEntity<ActivityResponse> updateActivity(@PathVariable Long id, @Valid @RequestBody ActivityRequest request) {
+    public ResponseEntity<ActivityResponse> updateActivity(@PathVariable Long activity_id, @Valid @RequestBody ActivityRequest request) {
         System.out.println("Calling updateActivity ===>");
-        ActivityResponse response=activitiesService.updateActivity(id, request);
+        ActivityResponse response=activitiesService.updateActivity(activity_id, request);
         return ResponseEntity.ok().body(response);
     }
 
