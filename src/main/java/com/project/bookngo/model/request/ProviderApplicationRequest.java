@@ -1,28 +1,28 @@
 package com.project.bookngo.model.request;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class RegisterRequest {
+public class ProviderApplicationRequest {
     @NotBlank
-    private String fullname;
+    private String businessName;
 
     @NotBlank
-    @Email
-    private String email;
-
-    @NotBlank
-    @Size(min=8)
-    private String password;
+    private String contactName;
 
     @NotBlank
     @Max(8)
     private String phone;
+
+    @NotBlank
+    private String city;
+
+    private String description;
+
+    @NotBlank
+    private String proposedActivities;
 }

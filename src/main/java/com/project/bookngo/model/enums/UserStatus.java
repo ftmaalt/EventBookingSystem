@@ -2,7 +2,7 @@ package com.project.bookngo.model.enums;
 
 public enum UserStatus {
     ACTIVE,
-    INACTIVE,
+    DEACTIVATED,
     PENDING_VERIFICATION,
     BLACKLISTED
 }

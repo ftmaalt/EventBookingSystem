@@ -5,7 +5,7 @@ import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import com.project.bookngo.enums.ActivityStatus;
+import com.project.bookngo.model.enums.ActivityStatus;
 
 @AllArgsConstructor
 @Getter
