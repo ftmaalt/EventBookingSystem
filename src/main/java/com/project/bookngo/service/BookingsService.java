@@ -27,9 +27,14 @@ import java.util.List;
 @Service
 public class BookingsService {
 
-    @Autowired private BookingsRepository bookingsRepository;
-    @Autowired private SessionsRepository sessionsRepository;
-    @Autowired private UsersRepository usersRepository;
+    @Autowired
+    private BookingsRepository bookingsRepository;
+    @Autowired
+    private SessionsRepository sessionsRepository;
+    @Autowired
+    private UsersRepository usersRepository;
+    @Autowired
+    private EmailService emailService;
 
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -74,8 +79,8 @@ public class BookingsService {
 
         Bookings saved = bookingsRepository.save(booking);
 
-        // TODO: send booking-confirmation notification to user.getEmail()
-        // TODO: schedule a reminder notification ahead of session.getStartTime()
+        emailService.sendBookingVerifiedEmail(saved.getUser().getEmail(), saved);
+
 
         return toResponse(saved);
     }
@@ -119,8 +124,7 @@ public class BookingsService {
         booking.setStatus(BookingStatus.CANCELLED);
         bookingsRepository.save(booking);
 
-        // TODO: send cancellation notification to booking.getUser().getEmail()
-
+        emailService.sendSessionCancelledEmail(booking.getUser().getEmail(), booking);
         return "Booking with id:" + id + " has been cancelled successfully.";
     }
 
