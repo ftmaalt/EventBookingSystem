@@ -20,7 +20,7 @@ public class Bookings {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long bookingId;
 
     @Column(nullable = false)
     private Integer participants;

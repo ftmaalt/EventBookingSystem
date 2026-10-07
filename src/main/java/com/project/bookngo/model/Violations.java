@@ -17,12 +17,10 @@ public class Violations {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column
-    @NotBlank
+    @Column(nullable = false)
     private ViolationType type;
 
-    @Column
-    @NotBlank
+    @Column(nullable = false)
     private Boolean excused;
 
     @Column(length = 500)
@@ -41,17 +39,14 @@ public class Violations {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "booking_id")
-    @NotBlank
     private Bookings booking;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "session_id")
-    @NotBlank
     private Sessions session;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    @NotBlank
     private User user;
 
 }
