@@ -145,7 +145,7 @@ public class SessionsService {
     private SessionResponse toResponse(Sessions session) {
         return new SessionResponse(
                 session.getId(),
-                session.getActivity().getActivity_id(),
+                session.getActivity().getId(),
                 session.getStartTime(),
                 session.getEndTime(),
                 session.getCapacity(),
