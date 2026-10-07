@@ -4,6 +4,8 @@ import com.project.bookngo.model.request.*;
 import com.project.bookngo.model.response.LoginResponse;
 import com.project.bookngo.model.response.GenericMessageResponse;
 import com.project.bookngo.service.AuthService;
+import com.project.bookngo.service.RateLimitService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,12 +21,19 @@ public class AuthController {
     @Autowired
     private AuthService authService;
 
+    @Autowired
+    private RateLimitService rateLimitService;
+
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
     //register
     @PostMapping("/register")
-    public ResponseEntity<GenericMessageResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<GenericMessageResponse> register(@Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
         logger.info("Calling register==>");
+        String ipAddress = httpRequest.getRemoteAddr();
+
+        rateLimitService.checkRateLimit(ipAddress, request.getEmail());
+
         GenericMessageResponse registerResponse=authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(registerResponse);
     }
@@ -38,15 +47,19 @@ public class AuthController {
 
     //    Login
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request,HttpServletRequest httpRequest) {
         logger.info("Calling login==>");
+        String ipAddress = httpRequest.getRemoteAddr();
+        rateLimitService.checkRateLimit(ipAddress, request.getEmail());
         LoginResponse loginResponse = authService.login(request);
         return ResponseEntity.status(HttpStatus.OK).body(loginResponse);
     }
     //        Password Reset
     @PostMapping("/forgotPassword")
-    public ResponseEntity<GenericMessageResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest forgotPasswordRequest) {
+    public ResponseEntity<GenericMessageResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest forgotPasswordRequest, HttpServletRequest httpRequest) {
         logger.info("Calling forgotPassword==>");
+        String ipAddress = httpRequest.getRemoteAddr();
+        rateLimitService.checkRateLimit(ipAddress, forgotPasswordRequest.getEmail());
         GenericMessageResponse forgotPasswordResponse= authService.forgotPassword(forgotPasswordRequest);
         return ResponseEntity.status(HttpStatus.OK).body(forgotPasswordResponse);
     }

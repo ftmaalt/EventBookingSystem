@@ -1,4 +1,5 @@
-package com.project.bookngo.security;
+package com.project.bookngo.config;
+import com.project.bookngo.security.JwtRequestFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
