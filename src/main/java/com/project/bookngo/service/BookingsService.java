@@ -19,6 +19,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -37,6 +39,7 @@ public class BookingsService {
     private EmailService emailService;
     @Autowired
     private SSEService sseService;
+    private static final Logger logger = LoggerFactory.getLogger(BookingsService.class);
 
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -45,7 +48,7 @@ public class BookingsService {
 
     @Transactional
     public BookingResponse createBooking(BookingRequest request) {
-        System.out.println("SERVICE Calling createBooking ==>");
+        logger.info("Creating booking for session ID: {}", request.getSessionId());
         User user = getCurrentUser();
         Sessions session = sessionsRepository.findByIdForUpdate(request.getSessionId())
                 .orElseThrow(() -> new InformationNotFoundException("Session with ID: " + request.getSessionId() + " not found."));
@@ -80,6 +83,7 @@ public class BookingsService {
         booking.setPaymentStatus(PaymentStatus.PENDING_PAYMENT);
 
         Bookings saved = bookingsRepository.save(booking);
+        logger.info("Booking created successfully with ID: {} for session ID: {}", saved.getId(), saved.getSession().getId());
 
         emailService.sendBookingVerifiedEmail(saved.getUser().getEmail(), saved);
         sseService.sendNotification(saved.getUser().getId(), "booking-confirmed", toResponse(saved));
@@ -88,7 +92,7 @@ public class BookingsService {
     }
 
     public BookingResponse getById(Long id) {
-        System.out.println("SERVICE Calling getById ==>");
+        logger.info("Fetching booking with ID: {}", id);
         Bookings booking = bookingsRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Booking with the id:" + id + " does not exist."));
         checkOwnershipOrAdmin(booking);
@@ -96,14 +100,16 @@ public class BookingsService {
     }
 
     public List<BookingResponse> getMyBookings() {
-        System.out.println("SERVICE Calling getMyBookings ==>");
+        logger.info("Fetching bookings for current user");
         User user = getCurrentUser();
-        return bookingsRepository.findByUserId(user.getId()).stream().map(this::toResponse).toList();
+        List<BookingResponse> bookings=bookingsRepository.findByUserId(user.getId()).stream().map(this::toResponse).toList();
+        logger.info("Retrieved {} bookings for current user", bookings.size());
+        return bookings;
     }
 
     @Transactional
     public String cancelBooking(Long id) {
-        System.out.println("SERVICE Calling cancelBooking ==>");
+        logger.info("Cancelling booking with ID: {}", id);
         Bookings booking = bookingsRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Booking with the id:" + id + " does not exist."));
         checkOwnershipOrAdmin(booking);
@@ -123,7 +129,9 @@ public class BookingsService {
         }
         sessionsRepository.save(session);
 
+
         booking.setStatus(BookingStatus.CANCELLED);
+        logger.info("Booking with ID {} cancelled successfully", id);
         bookingsRepository.save(booking);
 
         emailService.sendSessionCancelledEmail(booking.getUser().getEmail(), booking);
@@ -135,6 +143,7 @@ public class BookingsService {
         boolean isOwner = booking.getUser().getId().equals(current.getId());
         boolean isAdmin = current.getRole() == UserRole.ADMIN;
         if (!isOwner && !isAdmin) {
+            logger.warn("Unauthorized access attempt for booking ID: {} by user ID: {}", booking.getId(), current.getId());
             throw new InvalidCredentials("You are not authorized to access this booking.");
         }
     }

@@ -15,6 +15,8 @@ import com.project.bookngo.repository.UsersRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,6 +27,8 @@ public class SessionsService {
     @Autowired private SessionsRepository sessionsRepository;
     @Autowired private ActivitiesRepository activitiesRepository;
     @Autowired private UsersRepository usersRepository;
+
+    private static final Logger logger = LoggerFactory.getLogger(SessionsService.class);
 
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -38,7 +42,7 @@ public class SessionsService {
     }
 
     public SessionResponse createSession(SessionRequest request) {
-        System.out.println("SERVICE Calling createSession ==>");
+        logger.info("Creating session for activity ID: {}", request.getActivity_id());
         Activities activity = activitiesRepository.findById(request.getActivity_id())
                 .orElseThrow(() -> new InformationNotFoundException("Activity with ID: " + request.getActivity_id() + " not found."));
 
@@ -57,18 +61,19 @@ public class SessionsService {
         session.setStatus(SessionStatus.SCHEDULED);
 
         Sessions saved = sessionsRepository.save(session);
+        logger.info("Session created successfully with ID: {}", saved.getId());
         return toResponse(saved);
     }
 
     public SessionResponse getById(Long id) {
-        System.out.println("SERVICE Calling getById ==>");
+        logger.info("Fetching session with ID: {}", id);
         Sessions session = sessionsRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Session with the id:" + id + " does not exist."));
         return toResponse(session);
     }
 
     public List<SessionResponse> getAllByActivityId(Long activityId) {
-        System.out.println("SERVICE Calling getAllByActivityId ==>");
+        logger.info("Fetching sessions for activity ID: {}", activityId);
         if (!activitiesRepository.existsById(activityId)) {
             throw new InformationNotFoundException("Activity with ID: " + activityId + " not found.");
         }
@@ -76,7 +81,7 @@ public class SessionsService {
     }
 
     public SessionResponse updateSession(Long id, SessionRequest request) {
-        System.out.println("SERVICE Calling updateSession ==>");
+        logger.info("Updating session with ID: {}", id);
         Sessions session = sessionsRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Session with the id:" + id + " does not exist."));
 
@@ -106,11 +111,12 @@ public class SessionsService {
         }
 
         Sessions updated = sessionsRepository.save(session);
+        logger.info("Session with ID {} updated successfully", id);
         return toResponse(updated);
     }
 
     public SessionResponse updateSessionStatus(Long id) {
-        System.out.println("SERVICE Calling updateSessionStatus ==>");
+        logger.info("Updating status for session with ID: {}", id);
         Sessions session = sessionsRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Session with the id:" + id + " does not exist."));
 
@@ -123,11 +129,12 @@ public class SessionsService {
         }
 
         Sessions saved = sessionsRepository.save(session);
+        logger.info("Session with ID {} status updated successfully", id);
         return toResponse(saved);
     }
 
     public String cancelSession(Long id) {
-        System.out.println("SERVICE Calling cancelSession ==>");
+        logger.info("Cancelling session with ID: {}", id);
         Sessions session = sessionsRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Session with ID: " + id + " not found."));
 
@@ -139,6 +146,7 @@ public class SessionsService {
         }
 
         sessionsRepository.delete(session);
+        logger.info("Session with ID {} cancelled successfully", id);
         return "Session with id:" + id + " has been deleted successfully.";
     }
 

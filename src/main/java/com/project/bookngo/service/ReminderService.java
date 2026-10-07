@@ -6,6 +6,8 @@ import com.project.bookngo.repository.BookingsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -19,13 +21,17 @@ public class ReminderService {
     @Autowired
     private EmailService emailService;
 
+    private static final Logger logger = LoggerFactory.getLogger(ReminderService.class);
+
     @Scheduled(fixedRate = 10 * 60 * 1000)// checks for time every 10 minutes
     public void sendUpcomingBookingReminders(){
+        logger.info("Checking for upcoming booking reminders");
         LocalDateTime now= LocalDateTime.now();
         //finds any bookings coming in 24 hours
         LocalDateTime window= now.plusHours(24);
 
         List<Bookings> upcoming = bookingsRepository.findByStatusAndSession_StartTimeBetween(BookingStatus.CONFIRMED, now, window);
+        logger.info("Found {} upcoming confirmed bookings for reminder processing", upcoming.size());
 
         for (Bookings booking :upcoming) {
             long minutesToBooking = Duration.between(now, booking.getSession().getStartTime()).toMinutes();
