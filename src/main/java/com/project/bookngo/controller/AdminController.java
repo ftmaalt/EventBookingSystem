@@ -2,6 +2,7 @@ package com.project.bookngo.controller;
 
 import com.project.bookngo.model.request.UpdateUserRoleRequest;
 import com.project.bookngo.model.response.GenericMessageResponse;
+import com.project.bookngo.service.AdminService;
 import com.project.bookngo.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,14 +16,14 @@ import org.springframework.web.bind.annotation.*;
 public class AdminController {
 
     @Autowired
-    private AuthService authService;
+    private AdminService adminService;
 
     //    Update User Role
     @PutMapping("/{id}/role")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<GenericMessageResponse> updateUserRole(@PathVariable Long id, @Valid @RequestBody UpdateUserRoleRequest request) {
         System.out.println("Calling updateUserRole==>");
-        GenericMessageResponse registerResponse= authService.updateUserRole(id, request);
+        GenericMessageResponse registerResponse= adminService.updateUserRole(id, request);
         return ResponseEntity.status(HttpStatus.OK).body(registerResponse);
     }
     // Deactivate User
