@@ -16,6 +16,8 @@ import com.project.bookngo.repository.BookingsRepository;
 import com.project.bookngo.repository.SessionsRepository;
 import com.project.bookngo.repository.UsersRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -169,5 +171,10 @@ public class BookingsService {
                 booking.getPaymentStatus(),
                 booking.getCreatedAt()
         );
+    }
+
+    public Page<BookingResponse> getMyBookings(BookingStatus status, Pageable pageable) {
+        User user = getCurrentUser();
+        return bookingsRepository.findMyBookings(user.getId(), status, pageable).map(this::toResponse);
     }
 }

@@ -15,6 +15,8 @@ import com.project.bookngo.repository.LocationRepository;
 import com.project.bookngo.repository.UsersRepository;
 import com.project.bookngo.security.MyUserDetails;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
@@ -129,6 +131,10 @@ public class ActivitiesService {
                 activities.getCreatedAt(),
                 activities.getUpdatedAt()
         );
+    }
+
+    public Page<ActivityResponse> search(Long categoryId, Long locationId, Pageable pageable) {
+        return activitiesRepository.search(categoryId, locationId, pageable).map(this::toResponse);
     }
 }
 
