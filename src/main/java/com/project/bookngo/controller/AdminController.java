@@ -24,6 +24,13 @@ public class AdminController {
         System.out.println("Calling updateUserRole==>");
         GenericMessageResponse registerResponse= authService.updateUserRole(id, request);
         return ResponseEntity.status(HttpStatus.OK).body(registerResponse);
-
+    }
+    // Deactivate User
+    @PutMapping("/users/{id}/deactivate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<GenericMessageResponse> deactivateUser(@PathVariable Long id) {
+        return ResponseEntity.ok(adminService.deactivateUser(id));
+        // or however your existing AdminController calls into its service —
+        // match whatever pattern updateUserRole already uses
     }
 }

@@ -80,7 +80,7 @@ public class AuthService {
         }
 
         if (loginAttemptUser.getStatus() == UserStatus.BLACKLISTED ||
-                loginAttemptUser.getStatus() == UserStatus.DEACTIVATED) {throw new InvalidCredentials("The Email/Password you entered is not correct. Please try again.");
+                loginAttemptUser.getStatus() == UserStatus.DEACTIVATED) {throw new InvalidCredentials("TThis account has been deactivated. Please contact support.");
         }
         if (!passwordEncoder.matches(loginRequest.getPassword(), loginAttemptUser.getPasswordHash())) {
             throw new InvalidCredentials("The Email/Password you entered is not correct. Please try again.");
@@ -126,14 +126,6 @@ public GenericMessageResponse changePassword(ChangePasswordRequest request) {
     }
 }
 
-// User Role and Authorization
-    public GenericMessageResponse updateUserRole(Long userId, UpdateUserRoleRequest request){
-        System.out.println("SERVICE Calling updateUserRole");
-        User user= usersRepository.findById(userId).orElseThrow(() -> new InformationNotFoundException("The Email/Password you entered is not correct. Please try again."));
-        user.setRole(request.getRole());
-        usersRepository.save(user);
-        return new GenericMessageResponse("Your Role has been updated successfully");
-    }
 
 
 }
