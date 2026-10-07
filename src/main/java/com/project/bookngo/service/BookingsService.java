@@ -35,6 +35,8 @@ public class BookingsService {
     private UsersRepository usersRepository;
     @Autowired
     private EmailService emailService;
+    @Autowired
+    private SSEService sseService;
 
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -80,7 +82,7 @@ public class BookingsService {
         Bookings saved = bookingsRepository.save(booking);
 
         emailService.sendBookingVerifiedEmail(saved.getUser().getEmail(), saved);
-
+        sseService.sendNotification(saved.getUser().getId(), "booking-confirmed", toResponse(saved));
 
         return toResponse(saved);
     }
