@@ -31,6 +31,9 @@ public class ProviderApplicationService {
     @Autowired
     private UsersRepository usersRepository;
 
+    @Autowired
+    private EmailService emailService;
+
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return usersRepository.findUserByEmail(email);
@@ -57,6 +60,13 @@ public class ProviderApplicationService {
         application.setStatus(ApplicationStatus.PENDING);
         application.setCreatedUser(user);
         applicationRepository.save(application);
+        ProviderApplication saved = applicationRepository.save(application);
+
+        List<User> admins = usersRepository.findByRole(UserRole.ADMIN);
+        for (User admin : admins) {
+            emailService.sendNewApplicationNotification(admin.getEmail(), saved);
+        }
+
         return toResponse(application);
     }
 
