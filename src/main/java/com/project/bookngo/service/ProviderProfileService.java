@@ -11,6 +11,8 @@ import com.project.bookngo.repository.UsersRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class ProviderProfileService {
@@ -20,25 +22,28 @@ public class ProviderProfileService {
     @Autowired
     private UsersRepository usersRepository;
 
+    private static final Logger logger = LoggerFactory.getLogger(ProviderProfileService.class);
+
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return usersRepository.findUserByEmail(email);
     }
 
     public ProviderProfileResponse getMyProfile() {
-        System.out.println("SERVICE Calling getMyProfile==>");
+        logger.info("Fetching current provider profile");
         User user= getCurrentUser();
         ProviderProfile profile= providerProfileRepository.findByUserId(user.getId()).orElseThrow(()-> new InformationNotFoundException("Provider Profile Doesn't exist for this user."));
         return toResponse(profile);
     }
 
     public ProviderProfileResponse updateMyProfile(ProviderProfileRequest request) {
-        System.out.println("SERVICE Calling updateMyProfile==>");
+        logger.info("Updating current provider profile");
         User user= getCurrentUser();
         ProviderProfile profile= providerProfileRepository.findByUserId(user.getId()).orElseThrow(()-> new InformationNotFoundException("Provider Profile Doesn't exist for this user."));
         profile.setDescription(request.getDescription());
         profile.setPhone(request.getPhone());
         providerProfileRepository.save(profile);
+        logger.info("Provider profile updated successfully for user ID: {}", user.getId());
 
         return toResponse(profile);
     }
@@ -47,5 +52,5 @@ public class ProviderProfileService {
         return new ProviderProfileResponse(
                 profile.getProvider_id(), profile.getBusinessName(), profile.getPhone(), profile.getDescription(), profile.getUpdatedAt(), profile.getCreatedAt()
         );
-}
+    }
 }

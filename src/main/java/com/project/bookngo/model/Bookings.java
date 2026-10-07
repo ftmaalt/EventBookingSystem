@@ -20,7 +20,7 @@ public class Bookings {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long bookingId;
 
     @Column(nullable = false)
     private Integer participants;
@@ -59,6 +59,11 @@ public class Bookings {
     @Column(length = 20)
     private String lastReminderStage;
 
+    @Column(length = 150)
+    private String createdBy;
+
+    @Column(length = 150)
+    private String updatedBy;
 
 //    --- Relationship Mapping ---
 

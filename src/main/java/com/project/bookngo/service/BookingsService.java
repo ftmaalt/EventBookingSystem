@@ -16,9 +16,13 @@ import com.project.bookngo.repository.BookingsRepository;
 import com.project.bookngo.repository.SessionsRepository;
 import com.project.bookngo.repository.UsersRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -35,6 +39,9 @@ public class BookingsService {
     private UsersRepository usersRepository;
     @Autowired
     private EmailService emailService;
+    @Autowired
+    private SSEService sseService;
+    private static final Logger logger = LoggerFactory.getLogger(BookingsService.class);
 
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -43,10 +50,15 @@ public class BookingsService {
 
     @Transactional
     public BookingResponse createBooking(BookingRequest request) {
-        System.out.println("SERVICE Calling createBooking ==>");
+        logger.info("Creating booking for session ID: {}", request.getSessionId());
         User user = getCurrentUser();
         Sessions session = sessionsRepository.findByIdForUpdate(request.getSessionId())
                 .orElseThrow(() -> new InformationNotFoundException("Session with ID: " + request.getSessionId() + " not found."));
+        boolean alreadyBooked = bookingsRepository.findByUserIdAndSessionIdAndStatus(user.getId(), session.getId(), BookingStatus.CONFIRMED)
+                .isPresent();
+        if (alreadyBooked) {
+            throw new IllegalArgumentException("You already have a booking for this session.");
+        }
 
         if (session.getStatus() == SessionStatus.CANCELLED || session.getStatus() == SessionStatus.COMPLETED) {
             throw new InvalidTimeSpecificationException("This session is no longer available for booking.");
@@ -54,6 +66,7 @@ public class BookingsService {
         if (session.getStartTime().isBefore(LocalDateTime.now())) {
             throw new InvalidTimeSpecificationException("Cannot book a session that has already started.");
         }
+
         if (session.getSpotsLeft() < request.getParticipants()) {
             throw new IllegalArgumentException("Not enough spots left. Only " + session.getSpotsLeft() + " remaining.");
         }
@@ -69,6 +82,8 @@ public class BookingsService {
 
         Bookings booking = new Bookings();
         booking.setUser(user);
+        booking.setCreatedBy(user.getEmail());
+        booking.setUpdatedBy(user.getEmail());
         booking.setSession(session);
         booking.setParticipants(request.getParticipants());
         booking.setBookingType(request.getBookingType());
@@ -78,15 +93,16 @@ public class BookingsService {
         booking.setPaymentStatus(PaymentStatus.PENDING_PAYMENT);
 
         Bookings saved = bookingsRepository.save(booking);
+        logger.info("Booking created successfully with ID: {} for session ID: {}", saved.getBookingId(), saved.getSession().getId());
 
         emailService.sendBookingVerifiedEmail(saved.getUser().getEmail(), saved);
-
+        sseService.sendNotification(saved.getUser().getId(), "booking-confirmed", toResponse(saved));
 
         return toResponse(saved);
     }
 
     public BookingResponse getById(Long id) {
-        System.out.println("SERVICE Calling getById ==>");
+        logger.info("Fetching booking with ID: {}", id);
         Bookings booking = bookingsRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Booking with the id:" + id + " does not exist."));
         checkOwnershipOrAdmin(booking);
@@ -94,14 +110,16 @@ public class BookingsService {
     }
 
     public List<BookingResponse> getMyBookings() {
-        System.out.println("SERVICE Calling getMyBookings ==>");
+        logger.info("Fetching bookings for current user");
         User user = getCurrentUser();
-        return bookingsRepository.findByUserId(user.getId()).stream().map(this::toResponse).toList();
+        List<BookingResponse> bookings=bookingsRepository.findByUserId(user.getId()).stream().map(this::toResponse).toList();
+        logger.info("Retrieved {} bookings for current user", bookings.size());
+        return bookings;
     }
 
     @Transactional
     public String cancelBooking(Long id) {
-        System.out.println("SERVICE Calling cancelBooking ==>");
+        logger.info("Cancelling booking with ID: {}", id);
         Bookings booking = bookingsRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Booking with the id:" + id + " does not exist."));
         checkOwnershipOrAdmin(booking);
@@ -121,7 +139,10 @@ public class BookingsService {
         }
         sessionsRepository.save(session);
 
+
         booking.setStatus(BookingStatus.CANCELLED);
+        logger.info("Booking with ID {} cancelled successfully", id);
+        booking.setUpdatedBy(getCurrentUser().getEmail());
         bookingsRepository.save(booking);
 
         emailService.sendSessionCancelledEmail(booking.getUser().getEmail(), booking);
@@ -133,13 +154,14 @@ public class BookingsService {
         boolean isOwner = booking.getUser().getId().equals(current.getId());
         boolean isAdmin = current.getRole() == UserRole.ADMIN;
         if (!isOwner && !isAdmin) {
+            logger.warn("Unauthorized access attempt for booking ID: {} by user ID: {}", booking.getBookingId(), current.getId());
             throw new InvalidCredentials("You are not authorized to access this booking.");
         }
     }
 
     private BookingResponse toResponse(Bookings booking) {
         return new BookingResponse(
-                booking.getId(),
+                booking.getBookingId(),
                 booking.getSession().getId(),
                 booking.getParticipants(),
                 booking.getBookingType(),
@@ -149,5 +171,10 @@ public class BookingsService {
                 booking.getPaymentStatus(),
                 booking.getCreatedAt()
         );
+    }
+
+    public Page<BookingResponse> getMyBookings(BookingStatus status, Pageable pageable) {
+        User user = getCurrentUser();
+        return bookingsRepository.findMyBookings(user.getId(), status, pageable).map(this::toResponse);
     }
 }

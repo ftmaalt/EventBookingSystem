@@ -16,21 +16,18 @@ public class Penalties {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column
-    @NotBlank
+    @Column(nullable = false)
     private Short strikeNumber;
 
     @Column(precision = 10, scale = 3)
     private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
-    @Column
-    @NotBlank
+    @Column(nullable = false)
     private PenaltyStatus status;
 
     @CreationTimestamp
     @Column(updatable = false)
-    @NotBlank
     private LocalDateTime createdAt;
 
     @Column

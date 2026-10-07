@@ -16,6 +16,8 @@ import com.project.bookngo.repository.UsersRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,13 +36,15 @@ public class ProviderApplicationService {
     @Autowired
     private EmailService emailService;
 
+    private static final Logger logger = LoggerFactory.getLogger(ProviderApplicationService.class);
+
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return usersRepository.findUserByEmail(email);
     }
 
     public ProviderApplicationResponse submitApplication(ProviderApplicationRequest applicationRequest){
-        System.out.println("SERVICE Calling submitApplication ==>");
+        logger.info("Submitting provider application");
         User user= getCurrentUser();
         if (user.getRole() == UserRole.ADMIN || user.getRole()== UserRole.PROVIDER){
             throw new InformationExistsException("You already have provider access.");
@@ -59,8 +63,8 @@ public class ProviderApplicationService {
         application.setProposedActivities(applicationRequest.getProposedActivities());
         application.setStatus(ApplicationStatus.PENDING);
         application.setCreatedUser(user);
-        applicationRepository.save(application);
         ProviderApplication saved = applicationRepository.save(application);
+        logger.info("Provider application created successfully with ID: {}", saved.getApplication_id());
 
         List<User> admins = usersRepository.findByRole(UserRole.ADMIN);
         for (User admin : admins) {
@@ -71,22 +75,22 @@ public class ProviderApplicationService {
     }
 
     public List<ProviderApplicationResponse> getMyApplications() {
-        System.out.println("SERVICE Calling getMyApplications ==>");
+        logger.info("Fetching current user's provider applications");
         User user = getCurrentUser();
         return applicationRepository.findByCreatedUserId(user.getId()).stream().map(this::toResponse).toList();
     }
     public List<ProviderApplicationResponse> getAll() {
-        System.out.println("SERVICE Calling getAll ==>");
+        logger.info("Fetching all provider applications");
         return applicationRepository.findAll().stream().map(this::toResponse).toList();
     }
     public ProviderApplicationResponse getById(Long id) {
-        System.out.println("SERVICE Calling getById ==>");
+        logger.info("Fetching provider application with ID: {}", id);
         ProviderApplication application = applicationRepository.findById(id).orElseThrow(() -> new InformationNotFoundException("Application with id:" + id + " does not exist."));
         return toResponse(application);
     }
 
     public ProviderApplicationResponse approveApplication(Long id, ReviewApplicationRequest request) {
-        System.out.println("SERVICE Calling approveApplication ==>");
+        logger.info("Approving provider application with ID: {}", id);
         ProviderApplication application= applicationRepository.findById(id).orElseThrow(() -> new InformationNotFoundException("Application with id:" + id + " does not exist."));
         if (application.getStatus()!=ApplicationStatus.PENDING){
             throw new IllegalArgumentException("Only pending applications can be approved.");
@@ -108,11 +112,12 @@ public class ProviderApplicationService {
         profile.setPhone(application.getPhone());
         profile.setUser(applicant);
         profileRepository.save(profile);
+        logger.info("Provider application with ID {} approved successfully", id);
 
         return toResponse(application);
     }
     public ProviderApplicationResponse rejectApplication(Long id, ReviewApplicationRequest request) {
-        System.out.println("SERVICE Calling rejectApplication ==>");
+        logger.info("Rejecting provider application with ID: {}", id);
         ProviderApplication application= applicationRepository.findById(id).orElseThrow(() -> new InformationNotFoundException("Application with id:" + id + " does not exist."));
         if (application.getStatus()!=ApplicationStatus.PENDING){
             throw new IllegalArgumentException("Only pending applications can be approved.");
@@ -123,16 +128,16 @@ public class ProviderApplicationService {
         application.setReviewedAt(LocalDateTime.now());
         application.setReviewedBy(admin);
         applicationRepository.save(application);
+        logger.info("Provider application with ID {} rejected successfully", id);
 
         return toResponse(application);
     }
 
 
-        private ProviderApplicationResponse toResponse(ProviderApplication a) {
+    private ProviderApplicationResponse toResponse(ProviderApplication a) {
         return new ProviderApplicationResponse(
-                a.getApplication_id(), a.getBusinessName(), a.getContactName(), a.getCity(),
-                a.getProposedActivities(),a.getCreatedAt() , a.getReviewNote(),a.getStatus()
+                a.getApplication_id(), a.getBusinessName(), a.getContactName(),
+                a.getReviewNote(), a.getCity(), a.getCreatedAt(), a.getProposedActivities(), a.getStatus()
         );
     }
 }
-
