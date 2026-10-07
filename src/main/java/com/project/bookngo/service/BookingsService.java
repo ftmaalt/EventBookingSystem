@@ -80,6 +80,8 @@ public class BookingsService {
 
         Bookings booking = new Bookings();
         booking.setUser(user);
+        booking.setCreatedBy(user.getEmail());
+        booking.setUpdatedBy(user.getEmail());
         booking.setSession(session);
         booking.setParticipants(request.getParticipants());
         booking.setBookingType(request.getBookingType());
@@ -138,6 +140,7 @@ public class BookingsService {
 
         booking.setStatus(BookingStatus.CANCELLED);
         logger.info("Booking with ID {} cancelled successfully", id);
+        booking.setUpdatedBy(getCurrentUser().getEmail());
         bookingsRepository.save(booking);
 
         emailService.sendSessionCancelledEmail(booking.getUser().getEmail(), booking);
