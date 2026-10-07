@@ -39,6 +39,7 @@ public class BookingsController {
         return ResponseEntity.ok(bookingsService.getById(id));
     }
 
+
     @GetMapping
     public ResponseEntity<Page<BookingResponse>> getMyBookings(@RequestParam(required = false)BookingStatus status, @PageableDefault(size = 10)Pageable pageable) {
         logger.info("Calling getMyBookings ===>");
