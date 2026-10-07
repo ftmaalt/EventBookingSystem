@@ -52,6 +52,11 @@ public class BookingsService {
         User user = getCurrentUser();
         Sessions session = sessionsRepository.findByIdForUpdate(request.getSessionId())
                 .orElseThrow(() -> new InformationNotFoundException("Session with ID: " + request.getSessionId() + " not found."));
+        boolean alreadyBooked = bookingsRepository.findByUserIdAndSessionIdAndStatus(user.getId(), session.getId(), BookingStatus.CONFIRMED)
+                .isPresent();
+        if (alreadyBooked) {
+            throw new IllegalArgumentException("You already have a booking for this session.");
+        }
 
         if (session.getStatus() == SessionStatus.CANCELLED || session.getStatus() == SessionStatus.COMPLETED) {
             throw new InvalidTimeSpecificationException("This session is no longer available for booking.");
@@ -59,6 +64,7 @@ public class BookingsService {
         if (session.getStartTime().isBefore(LocalDateTime.now())) {
             throw new InvalidTimeSpecificationException("Cannot book a session that has already started.");
         }
+
         if (session.getSpotsLeft() < request.getParticipants()) {
             throw new IllegalArgumentException("Not enough spots left. Only " + session.getSpotsLeft() + " remaining.");
         }
