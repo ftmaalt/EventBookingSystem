@@ -7,6 +7,8 @@ import com.project.bookngo.model.User;
 import com.project.bookngo.repository.TokensRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -20,10 +22,12 @@ public class TokenService {
     @Autowired
     private TokensRepository tokensRepository;
 
+    private static final Logger logger = LoggerFactory.getLogger(TokenService.class);
+
 
     public String generateToken(User user, TokenType type) {
-        System.out.println("SERVICE Calling generateToken ==>");
-       String tokenString = UUID.randomUUID().toString();
+        logger.info("Generating {} token for user ID: {}", type, user.getId());
+        String tokenString = UUID.randomUUID().toString();
         // 2. create a new Tokens entity
         Tokens token = new Tokens();
         token.setToken(tokenString);
@@ -36,11 +40,12 @@ public class TokenService {
             token.setExpires_at(LocalDateTime.now().plusMinutes(6));
         }
         tokensRepository.save(token);
+        logger.info("{} token generated successfully for user ID: {}", type, user.getId());
         return tokenString;
     }
 
     public User validateToken(String tokenString, TokenType expectedType) {
-        System.out.println("SERVICE Calling validateToken ==>");
+        logger.info("Validating {} token", expectedType);
         Tokens token = tokensRepository.findByToken(tokenString).orElseThrow(() -> new InformationNotFoundException("Invalid token."));
 
         if (token.getType() != expectedType) {
@@ -54,7 +59,8 @@ public class TokenService {
         }
         token.setUsed_at(LocalDateTime.now());
         tokensRepository.save(token);
-            return token.getUser();
-        }
+        logger.info("{} token validated successfully for user ID: {}", expectedType, token.getUser().getId());
+        return token.getUser();
+    }
 
 }

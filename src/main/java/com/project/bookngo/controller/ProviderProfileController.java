@@ -4,6 +4,8 @@ import com.project.bookngo.model.request.ProviderProfileRequest;
 import com.project.bookngo.model.response.ProviderProfileResponse;
 import com.project.bookngo.service.ProviderProfileService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,10 +20,12 @@ public class ProviderProfileController {
     @Autowired
     private ProviderProfileService providerProfileService;
 
+    private static final Logger logger = LoggerFactory.getLogger(ProviderProfileController.class);
+
     @GetMapping("/me")
     @PreAuthorize("hasRole('PROVIDER')")
     public ResponseEntity<ProviderProfileResponse> getMyProfile() {
-        System.out.println("Calling getMyProfile==>");
+        logger.info("Calling getMyProfile==>");
         ProviderProfileResponse profileResponse = providerProfileService.getMyProfile();
         return ResponseEntity.ok(profileResponse);
     }
@@ -29,7 +33,7 @@ public class ProviderProfileController {
     @PutMapping("/me")
     @PreAuthorize("hasRole('PROVIDER')")
     public ResponseEntity<ProviderProfileResponse> updateMyProfile(@Valid @RequestBody ProviderProfileRequest request) {
-        System.out.println("Calling updateMyProfile==>");
+        logger.info("Calling updateMyProfile==>");
         ProviderProfileResponse profileResponse = providerProfileService.updateMyProfile(request);
         return ResponseEntity.ok(profileResponse);
     }

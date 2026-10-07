@@ -1,6 +1,7 @@
 package com.project.bookngo.security;
 
 import com.project.bookngo.model.User;
+import com.project.bookngo.model.enums.UserStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,8 +23,8 @@ public class MyUserDetails implements UserDetails {
     private User user;
 
     @Override
-    public boolean isEnabled() { // is user active
-        return true;
+    public boolean isEnabled(){
+        return user.getStatus() == UserStatus.ACTIVE;
     }
 
     @Override

@@ -17,6 +17,8 @@ import com.project.bookngo.security.MyUserDetails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -33,6 +35,7 @@ public class ActivitiesService {
 
     @Autowired
     private UsersRepository usersRepository;
+    private static final Logger logger = LoggerFactory.getLogger(ActivitiesService.class);
 
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -40,8 +43,7 @@ public class ActivitiesService {
     }
 
     public ActivityResponse createActivity(ActivityRequest request) {
-        System.out.println("SERVICE Calling createActivity ==>");
-        User provider = getCurrentUser();
+        logger.info("Creating activity with title: {}", request.getTitle());        User provider = getCurrentUser();
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new InformationNotFoundException(
                         "Category with the id:" + request.getCategoryId() + " does not exist."));
@@ -59,23 +61,24 @@ public class ActivitiesService {
         activity.setStatus(ActivityStatus.ACTIVE);
 
         Activities saved = activitiesRepository.save(activity);
+        logger.info("Activity created successfully with ID: {}", saved.getId());
         return toResponse(saved);
     }
 
     public ActivityResponse getById(Long id) {
-        System.out.println("SERVICE Calling getById ==>");
+        logger.info("Fetching activity with ID: {}", id);
         Activities activity = activitiesRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Activity with the id:" + id + " does not exist."));
         return toResponse(activity);
     }
 
     public List<ActivityResponse> getAllActivities() {
-        System.out.println("SERVICE Calling getAllActivities ==>");
+        logger.info("Fetching All Activities");
         return activitiesRepository.findAll().stream().map(this::toResponse).toList();
     }
 
     public ActivityResponse updateActivity(Long id, ActivityRequest request) {
-        System.out.println("SERVICE Calling updateActivity ==>");
+        logger.info("Updating activity with ID: {}", id);
         Activities activity = activitiesRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Activity with the id:" + id + " does not exist."));
 
@@ -93,23 +96,25 @@ public class ActivitiesService {
         activity.setLocation(location);
 
         Activities updated = activitiesRepository.save(activity);
+        logger.info("Activity with ID {} updated successfully", id);
         return toResponse(updated);
     }
 
     public String deleteActivity(Long id) {
-        System.out.println("SERVICE Calling deleteActivity ==>");
+        logger.info("Attempting to delete activity with ID: {}", id);
         Activities activity = activitiesRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Activity with the id:" + id + " does not exist."));
         if (!activity.getProvider().getId().equals(getCurrentUser().getId())) {
             throw new InvalidCredentials("You are not authorized to modify this activity.");
         }
         activitiesRepository.delete(activity);
+        logger.info("Activity with ID {} deleted successfully", id);
         return "Activity with id:" + id + " has been deleted successfully.";
     }
 
     private ActivityResponse toResponse(Activities activities) {
         return new ActivityResponse(
-                activities.getActivity_id(),
+                activities.getId(),
                 activities.getTitle(),
                 activities.getDescription(),
                 activities.getPricePerPerson(),

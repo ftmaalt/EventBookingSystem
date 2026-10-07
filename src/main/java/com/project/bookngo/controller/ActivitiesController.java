@@ -5,6 +5,8 @@ import com.project.bookngo.model.response.ActivityResponse;
 import com.project.bookngo.model.response.CategoryResponse;
 import com.project.bookngo.service.ActivitiesService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,39 +22,41 @@ public class ActivitiesController {
     @Autowired
     private ActivitiesService activitiesService;
 
+    private static final Logger logger = LoggerFactory.getLogger(ActivitiesController.class);
+
     @PostMapping
     @PreAuthorize("hasRole('PROVIDER')")
     public ResponseEntity<ActivityResponse> createActivity(@Valid @RequestBody ActivityRequest request) {
-        System.out.println("Calling createActivity ===>");
+        logger.info("Calling createActivity ===>");
         ActivityResponse response = activitiesService.createActivity(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     @GetMapping("/{activity_id}")
-    public ResponseEntity<ActivityResponse> getById(@PathVariable Long id) {
-        System.out.println("Calling getById ===>");
-        ActivityResponse response=activitiesService.getById(id);
+    public ResponseEntity<ActivityResponse> getById(@PathVariable Long activity_id) {
+        logger.info("Calling getById ===>");
+        ActivityResponse response=activitiesService.getById(activity_id);
         return ResponseEntity.ok().body(response);
     }
 
     @GetMapping
     public ResponseEntity<List<ActivityResponse>> getAllActivities() {
-        System.out.println("Calling getAllActivities ===>");
+        logger.info("Calling getAllActivities ===>");
         List<ActivityResponse> response=activitiesService.getAllActivities();
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{activity_id}")
     @PreAuthorize("hasRole('PROVIDER')")
-    public ResponseEntity<ActivityResponse> updateActivity(@PathVariable Long id, @Valid @RequestBody ActivityRequest request) {
-        System.out.println("Calling updateActivity ===>");
-        ActivityResponse response=activitiesService.updateActivity(id, request);
+    public ResponseEntity<ActivityResponse> updateActivity(@PathVariable Long activity_id, @Valid @RequestBody ActivityRequest request) {
+        logger.info("Calling updateActivity ===>");
+        ActivityResponse response=activitiesService.updateActivity(activity_id, request);
         return ResponseEntity.ok().body(response);
     }
 
     @DeleteMapping("/{activity_id}")
     @PreAuthorize("hasRole('PROVIDER')")
     public ResponseEntity<String> deleteActivity(@PathVariable Long activity_id) {
-        System.out.println("Calling deleteActivity ===>");
+        logger.info("Calling deleteActivity ===>");
         String message= activitiesService.deleteActivity(activity_id);
         return ResponseEntity.ok(message);
     }

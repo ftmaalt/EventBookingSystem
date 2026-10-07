@@ -12,19 +12,21 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class EmailService {
 
     @Autowired
     private JavaMailSender mailSender;
+    private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
     @Value("${app.base-url}")
     private String baseUrl;
 
     public void sendVerificationEmail(String toEmail, String token) {
-        System.out.println("SERVICE Calling sendVerificationEmail==>");
-        SimpleMailMessage verificationMessage = new SimpleMailMessage();
+        logger.info("Sending verification email to: {}", toEmail);        SimpleMailMessage verificationMessage = new SimpleMailMessage();
         verificationMessage.setTo(toEmail);
         verificationMessage.setSubject("Verify your BooknGo email");
         verificationMessage.setText(
@@ -39,8 +41,7 @@ public class EmailService {
     }
 
     public void sendPasswordResetEmail(String toEmail, String token){
-        System.out.println("SERVICE Calling sendPasswordResetEmail");
-        SimpleMailMessage passwordResetMessage= new SimpleMailMessage();
+        logger.info("Sending password reset email to: {}", toEmail);        SimpleMailMessage passwordResetMessage= new SimpleMailMessage();
         passwordResetMessage.setTo(toEmail);
         passwordResetMessage.setSubject("Reset your BooknGo account password");
         passwordResetMessage.setText("Hello," +
@@ -53,7 +54,7 @@ public class EmailService {
     }
 
     public void sendBookingVerifiedEmail(String toEmail, Bookings booking ){
-        System.out.println("SERVICE Calling sendBookingVerifiedEmail");
+        logger.info("Sending booking confirmation email for booking ID: {} to: {}", booking.getId(), toEmail);
         SimpleMailMessage bookingConfirmedMessage= new SimpleMailMessage();
         bookingConfirmedMessage.setTo(toEmail);
         bookingConfirmedMessage.setSubject("Booking Confirmed For "+booking.getSession()+ "BID#"+booking.getId());
@@ -102,7 +103,7 @@ public class EmailService {
         mailSender.send(bookingConfirmedMessage);
     }
     public void sendBookingReminders(String toEmail, Bookings booking, String timeFrameLabel) {
-        System.out.println("SERVICE Calling sendBookingReminders");
+        logger.info("Sending booking reminder for booking ID: {} to: {}", booking != null ? booking.getId() : null, toEmail);
         if (booking == null || booking.getSession() == null) return;
 
         String activityTitle = (booking.getSession().getActivity() != null)
@@ -136,7 +137,7 @@ public class EmailService {
         mailSender.send(reminderMessage);
     }
     public void sendSessionCancelledEmail(String toEmail, Bookings booking) {
-        System.out.println("SERVICE Calling sendSessionCancelledEmail");
+        logger.info("Sending cancellation email for booking ID: {} to: {}", booking != null ? booking.getId() : null,toEmail);
 
         if (booking == null || booking.getSession() == null) {
             return;
@@ -194,6 +195,7 @@ public class EmailService {
         mailSender.send(cancellationMessage);
     }
     public void sendNewApplicationNotification(String adminEmail, ProviderApplication application) {
+        logger.info("Sending provider application notification to admin: {}", adminEmail);
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(adminEmail);
         message.setSubject("New Provider Application: " + application.getBusinessName());
