@@ -109,13 +109,13 @@ public class BookingsService {
         return toResponse(booking);
     }
 
-    public List<BookingResponse> getMyBookings() {
-        logger.info("Fetching bookings for current user");
-        User user = getCurrentUser();
-        List<BookingResponse> bookings=bookingsRepository.findByUserId(user.getId()).stream().map(this::toResponse).toList();
-        logger.info("Retrieved {} bookings for current user", bookings.size());
-        return bookings;
-    }
+//    public List<BookingResponse> getMyBookings() {
+//        logger.info("Fetching bookings for current user");
+//        User user = getCurrentUser();
+//        List<BookingResponse> bookings=bookingsRepository.findByUserId(user.getId()).stream().map(this::toResponse).toList();
+//        logger.info("Retrieved {} bookings for current user", bookings.size());
+//        return bookings;
+//    }
 
     @Transactional
     public String cancelBooking(Long id) {
