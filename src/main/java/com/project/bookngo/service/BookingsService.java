@@ -55,7 +55,12 @@ public class BookingsService {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return usersRepository.findUserByEmail(email);
     }
-
+    /**
+     * Creates a new booking for the currently authenticated user.
+     *
+     * @param request booking details including session, participants, and booking type
+     * @return the newly created booking response
+     */
     @Transactional
     public BookingResponse createBooking(BookingRequest request) {
         logger.info("Creating booking for session ID: {}", request.getSessionId());
@@ -181,7 +186,14 @@ public class BookingsService {
                 booking.getCreatedAt()
         );
     }
-
+    /**
+     * Retrieves the authenticated user's bookings with optional status filtering,
+     * pagination, and sorting.
+     *
+     * @param status optional booking status filter
+     * @param pageable pagination and sorting information
+     * @return a page of the user's booking responses
+     */
     public Page<BookingResponse> getMyBookings(BookingStatus status, Pageable pageable) {
         User user = getCurrentUser();
         return bookingsRepository.findMyBookings(user.getId(), status, pageable).map(this::toResponse);
