@@ -3,6 +3,8 @@ package com.project.bookngo.controller;
 import com.project.bookngo.model.User;
 import com.project.bookngo.repository.UsersRepository;
 import com.project.bookngo.service.SSEService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,6 +19,8 @@ public class NotificationController {
     @Autowired
     private UsersRepository usersRepository;
 
+    private static final Logger logger = LoggerFactory.getLogger(NotificationController.class);
+
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return usersRepository.findUserByEmail(email);
@@ -24,7 +28,7 @@ public class NotificationController {
 
     @GetMapping(value = "/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter subscribe() {
-        System.out.println("Calling subscribe==>");
+        logger.info("Calling subscribe==>");
         User user = getCurrentUser();
         return sseService.subscribe(user.getId());
     }
