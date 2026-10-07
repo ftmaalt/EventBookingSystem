@@ -40,16 +40,16 @@ public class ReminderService {
         if (minutesToBooking<= 0) {
             return null;
         }
-        if (minutesToBooking >= 30){
+        if (minutesToBooking <= 30){
             return "30 Minutes";
         }
-        if (minutesToBooking >= 60){
+        if (minutesToBooking <= 60){
             return "1 Hour";
         }
-        if (minutesToBooking >= 360){
+        if (minutesToBooking <= 360){
             return "6 Hours";
         }
-        if (minutesToBooking >= 1440){
+        if (minutesToBooking <= 1440){
             return "24 Hours";
         }
         return null;

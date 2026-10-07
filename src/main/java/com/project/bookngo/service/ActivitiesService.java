@@ -109,7 +109,7 @@ public class ActivitiesService {
 
     private ActivityResponse toResponse(Activities activities) {
         return new ActivityResponse(
-                activities.getActivity_id(),
+                activities.getId(),
                 activities.getTitle(),
                 activities.getDescription(),
                 activities.getPricePerPerson(),

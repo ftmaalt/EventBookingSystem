@@ -75,9 +75,12 @@ public class AuthService {
         if (loginAttemptUser == null) {
             throw new InformationNotFoundException("The Email/Password you entered is not correct. Please try again.");
         }
-        if (loginAttemptUser.getStatus() == UserStatus.PENDING_VERIFICATION || loginAttemptUser.getStatus() == UserStatus.BLACKLISTED || loginAttemptUser.getStatus() == UserStatus.DEACTIVATED) {
+        if (loginAttemptUser.getStatus() == UserStatus.PENDING_VERIFICATION) {
             throw new VerificationRequiredException("Please verify your email before attempting to login.");
+        }
 
+        if (loginAttemptUser.getStatus() == UserStatus.BLACKLISTED ||
+                loginAttemptUser.getStatus() == UserStatus.DEACTIVATED) {throw new InvalidCredentials("The Email/Password you entered is not correct. Please try again.");
         }
         if (!passwordEncoder.matches(loginRequest.getPassword(), loginAttemptUser.getPasswordHash())) {
             throw new InvalidCredentials("The Email/Password you entered is not correct. Please try again.");
@@ -114,6 +117,9 @@ public GenericMessageResponse changePassword(ChangePasswordRequest request) {
     if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())){
             throw new InvalidCredentials("The Password you entered is not correct. Please try again.");
     }else{
+        if (request.getCurrentPassword().equals(request.getNewPassword())){
+            throw new IllegalArgumentException("Your new Password shouldn't match your current password.");
+        }
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         usersRepository.save(user);
         return new GenericMessageResponse("Password Changed Successfully.");

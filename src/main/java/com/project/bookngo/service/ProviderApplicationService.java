@@ -59,7 +59,6 @@ public class ProviderApplicationService {
         application.setProposedActivities(applicationRequest.getProposedActivities());
         application.setStatus(ApplicationStatus.PENDING);
         application.setCreatedUser(user);
-        applicationRepository.save(application);
         ProviderApplication saved = applicationRepository.save(application);
 
         List<User> admins = usersRepository.findByRole(UserRole.ADMIN);
@@ -130,8 +129,8 @@ public class ProviderApplicationService {
 
         private ProviderApplicationResponse toResponse(ProviderApplication a) {
         return new ProviderApplicationResponse(
-                a.getApplication_id(), a.getBusinessName(), a.getContactName(), a.getCity(),
-                a.getProposedActivities(),a.getCreatedAt() , a.getReviewNote(),a.getStatus()
+                a.getApplication_id(), a.getBusinessName(), a.getContactName(),
+                a.getReviewNote(), a.getCity(), a.getCreatedAt(), a.getProposedActivities(), a.getStatus()
         );
     }
 }
