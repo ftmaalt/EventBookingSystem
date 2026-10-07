@@ -49,6 +49,11 @@ public class Activities {
     @Column
     private LocalDateTime updatedAt;
 
+    @Column(length = 150)
+    private String createdBy;
+
+    @Column(length = 150)
+    private String updatedBy;
 
 //    --- Relationship Mapping ---
 

@@ -58,6 +58,8 @@ public class ActivitiesService {
         activity.setCategory(category);
         activity.setLocation(location);
         activity.setProvider(provider);
+        activity.setCreatedBy(provider.getEmail());
+        activity.setUpdatedBy(provider.getEmail());
         activity.setStatus(ActivityStatus.ACTIVE);
 
         Activities saved = activitiesRepository.save(activity);
@@ -94,7 +96,7 @@ public class ActivitiesService {
         activity.setDurationMinutes(request.getDurationMinutes());
         activity.setCategory(category);
         activity.setLocation(location);
-
+        activity.setUpdatedBy(getCurrentUser().getEmail());
         Activities updated = activitiesRepository.save(activity);
         logger.info("Activity with ID {} updated successfully", id);
         return toResponse(updated);
@@ -107,6 +109,7 @@ public class ActivitiesService {
         if (!activity.getProvider().getId().equals(getCurrentUser().getId())) {
             throw new InvalidCredentials("You are not authorized to modify this activity.");
         }
+        activity.setUpdatedBy(getCurrentUser().getEmail());
         activitiesRepository.delete(activity);
         logger.info("Activity with ID {} deleted successfully", id);
         return "Activity with id:" + id + " has been deleted successfully.";

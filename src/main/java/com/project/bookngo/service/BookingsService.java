@@ -80,6 +80,8 @@ public class BookingsService {
 
         Bookings booking = new Bookings();
         booking.setUser(user);
+        booking.setCreatedBy(user.getEmail());
+        booking.setUpdatedBy(user.getEmail());
         booking.setSession(session);
         booking.setParticipants(request.getParticipants());
         booking.setBookingType(request.getBookingType());
@@ -89,7 +91,7 @@ public class BookingsService {
         booking.setPaymentStatus(PaymentStatus.PENDING_PAYMENT);
 
         Bookings saved = bookingsRepository.save(booking);
-        logger.info("Booking created successfully with ID: {} for session ID: {}", saved.getId(), saved.getSession().getId());
+        logger.info("Booking created successfully with ID: {} for session ID: {}", saved.getBookingId(), saved.getSession().getId());
 
         emailService.sendBookingVerifiedEmail(saved.getUser().getEmail(), saved);
         sseService.sendNotification(saved.getUser().getId(), "booking-confirmed", toResponse(saved));
@@ -138,6 +140,7 @@ public class BookingsService {
 
         booking.setStatus(BookingStatus.CANCELLED);
         logger.info("Booking with ID {} cancelled successfully", id);
+        booking.setUpdatedBy(getCurrentUser().getEmail());
         bookingsRepository.save(booking);
 
         emailService.sendSessionCancelledEmail(booking.getUser().getEmail(), booking);
@@ -149,14 +152,14 @@ public class BookingsService {
         boolean isOwner = booking.getUser().getId().equals(current.getId());
         boolean isAdmin = current.getRole() == UserRole.ADMIN;
         if (!isOwner && !isAdmin) {
-            logger.warn("Unauthorized access attempt for booking ID: {} by user ID: {}", booking.getId(), current.getId());
+            logger.warn("Unauthorized access attempt for booking ID: {} by user ID: {}", booking.getBookingId(), current.getId());
             throw new InvalidCredentials("You are not authorized to access this booking.");
         }
     }
 
     private BookingResponse toResponse(Bookings booking) {
         return new BookingResponse(
-                booking.getId(),
+                booking.getBookingId(),
                 booking.getSession().getId(),
                 booking.getParticipants(),
                 booking.getBookingType(),

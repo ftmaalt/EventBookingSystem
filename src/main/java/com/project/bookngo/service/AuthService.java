@@ -40,7 +40,8 @@ public class AuthService {
 
     // ---registration section---
     public GenericMessageResponse register(RegisterRequest request) {
-        logger.info("User registration request received");        if (usersRepository.existsByEmail(request.getEmail())) {
+        logger.info("User registration request received");
+        if (usersRepository.existsByEmail(request.getEmail())) {
             throw new InformationExistsException("The email you inputted has already been used. Please try again with another email.");
         } else {
             User user = new User();
@@ -84,11 +85,13 @@ public class AuthService {
         if (loginAttemptUser.getStatus() == UserStatus.PENDING_VERIFICATION) {
             throw new VerificationRequiredException("Please verify your email before attempting to login.");
         }
-
-        if (loginAttemptUser.getStatus() == UserStatus.BLACKLISTED ||
-                loginAttemptUser.getStatus() == UserStatus.DEACTIVATED) {
+        if ((loginAttemptUser.getStatus() == UserStatus.BLACKLISTED)){
+            logger.warn("Login attempt blocked for blocked user ID: {} with status: {}", loginAttemptUser.getId(), loginAttemptUser.getStatus());
+            throw new InvalidCredentials("Due to violations. Your account has been permanently blocked.");
+        }
+        if (loginAttemptUser.getStatus() == UserStatus.DEACTIVATED) {
             logger.warn("Login attempt blocked for inactive user ID: {} with status: {}", loginAttemptUser.getId(), loginAttemptUser.getStatus());
-            throw new InvalidCredentials("TThis account has been deactivated. Please contact support.");
+            throw new InvalidCredentials("This account has been deactivated. Please contact support.");
         }
         if (!passwordEncoder.matches(loginRequest.getPassword(), loginAttemptUser.getPasswordHash())) {
             logger.warn("Login attempt failed: incorrect password for user ID: {}", loginAttemptUser.getId());
