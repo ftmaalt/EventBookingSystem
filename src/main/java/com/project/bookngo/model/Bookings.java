@@ -59,6 +59,11 @@ public class Bookings {
     @Column(length = 20)
     private String lastReminderStage;
 
+    @Column(length = 150)
+    private String createdBy;
+
+    @Column(length = 150)
+    private String updatedBy;
 
 //    --- Relationship Mapping ---
 
