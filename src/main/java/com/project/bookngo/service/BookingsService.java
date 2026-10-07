@@ -33,14 +33,22 @@ public class BookingsService {
 
     @Autowired
     private BookingsRepository bookingsRepository;
+
     @Autowired
     private SessionsRepository sessionsRepository;
+
     @Autowired
     private UsersRepository usersRepository;
+
     @Autowired
     private EmailService emailService;
+
     @Autowired
     private SSEService sseService;
+
+    @Autowired
+    private AuditLogService auditLogService;
+
     private static final Logger logger = LoggerFactory.getLogger(BookingsService.class);
 
     private User getCurrentUser() {
@@ -141,6 +149,7 @@ public class BookingsService {
 
 
         booking.setStatus(BookingStatus.CANCELLED);
+        auditLogService.logAction("BOOKING_CANCELLED", getCurrentUser().getEmail(), "Booking", booking.getBookingId(), "Booking was cancelled successfully");
         logger.info("Booking with ID {} cancelled successfully", id);
         booking.setUpdatedBy(getCurrentUser().getEmail());
         bookingsRepository.save(booking);

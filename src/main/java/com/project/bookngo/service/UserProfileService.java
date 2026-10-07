@@ -18,7 +18,12 @@ public class UserProfileService {
 
     @Autowired
     private UsersRepository usersRepository;
-    @Autowired private FileStorageService fileStorageService;
+
+    @Autowired
+    private FileStorageService fileStorageService;
+
+    @Autowired
+    private AuditLogService auditLogService;
 
     private static final Logger logger = LoggerFactory.getLogger(UserProfileService.class);
 
@@ -43,6 +48,7 @@ public class UserProfileService {
         User user = getCurrentUser();
         user.setFullName(request.getFullName());
         user.setPhone(request.getPhone());
+        auditLogService.logAction("PROFILE_UPDATED", getCurrentUser().getEmail(), "User", user.getId(), "User profile was updated");
         User saved = usersRepository.save(user);
         logger.info("Current user's profile updated successfully");
         return toResponse(saved);

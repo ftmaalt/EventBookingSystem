@@ -19,6 +19,6 @@ public interface BookingsRepository extends JpaRepository<Bookings, Long> {
     List<Bookings> findByStatusAndSession_StartTimeBetween(BookingStatus status, LocalDateTime start, LocalDateTime end);
     Optional<Bookings> findByBookingIdAndUserId(Long bookingId, Long userId);
     Optional<Bookings> findByUserIdAndSessionIdAndStatus(Long userId, Long sessionId, BookingStatus status);
-    @Query("SELECT b FROM BOOKINGS b WHERE b.user.id = :userId AND (:status IS NULL OR b.status = :status)")
-    Page<Bookings> findMyBookings(@Param("userid") Long userId, @Param("status") BookingStatus status, Pageable pageable);
+    @Query("SELECT b FROM Bookings b WHERE b.user.id = :userId AND (:status IS NULL OR b.status = :status)")
+    Page<Bookings> findMyBookings(@Param("userId") Long userId, @Param("status") BookingStatus status, Pageable pageable);
 }
