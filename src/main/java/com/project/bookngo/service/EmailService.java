@@ -54,10 +54,10 @@ public class EmailService {
     }
 
     public void sendBookingVerifiedEmail(String toEmail, Bookings booking ){
-        logger.info("Sending booking confirmation email for booking ID: {} to: {}", booking.getId(), toEmail);
+        logger.info("Sending booking confirmation email for booking ID: {} to: {}", booking.getBookingId(), toEmail);
         SimpleMailMessage bookingConfirmedMessage= new SimpleMailMessage();
         bookingConfirmedMessage.setTo(toEmail);
-        bookingConfirmedMessage.setSubject("Booking Confirmed For "+booking.getSession()+ "BID#"+booking.getId());
+        bookingConfirmedMessage.setSubject("Booking Confirmed For "+booking.getSession()+ "BID#"+booking.getBookingId());
         String emailText = String.format(
                 "Hello %s,\n\n" +
                         "Great news! Your booking has been successfully confirmed.\n\n" +
@@ -85,7 +85,7 @@ public class EmailService {
 
                 booking.getUser() != null ? booking.getUser().getFullName() : "Customer",
 
-                booking.getId(),
+                booking.getBookingId(),
                 booking.getSession() != null ? booking.getSession().getActivity().getTitle() : "N/A",
                 booking.getSession() != null ? booking.getSession().getStartTime() : "N/A",
                 booking.getBookingType(),
@@ -103,7 +103,7 @@ public class EmailService {
         mailSender.send(bookingConfirmedMessage);
     }
     public void sendBookingReminders(String toEmail, Bookings booking, String timeFrameLabel) {
-        logger.info("Sending booking reminder for booking ID: {} to: {}", booking != null ? booking.getId() : null, toEmail);
+        logger.info("Sending booking reminder for booking ID: {} to: {}", booking != null ? booking.getBookingId() : null, toEmail);
         if (booking == null || booking.getSession() == null) return;
 
         String activityTitle = (booking.getSession().getActivity() != null)
@@ -128,7 +128,7 @@ public class EmailService {
                         "Booking Status    : %s\n\n" +
                         "Please make sure to arrive on time for your session.\n\n" +
                         "Thank you for choosing BookNGo!\n\nBest regards,\nThe BookNGo Team",
-                userName, activityTitle, timeFrameLabel, booking.getId(), activityTitle,
+                userName, activityTitle, timeFrameLabel, booking.getBookingId(), activityTitle,
                 booking.getSession().getStartTime(), booking.getBookingType(),
                 booking.getParticipants(), booking.getStatus()
         );
@@ -137,7 +137,7 @@ public class EmailService {
         mailSender.send(reminderMessage);
     }
     public void sendSessionCancelledEmail(String toEmail, Bookings booking) {
-        logger.info("Sending cancellation email for booking ID: {} to: {}", booking != null ? booking.getId() : null,toEmail);
+        logger.info("Sending cancellation email for booking ID: {} to: {}", booking != null ? booking.getBookingId() : null,toEmail);
 
         if (booking == null || booking.getSession() == null) {
             return;
@@ -182,7 +182,7 @@ public class EmailService {
 
                 userName,
                 activityTitle,
-                booking.getId(),
+                booking.getBookingId(),
                 activityTitle,
                 booking.getSession().getStartTime() != null ? booking.getSession().getStartTime() : "N/A",
                 booking.getParticipants(),
