@@ -44,7 +44,7 @@ public class BookingsService {
     private EmailService emailService;
 
     @Autowired
-    private SSEService sseService;
+    private NotificationService notificationService;
 
     @Autowired
     private AuditLogService auditLogService;
@@ -109,7 +109,11 @@ public class BookingsService {
         logger.info("Booking created successfully with ID: {} for session ID: {}", saved.getBookingId(), saved.getSession().getId());
 
         emailService.sendBookingVerifiedEmail(saved.getUser().getEmail(), saved);
-        sseService.sendNotification(saved.getUser().getId(), "booking-confirmed", toResponse(saved));
+        notificationService.create(
+                saved.getUser(),
+                "booking-confirmed",
+                "Booking #" + saved.getBookingId() + " was confirmed successfully."
+        );
 
         return toResponse(saved);
     }

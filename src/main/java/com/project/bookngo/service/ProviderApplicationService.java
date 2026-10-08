@@ -36,6 +36,9 @@ public class ProviderApplicationService {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private NotificationService notificationService;
+
     private static final Logger logger = LoggerFactory.getLogger(ProviderApplicationService.class);
 
     private User getCurrentUser() {
@@ -66,12 +69,47 @@ public class ProviderApplicationService {
         ProviderApplication saved = applicationRepository.save(application);
         logger.info("Provider application created successfully with ID: {}", saved.getApplication_id());
 
-        List<User> admins = usersRepository.findByRole(UserRole.ADMIN);
+        List<User> admins =
+                usersRepository.findByRole(UserRole.ADMIN);
+
         for (User admin : admins) {
-            emailService.sendNewApplicationNotification(admin.getEmail(), saved);
+
+            // Create the in-app notification FIRST
+            notificationService.create(
+                    admin,
+                    "provider-application-pending",
+                    "New provider application from "
+                            + saved.getBusinessName()
+                            + " is waiting for review."
+            );
+
+            logger.info(
+                    "In-app provider application notification created for admin: {}",
+                    admin.getEmail()
+            );
+
+            // Email is secondary
+            if (
+                    admin.getEmail() != null &&
+                            !admin.getEmail().isBlank()
+            ) {
+                try {
+                    emailService.sendNewApplicationNotification(
+                            admin.getEmail(),
+                            saved
+                    );
+                } catch (Exception e) {
+                    logger.error(
+                            "Failed to email admin {} about provider application {}",
+                            admin.getEmail(),
+                            saved.getApplication_id(),
+                            e
+                    );
+                }
+            }
         }
 
-        return toResponse(application);
+        return toResponse(saved);
     }
 
     public List<ProviderApplicationResponse> getMyApplications() {
@@ -114,6 +152,12 @@ public class ProviderApplicationService {
         profileRepository.save(profile);
         logger.info("Provider application with ID {} approved successfully", id);
 
+        notificationService.create(
+                applicant,
+                "provider-application-approved",
+                "Your provider application for " + application.getBusinessName() + " was approved."
+        );
+
         return toResponse(application);
     }
     public ProviderApplicationResponse rejectApplication(Long id, ReviewApplicationRequest request) {
@@ -129,6 +173,18 @@ public class ProviderApplicationService {
         application.setReviewedBy(admin);
         applicationRepository.save(application);
         logger.info("Provider application with ID {} rejected successfully", id);
+
+        User applicant = application.getCreatedUser();
+        String notificationMessage = "Your provider application for " + application.getBusinessName() + " was rejected.";
+        if (application.getReviewNote() != null && !application.getReviewNote().isBlank()) {
+            notificationMessage += " Note: " + application.getReviewNote();
+        }
+
+        notificationService.create(
+                applicant,
+                "provider-application-rejected",
+                notificationMessage
+        );
 
         return toResponse(application);
     }

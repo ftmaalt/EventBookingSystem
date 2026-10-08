@@ -41,7 +41,12 @@ public class SecurityConfig {
                                 "/api/auth/register",
                                 "/api/auth/forgotPassword",
                                 "/api/auth/resetPassword",
-                                "/error"
+                                "/error",
+                                "/uploads/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs",
+                                "/v3/api-docs/**"
                         ).permitAll().requestMatchers(HttpMethod.GET,
                                 "/api/categories/**",
                                 "/api/locations/**",

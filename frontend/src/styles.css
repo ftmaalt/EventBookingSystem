@@ -1636,3 +1636,348 @@ footer {
         width: 100%;
     }
 }
+
+/* ==================================================
+   PROFILE PICTURE / PROVIDER CTA ENHANCEMENTS
+================================================== */
+
+.avatar {
+    width: 95px;
+    height: 95px;
+
+    margin: 5px auto 17px;
+
+    border-radius: 50%;
+    overflow: hidden;
+
+    background: var(--primary-light);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: var(--primary);
+    font-size: 35px;
+    font-weight: 800;
+}
+
+.avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.avatar span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 100%;
+    height: 100%;
+}
+
+.profile-picture-help {
+    display: block;
+    margin-top: 9px;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.45;
+}
+
+.provider-application-intro {
+    margin: 8px 0 20px;
+    line-height: 1.6;
+}
+
+.navigation a[href="/apply-provider"] {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.navigation a[href="/apply-provider"]:hover {
+    background: var(--primary-light);
+}
+
+.quick-card[href="/apply-provider"] {
+    background:
+            linear-gradient(
+                    135deg,
+                    var(--primary-light),
+                    #ffffff
+            );
+    border-color: #d8d3f6;
+}
+
+.quick-card[href="/apply-provider"] > span {
+    color: var(--primary);
+    font-size: 20px;
+    font-weight: 800;
+}
+
+
+
+/* ==================================================
+   NOTIFICATION CENTER
+================================================== */
+
+.notification-center {
+    position: relative;
+}
+
+.notification-bell {
+    width: 42px;
+    height: 42px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--white);
+    display: grid;
+    place-items: center;
+    position: relative;
+    font-size: 18px;
+}
+
+.notification-bell:hover {
+    background: var(--primary-light);
+    border-color: #d8d4f6;
+}
+
+.notification-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 19px;
+    height: 19px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--red);
+    color: white;
+    display: grid;
+    place-items: center;
+    font-size: 10px;
+    font-weight: 800;
+    border: 2px solid var(--white);
+}
+
+.notification-panel {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    width: min(390px, calc(100vw - 32px));
+    max-height: 480px;
+    overflow: hidden;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 18px 55px rgba(30, 32, 45, 0.16);
+    z-index: 1200;
+}
+
+.notification-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border);
+}
+
+.notification-panel-header div {
+    display: grid;
+    gap: 2px;
+}
+
+.notification-panel-header strong {
+    font-size: 15px;
+}
+
+.notification-panel-header span {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.notification-panel-header button {
+    border: 0;
+    background: transparent;
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.notification-panel-list {
+    max-height: 395px;
+    overflow-y: auto;
+}
+
+.notification-item {
+    display: grid;
+    grid-template-columns: 10px 1fr auto;
+    gap: 10px;
+    align-items: start;
+    padding: 15px 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.notification-item:last-child {
+    border-bottom: 0;
+}
+
+.notification-item:hover {
+    background: #fafaf8;
+}
+
+.notification-dot {
+    width: 8px;
+    height: 8px;
+    margin-top: 6px;
+    border-radius: 50%;
+    background: var(--primary);
+}
+
+.notification-item strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 13px;
+}
+
+.notification-item p {
+    margin: 0 0 6px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.notification-item small {
+    color: #a0a3ab;
+    font-size: 10px;
+}
+
+.notification-remove {
+    border: 0;
+    background: transparent;
+    color: #a0a3ab;
+    font-size: 18px;
+    line-height: 1;
+}
+
+.notification-remove:hover {
+    color: var(--red);
+}
+
+.notification-empty {
+    min-height: 150px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 8px;
+    color: var(--muted);
+}
+
+.notification-empty span {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--green-light);
+    color: var(--green);
+    font-weight: 800;
+}
+
+.notification-empty p {
+    margin: 0;
+    font-size: 12px;
+}
+
+@media (max-width: 900px) {
+    .navigation .notification-center {
+        width: 100%;
+    }
+
+    .notification-bell {
+        width: 100%;
+        display: flex;
+        justify-content: flex-start;
+        gap: 8px;
+        padding: 10px 13px;
+        border: 0;
+        border-radius: 9px;
+    }
+
+    .notification-bell::after {
+        content: "Notifications";
+        color: var(--muted);
+        font-size: 14px;
+    }
+
+    .notification-badge {
+        top: 4px;
+        left: 28px;
+        right: auto;
+    }
+
+    .notification-panel {
+        position: static;
+        width: 100%;
+        margin-top: 6px;
+        box-shadow: none;
+        border-radius: 12px;
+    }
+}
+
+
+/* ==================================================
+   ADDITIONAL STATUS PILLS & LAYOUT HELPERS
+================================================== */
+
+.status-pill.active,
+.status-pill.approved {
+    background: var(--green-light);
+    color: var(--green);
+}
+
+.status-pill.pending,
+.status-pill.pending_review,
+.status-pill.in_progress {
+    background: var(--yellow-light);
+    color: var(--yellow);
+}
+
+.status-pill.rejected,
+.status-pill.inactive {
+    background: var(--red-light);
+    color: var(--red);
+}
+
+.status-pill.user,
+.status-pill.provider,
+.status-pill.admin {
+    background: var(--primary-light);
+    color: var(--primary-dark);
+}
+
+.session-right {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.application {
+    flex-wrap: wrap;
+}
+
+.application > div:last-child:not(:first-child) {
+    min-width: 240px;
+}
+
+.form-card h3 {
+    margin: 18px 0 4px;
+}
+
+.booking-info h3 a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.booking-info h3 a:hover {
+    color: var(--primary);
+}

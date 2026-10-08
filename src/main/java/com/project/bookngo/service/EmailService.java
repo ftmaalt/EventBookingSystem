@@ -22,8 +22,9 @@ public class EmailService {
     private JavaMailSender mailSender;
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
-    @Value("${app.base-url}")
-    private String baseUrl;
+    // Links in emails open the React app, not the raw API.
+    @Value("${app.frontend-url:http://localhost:5173}")
+    private String frontendUrl;
 
     public void sendVerificationEmail(String toEmail, String token) {
         logger.info("Sending verification email to: {}", toEmail);        SimpleMailMessage verificationMessage = new SimpleMailMessage();
@@ -31,7 +32,7 @@ public class EmailService {
         verificationMessage.setSubject("Verify your BooknGo email");
         verificationMessage.setText(
                 "Hello," +
-                        "\nHere is your verification link:\n" + baseUrl + "/api/auth/verify?token=" + token+
+                        "\nHere is your verification link:\n" + frontendUrl + "/verify-email?token=" + token+
                         "\n\nThis email verification link will expire after 24 hours. If you did not create an account on BooknGo, no further action is required.\n" +
                         "\n" +
                         "Regards,\n" +
@@ -45,7 +46,7 @@ public class EmailService {
         passwordResetMessage.setTo(toEmail);
         passwordResetMessage.setSubject("Reset your BooknGo account password");
         passwordResetMessage.setText("Hello," +
-                "\nYou are receiving this email because we received a password reset request for your account." + "Use this link to reset it: "  + baseUrl + "/api/auth/reset-password?token=" + token +
+                "\nYou are receiving this email because we received a password reset request for your account." + "Use this link to reset it: "  + frontendUrl + "/reset-password?token=" + token +
                 "\n\nThis password reset link will expire in 6 minutes.If you did not request a password reset, no further action is required.\n" +
                 "\n" +
                 "Regards,\n" +
@@ -57,7 +58,7 @@ public class EmailService {
         logger.info("Sending booking confirmation email for booking ID: {} to: {}", booking.getBookingId(), toEmail);
         SimpleMailMessage bookingConfirmedMessage= new SimpleMailMessage();
         bookingConfirmedMessage.setTo(toEmail);
-        bookingConfirmedMessage.setSubject("Booking Confirmed For "+booking.getSession()+ "BID#"+booking.getBookingId());
+        bookingConfirmedMessage.setSubject("Booking Confirmed BID#"+booking.getBookingId());
         String emailText = String.format(
                 "Hello %s,\n\n" +
                         "Great news! Your booking has been successfully confirmed.\n\n" +
@@ -157,7 +158,7 @@ public class EmailService {
 
         SimpleMailMessage cancellationMessage = new SimpleMailMessage();
         cancellationMessage.setTo(toEmail);
-        cancellationMessage.setSubject("Important Update: Session Cancelled - Ref #" + booking.getSession().getId());
+        cancellationMessage.setSubject("Important Update: Session Cancelled - Ref #" +booking.getBookingId());
 
         String emailText = String.format(
                 "Hello %s,\n\n" +
@@ -215,4 +216,3 @@ public class EmailService {
         mailSender.send(message);
     }
 }
-
