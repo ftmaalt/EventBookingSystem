@@ -38,6 +38,9 @@ public class ViolationsService {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private AuditLogService auditLogService;
+
     private static final BigDecimal PENALTY_FEE = new BigDecimal("10.000");
 
     private User getCurrentUser() {
@@ -117,6 +120,7 @@ public class ViolationsService {
 
         if (newStrikeCount >= 3) {
             user.setStatus(UserStatus.BLACKLISTED);
+            auditLogService.logAction("USER_BLACKLISTED", "SYSTEM", "User", user.getId() , "User account was blacklisted due to continuous violations");
             usersRepository.save(user);
         } else {
             user.setStatus(UserStatus.DEACTIVATED);

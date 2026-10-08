@@ -4,16 +4,16 @@ import com.project.bookngo.model.enums.BookingStatus;
 import com.project.bookngo.model.enums.BookingType;
 import com.project.bookngo.model.enums.PaymentStatus;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
-import org.hibernate.annotations.CreationTimestamp;
+import lombok.Getter;
+import lombok.Setter;import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "bookings")
 public class Bookings {

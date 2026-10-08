@@ -14,8 +14,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.data.domain.Sort;
 
 @RestController
 @RequestMapping("/api/bookings")
@@ -41,7 +40,7 @@ public class BookingsController {
 
 
     @GetMapping
-    public ResponseEntity<Page<BookingResponse>> getMyBookings(@RequestParam(required = false)BookingStatus status, @PageableDefault(size = 10)Pageable pageable) {
+    public ResponseEntity<Page<BookingResponse>> getMyBookings(@RequestParam(required = false)BookingStatus status, @PageableDefault(size = 10,  sort = "createdAt", direction = Sort.Direction.DESC )Pageable pageable) {
         logger.info("Calling getMyBookings ===>");
         return ResponseEntity.ok(bookingsService.getMyBookings(status, pageable));
     }

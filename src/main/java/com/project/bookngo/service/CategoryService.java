@@ -19,11 +19,12 @@ public class CategoryService {
     private static final Logger logger = LoggerFactory.getLogger(CategoryService.class);
 
     public CategoryResponse createCategory( CategoryRequest request){
-        logger.info("Creating category: {}", request.getCategory_name());        Category categoryObject = new Category();
+        logger.info("Creating category: {}", request.getCategory_name());
+        Category categoryObject = new Category();
             categoryObject.setCategoryName(request.getCategory_name());
             categoryObject.setDescription(request.getDescription());
             categoryObject =categoryRepository.save(categoryObject);
-        logger.info("Category created successfully with ID: {}", categoryObject.getCategory_id());
+        logger.info("Category created successfully with ID: {}", categoryObject.getId());
             return toResponse(categoryObject);
     }
 
@@ -61,6 +62,6 @@ public class CategoryService {
     }
 
     private CategoryResponse toResponse(Category categoryObject) {
-        return new CategoryResponse(categoryObject.getCategory_id(), categoryObject.getCategoryName(), categoryObject.getDescription());
+        return new CategoryResponse(categoryObject.getId(), categoryObject.getCategoryName(), categoryObject.getDescription());
     }
 }

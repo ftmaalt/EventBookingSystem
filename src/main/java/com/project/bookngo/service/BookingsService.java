@@ -33,21 +33,34 @@ public class BookingsService {
 
     @Autowired
     private BookingsRepository bookingsRepository;
+
     @Autowired
     private SessionsRepository sessionsRepository;
+
     @Autowired
     private UsersRepository usersRepository;
+
     @Autowired
     private EmailService emailService;
+
     @Autowired
-    private SSEService sseService;
+    private NotificationService notificationService;
+
+    @Autowired
+    private AuditLogService auditLogService;
+
     private static final Logger logger = LoggerFactory.getLogger(BookingsService.class);
 
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return usersRepository.findUserByEmail(email);
     }
-
+    /**
+     * Creates a new booking for the currently authenticated user.
+     *
+     * @param request booking details including session, participants, and booking type
+     * @return the newly created booking response
+     */
     @Transactional
     public BookingResponse createBooking(BookingRequest request) {
         logger.info("Creating booking for session ID: {}", request.getSessionId());
@@ -96,7 +109,11 @@ public class BookingsService {
         logger.info("Booking created successfully with ID: {} for session ID: {}", saved.getBookingId(), saved.getSession().getId());
 
         emailService.sendBookingVerifiedEmail(saved.getUser().getEmail(), saved);
-        sseService.sendNotification(saved.getUser().getId(), "booking-confirmed", toResponse(saved));
+        notificationService.create(
+                saved.getUser(),
+                "booking-confirmed",
+                "Booking #" + saved.getBookingId() + " was confirmed successfully."
+        );
 
         return toResponse(saved);
     }
@@ -141,6 +158,7 @@ public class BookingsService {
 
 
         booking.setStatus(BookingStatus.CANCELLED);
+        auditLogService.logAction("BOOKING_CANCELLED", getCurrentUser().getEmail(), "Booking", booking.getBookingId(), "Booking was cancelled successfully");
         logger.info("Booking with ID {} cancelled successfully", id);
         booking.setUpdatedBy(getCurrentUser().getEmail());
         bookingsRepository.save(booking);
@@ -172,7 +190,14 @@ public class BookingsService {
                 booking.getCreatedAt()
         );
     }
-
+    /**
+     * Retrieves the authenticated user's bookings with optional status filtering,
+     * pagination, and sorting.
+     *
+     * @param status optional booking status filter
+     * @param pageable pagination and sorting information
+     * @return a page of the user's booking responses
+     */
     public Page<BookingResponse> getMyBookings(BookingStatus status, Pageable pageable) {
         User user = getCurrentUser();
         return bookingsRepository.findMyBookings(user.getId(), status, pageable).map(this::toResponse);

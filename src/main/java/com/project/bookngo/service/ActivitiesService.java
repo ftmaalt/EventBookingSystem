@@ -124,7 +124,7 @@ public class ActivitiesService {
                 activities.getDescription(),
                 activities.getPricePerPerson(),
                 activities.getDurationMinutes(),
-                activities.getCategory() != null ? activities.getCategory().getCategory_id(): null,
+                activities.getCategory() != null ? activities.getCategory().getId(): null,
                 activities.getLocation() != null ? activities.getLocation().getId() : null,
                 activities.getProvider() != null ? activities.getProvider().getId() : null,
                 activities.getStatus(),
