@@ -51,8 +51,7 @@ src/test/java/                  Automated tests
 
 The persistence model includes 13 mapped entities: `User`, `ProviderProfile`, `ProviderApplication`, `Category`, `Location`, `Activities`, `Sessions`, `Bookings`, `Tokens`, `Notification`, `Violations`, `Penalties`, and `AuditLog`. Foreign keys connect bookings to users/sessions, sessions to activities, activities to categories/providers/locations, and associated records to their owners.
 
-- **Editable dbdiagram diagram:** [`docs/BookNGo_ERD.dbml`](docs/BookNGo_ERD.dbml). Import/paste this into [dbdiagram.io](https://dbdiagram.io/).
-- **Note:** The DBML is generated from current JPA annotations. Compare it with PostgreSQL's actual schema before final submission because `ddl-auto=update` can leave legacy database columns that differ from code.
+<img width="3372" height="2163" alt="Untitled" src="https://github.com/user-attachments/assets/72df4831-430d-49db-b971-24b623dc3c09" />
 
 ## Installation & local setup
 
@@ -80,8 +79,6 @@ jwt-secret=${JWT_SECRET}
 spring.mail.username=${MAIL_USERNAME}
 spring.mail.password=${MAIL_PASSWORD}
 ```
-
-**Security note:** The uploaded development properties contain inline credentials/secrets. Before publishing, replace them with environment variables, remove committed credentials, and rotate any already exposed secrets. Do not publish `.env`, database passwords, SMTP app passwords, or JWT secrets.
 
 ### Run backend
 
@@ -111,7 +108,7 @@ Vite typically serves locally on port 5173; use the URL displayed by Vite. Front
 
 ## API endpoint reference
 
-Endpoints below were extracted from the controller mappings in the uploaded source. Access labels describe typical protection, **not a substitute for reviewing `@PreAuthorize` and service ownership checks**.
+Endpoints below were extracted from the controller mappings in the uploaded source. Access labels describe typical protection,
 
 ### Authentication & account recovery
 
@@ -295,8 +292,6 @@ Run:
 ```bash
 ./mvnw test
 ```
-
-Use Postman to cover successful/failed authentication, validation, role restrictions, booking creation, capacity, cancellation, notification delivery, provider reviews, and rate limiting. Tests have **not been run or confirmed passing** merely by inclusion in this README. For concurrent booking capacity, add a parallel integration test to demonstrate no overbooking.
 
 ## Development & planning
 
