@@ -40,16 +40,15 @@ public class ProviderApplicationService {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private CurrentUserService currentUserService;
+
     private static final Logger logger = LoggerFactory.getLogger(ProviderApplicationService.class);
 
-    private User getCurrentUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return usersRepository.findUserByEmail(email);
-    }
 
     public ProviderApplicationResponse submitApplication(ProviderApplicationRequest applicationRequest){
         logger.info("Submitting provider application");
-        User user= getCurrentUser();
+        User user= currentUserService.getCurrentUser();
         if (user.getRole() == UserRole.ADMIN || user.getRole()== UserRole.PROVIDER){
             throw new InformationExistsException("You already have provider access.");
         }
@@ -75,7 +74,6 @@ public class ProviderApplicationService {
 
         for (User admin : admins) {
 
-            // Create the in-app notification FIRST
             notificationService.create(
                     admin,
                     "provider-application-pending",
@@ -89,7 +87,6 @@ public class ProviderApplicationService {
                     admin.getEmail()
             );
 
-            // Email is secondary
             if (
                     admin.getEmail() != null &&
                             !admin.getEmail().isBlank()
@@ -115,7 +112,7 @@ public class ProviderApplicationService {
 
     public List<ProviderApplicationResponse> getMyApplications() {
         logger.info("Fetching current user's provider applications");
-        User user = getCurrentUser();
+        User user= currentUserService.getCurrentUser();
         return applicationRepository.findByCreatedUserId(user.getId()).stream().map(this::toResponse).toList();
     }
     public List<ProviderApplicationResponse> getAll() {
@@ -134,7 +131,7 @@ public class ProviderApplicationService {
         if (application.getStatus()!=ApplicationStatus.PENDING){
             throw new BusinessConflictsException("Only pending applications can be approved.");
         }
-        User admin = getCurrentUser();
+        User admin= currentUserService.getCurrentUser();
         application.setStatus(ApplicationStatus.APPROVED);
         application.setReviewNote(request.getReviewNote());
         application.setReviewedAt(LocalDateTime.now());
@@ -166,7 +163,7 @@ public class ProviderApplicationService {
         ProviderApplication application= applicationRepository.findById(id).orElseThrow(() -> new InformationNotFoundException("Application with id:" + id + " does not exist."));
         if (application.getStatus()!=ApplicationStatus.PENDING){
             throw new BusinessConflictsException("Only pending applications can be rejected.");        }
-        User admin = getCurrentUser();
+        User admin= currentUserService.getCurrentUser();
         application.setStatus(ApplicationStatus.REJECTED);
         application.setReviewNote(request.getReviewNote());
         application.setReviewedAt(LocalDateTime.now());

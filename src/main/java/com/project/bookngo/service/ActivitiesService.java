@@ -35,16 +35,12 @@ public class ActivitiesService {
     private LocationRepository locationRepository;
 
     @Autowired
-    private UsersRepository usersRepository;
+    private CurrentUserService currentUserService;
     private static final Logger logger = LoggerFactory.getLogger(ActivitiesService.class);
 
-    private User getCurrentUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return usersRepository.findUserByEmail(email);
-    }
-
     public ActivityResponse createActivity(ActivityRequest request) {
-        logger.info("Creating activity with title: {}", request.getTitle());        User provider = getCurrentUser();
+        logger.info("Creating activity with title: {}", request.getTitle());
+        User provider = currentUserService.getCurrentUser();
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new InformationNotFoundException(
                         "Category with the id:" + request.getCategoryId() + " does not exist."));
@@ -85,7 +81,8 @@ public class ActivitiesService {
         Activities activity = activitiesRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Activity with the id:" + id + " does not exist."));
 
-        if (!activity.getProvider().getId().equals(getCurrentUser().getId())) {
+        if (!activity.getProvider().getId().equals(currentUserService.getCurrentUser()
+.getId())) {
             throw new AccessDeniedException(
                     "You are not authorized to modify this activity.");
         }
@@ -102,7 +99,7 @@ public class ActivitiesService {
         activity.setDurationMinutes(request.getDurationMinutes());
         activity.setCategory(category);
         activity.setLocation(location);
-        activity.setUpdatedBy(getCurrentUser().getEmail());
+        activity.setUpdatedBy(currentUserService.getCurrentUser().getEmail());
         Activities updated = activitiesRepository.save(activity);
         logger.info("Activity with ID {} updated successfully", id);
         return toResponse(updated);
@@ -112,10 +109,10 @@ public class ActivitiesService {
         logger.info("Attempting to delete activity with ID: {}", id);
         Activities activity = activitiesRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Activity with the id:" + id + " does not exist."));
-        if (!activity.getProvider().getId().equals(getCurrentUser().getId())) {
+        if (!activity.getProvider().getId().equals(currentUserService.getCurrentUser().getId())) {
             throw new AccessDeniedException("You are not authorized to modify this activity.");
         }
-        activity.setUpdatedBy(getCurrentUser().getEmail());
+        activity.setUpdatedBy(currentUserService.getCurrentUser().getEmail());
         activitiesRepository.delete(activity);
         logger.info("Activity with ID {} deleted successfully", id);
         return "Activity with id:" + id + " has been deleted successfully.";

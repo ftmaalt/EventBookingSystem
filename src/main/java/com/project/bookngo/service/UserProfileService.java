@@ -25,30 +25,23 @@ public class UserProfileService {
     @Autowired
     private AuditLogService auditLogService;
 
+    @Autowired
+    private CurrentUserService currentUserService;
+
     private static final Logger logger = LoggerFactory.getLogger(UserProfileService.class);
 
-    private User getCurrentUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        logger.info("Fetching current user profile for email: {}", email);
-        User user = usersRepository.findUserByEmail(email);
-        if (user == null) {
-            logger.warn("Authenticated user not found for email: {}", email);
-            throw new InformationNotFoundException("Authenticated user not found.");
-        }
-        return user;
-    }
 
     public UserProfileResponse getMyProfile() {
         logger.info("Fetching current user's profile");
-        return toResponse(getCurrentUser());
+        return toResponse(currentUserService.getCurrentUser());
     }
 
     public UserProfileResponse updateMyProfile(UserProfileRequest request) {
         logger.info("Updating current user's profile");
-        User user = getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         user.setFullName(request.getFullName());
         user.setPhone(request.getPhone());
-        auditLogService.logAction("PROFILE_UPDATED", getCurrentUser().getEmail(), "User", user.getId(), "User profile was updated");
+        auditLogService.logAction("PROFILE_UPDATED", currentUserService.getCurrentUser().getEmail(), "User", user.getId(), "User profile was updated");
         User saved = usersRepository.save(user);
         logger.info("Current user's profile updated successfully");
         return toResponse(saved);
@@ -56,7 +49,7 @@ public class UserProfileService {
 
     public UserProfileResponse uploadProfilePicture(MultipartFile file) {
         logger.info("Uploading profile picture for current user");
-        User user = getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         String path = fileStorageService.storeProfilePicture(file);
         user.setProfilePicturePath(path);
         User saved = usersRepository.save(user);

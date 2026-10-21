@@ -42,15 +42,14 @@ public class ViolationsService {
     @Autowired
     private AuditLogService auditLogService;
 
+    @Autowired
+    private CurrentUserService currentUserService;
+
     private static final BigDecimal PENALTY_FEE = new BigDecimal("10.000");
 
-    private User getCurrentUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return usersRepository.findUserByEmail(email);
-    }
 
     public GenericMessageResponse reportViolation(ReportViolationRequest request) {
-        User reporter = getCurrentUser();
+        User reporter = currentUserService.getCurrentUser();
         User offender = usersRepository.findById(request.getUserId())
                 .orElseThrow(() -> new InformationNotFoundException("User with ID: " + request.getUserId() + " not found."));
 

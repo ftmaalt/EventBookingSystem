@@ -25,19 +25,18 @@ import java.util.List;
 @Service
 public class SessionsService {
 
-    @Autowired private SessionsRepository sessionsRepository;
-    @Autowired private ActivitiesRepository activitiesRepository;
-    @Autowired private UsersRepository usersRepository;
+    @Autowired
+    private SessionsRepository sessionsRepository;
+    @Autowired
+    private ActivitiesRepository activitiesRepository;
+    @Autowired
+    private CurrentUserService currentUserService;
 
     private static final Logger logger = LoggerFactory.getLogger(SessionsService.class);
 
-    private User getCurrentUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return usersRepository.findUserByEmail(email);
-    }
 
     private void checkOwnership(Activities activity) {
-        if (!activity.getProvider().getId().equals(getCurrentUser().getId())) {
+        if (!activity.getProvider().getId().equals(currentUserService.getCurrentUser().getId())) {
             throw new AccessDeniedException("You are not authorized to modify this activity.");
         }
     }

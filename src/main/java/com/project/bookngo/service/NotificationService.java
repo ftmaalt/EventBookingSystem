@@ -27,13 +27,12 @@ public class NotificationService {
     @Autowired
     private SSEService sseService;
 
+    @Autowired
+    private CurrentUserService currentUserService;
+
     private static final Logger logger =
             LoggerFactory.getLogger(NotificationService.class);
 
-    private User getCurrentUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return usersRepository.findUserByEmail(email);
-    }
 
     public NotificationResponse create(
             User user,
@@ -77,7 +76,7 @@ public class NotificationService {
     }
 
     public List<NotificationResponse> getMine() {
-        User user = getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         return notificationRepository
                 .findTop30ByUserIdOrderByCreatedAtDesc(user.getId())
                 .stream()
@@ -87,7 +86,7 @@ public class NotificationService {
 
     @Transactional
     public void markAllRead() {
-        User user = getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         List<Notification> unread = notificationRepository
                 .findByUserIdAndReadFalse(user.getId());
 
@@ -97,7 +96,7 @@ public class NotificationService {
 
     @Transactional
     public void markRead(Long id) {
-        User user = getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         Notification notification = notificationRepository
                 .findByIdAndUserId(id, user.getId())
                 .orElseThrow(() -> new InformationNotFoundException(
@@ -110,7 +109,7 @@ public class NotificationService {
 
     @Transactional
     public void deleteMine(Long id) {
-        User user = getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         Notification notification = notificationRepository
                 .findByIdAndUserId(id, user.getId())
                 .orElseThrow(() -> new InformationNotFoundException(
@@ -121,7 +120,7 @@ public class NotificationService {
 
     @Transactional
     public void clearMine() {
-        User user = getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         notificationRepository.deleteByUserId(user.getId());
     }
 

@@ -20,10 +20,8 @@ public class AdminService {
     @Autowired
     private AuditLogService auditLogService;
 
-    private User getCurrentUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return usersRepository.findUserByEmail(email);
-    }
+    @Autowired
+    private CurrentUserService currentUserService;
 
     private static final Logger logger = LoggerFactory.getLogger(AdminService.class);
 
@@ -41,7 +39,7 @@ public class AdminService {
         logger.info("Deactivating user ID: {}", userId);
         User user= usersRepository.findById(userId).orElseThrow(() -> new InformationNotFoundException("The Email/Password you entered is not correct. Please try again."));
         user.setStatus(UserStatus.DEACTIVATED);
-        auditLogService.logAction("USER_DEACTIVATED", getCurrentUser().getEmail(), "User", user.getId() , "User account was deactivated by admin");
+        auditLogService.logAction("USER_DEACTIVATED", currentUserService.getCurrentUser().getEmail(), "User", user.getId() , "User account was deactivated by admin");
         usersRepository.save(user);
         logger.info("User ID {} has been deactivated", userId);
         return new GenericMessageResponse("User account with ID#"+ userId +" has been deactivated Successfully");

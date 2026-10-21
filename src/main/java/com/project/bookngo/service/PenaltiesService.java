@@ -26,16 +26,14 @@ public class PenaltiesService {
     @Autowired
     private UsersRepository usersRepository;
 
-    private User getCurrentUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return usersRepository.findUserByEmail(email);
-    }
+    @Autowired
+    private CurrentUserService currentUserService;
 
     public GenericMessageResponse payPenalty(Long id) {
         Penalties penalty = penaltiesRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Penalty with ID: " + id + " not found."));
 
-        User current = getCurrentUser();
+        User current = currentUserService.getCurrentUser();
         boolean isOwner = penalty.getUser().getId().equals(current.getId());
         boolean isAdmin = current.getRole() == UserRole.ADMIN;
         if (!isOwner && !isAdmin) {

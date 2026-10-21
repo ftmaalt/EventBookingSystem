@@ -51,10 +51,9 @@ public class BookingsService {
 
     private static final Logger logger = LoggerFactory.getLogger(BookingsService.class);
 
-    private User getCurrentUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return usersRepository.findUserByEmail(email);
-    }
+    @Autowired
+    private CurrentUserService currentUserService;
+
     /**
      * Creates a new booking for the currently authenticated user.
      *
@@ -64,7 +63,7 @@ public class BookingsService {
     @Transactional
     public BookingResponse createBooking(BookingRequest request) {
         logger.info("Creating booking for session ID: {}", request.getSessionId());
-        User user = getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         Sessions session = sessionsRepository.findByIdForUpdate(request.getSessionId())
                 .orElseThrow(() -> new InformationNotFoundException("Session with ID: " + request.getSessionId() + " not found."));
         boolean alreadyBooked = bookingsRepository.findByUserIdAndSessionIdAndStatus(user.getId(), session.getId(), BookingStatus.CONFIRMED)
@@ -154,9 +153,9 @@ public class BookingsService {
 
 
         booking.setStatus(BookingStatus.CANCELLED);
-        auditLogService.logAction("BOOKING_CANCELLED", getCurrentUser().getEmail(), "Booking", booking.getBookingId(), "Booking was cancelled successfully");
+        auditLogService.logAction("BOOKING_CANCELLED", currentUserService.getCurrentUser().getEmail(), "Booking", booking.getBookingId(), "Booking was cancelled successfully");
         logger.info("Booking with ID {} cancelled successfully", id);
-        booking.setUpdatedBy(getCurrentUser().getEmail());
+        booking.setUpdatedBy(currentUserService.getCurrentUser().getEmail());
         bookingsRepository.save(booking);
 
         emailService.sendSessionCancelledEmail(booking.getUser().getEmail(), booking);
@@ -164,7 +163,7 @@ public class BookingsService {
     }
 
     private void checkOwnershipOrAdmin(Bookings booking) {
-        User current = getCurrentUser();
+        User current = currentUserService.getCurrentUser();
         boolean isOwner = booking.getUser().getId().equals(current.getId());
         boolean isAdmin = current.getRole() == UserRole.ADMIN;
         if (!isOwner && !isAdmin) {
@@ -195,7 +194,7 @@ public class BookingsService {
      * @return a page of the user's booking responses
      */
     public Page<BookingResponse> getMyBookings(BookingStatus status, Pageable pageable) {
-        User user = getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         return bookingsRepository.findMyBookings(user.getId(), status, pageable).map(this::toResponse);
     }
 }

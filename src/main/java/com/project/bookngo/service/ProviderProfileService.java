@@ -9,6 +9,7 @@ import com.project.bookngo.model.response.ProviderProfileResponse;
 import com.project.bookngo.repository.ProviderProfileRepository;
 import com.project.bookngo.repository.UsersRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
@@ -21,24 +22,22 @@ public class ProviderProfileService {
     private ProviderProfileRepository providerProfileRepository;
     @Autowired
     private UsersRepository usersRepository;
+    @Autowired
+    private CurrentUserService currentUserService;
 
     private static final Logger logger = LoggerFactory.getLogger(ProviderProfileService.class);
 
-    private User getCurrentUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return usersRepository.findUserByEmail(email);
-    }
 
     public ProviderProfileResponse getMyProfile() {
         logger.info("Fetching current provider profile");
-        User user= getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         ProviderProfile profile= providerProfileRepository.findByUserId(user.getId()).orElseThrow(()-> new InformationNotFoundException("Provider Profile Doesn't exist for this user."));
         return toResponse(profile);
     }
 
     public ProviderProfileResponse updateMyProfile(ProviderProfileRequest request) {
         logger.info("Updating current provider profile");
-        User user= getCurrentUser();
+        User user = currentUserService.getCurrentUser();
         ProviderProfile profile= providerProfileRepository.findByUserId(user.getId()).orElseThrow(()-> new InformationNotFoundException("Provider Profile Doesn't exist for this user."));
         profile.setDescription(request.getDescription());
         profile.setPhone(request.getPhone());
