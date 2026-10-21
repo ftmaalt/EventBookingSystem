@@ -31,7 +31,7 @@ public class ProviderApplicationController {
         ProviderApplicationResponse applicationResponse = applicationService.submitApplication(applicationRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(applicationResponse);
     }
-    // check the path
+
     @GetMapping("/mine")
     public ResponseEntity<List<ProviderApplicationResponse>> getMyApplications(){
         logger.info("Calling getMyApplications==>");

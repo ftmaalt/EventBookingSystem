@@ -54,7 +54,7 @@ public class MyUserDetails implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-// SimpleGrantedAuthority only allows users to have a single role,, for eg: a user can only be an admin, a regular user, or an activity provider.
+
         return List.of(new SimpleGrantedAuthority("ROLE_"+ user.getRole().name()));
     }
 }

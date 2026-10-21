@@ -26,7 +26,7 @@ public class AuthController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
-    //register
+
     @PostMapping("/register")
     public ResponseEntity<GenericMessageResponse> register(@Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
         logger.info("Calling register==>");
@@ -45,7 +45,6 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.OK).body(registerResponse);
     }
 
-    //    Login
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request,HttpServletRequest httpRequest) {
         logger.info("Calling login==>");
@@ -54,7 +53,7 @@ public class AuthController {
         LoginResponse loginResponse = authService.login(request);
         return ResponseEntity.status(HttpStatus.OK).body(loginResponse);
     }
-    //        Password Reset
+
     @PostMapping("/forgotPassword")
     public ResponseEntity<GenericMessageResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest forgotPasswordRequest, HttpServletRequest httpRequest) {
         logger.info("Calling forgotPassword==>");
@@ -69,7 +68,7 @@ public class AuthController {
         GenericMessageResponse passwordResponse= authService.resetPassword(passwordRequest);
         return ResponseEntity.status(HttpStatus.OK).body(passwordResponse);
     }
-    //        Change Password
+
     @PutMapping("/changePassword")
     public ResponseEntity<GenericMessageResponse> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         logger.info("Calling changePassword==>");

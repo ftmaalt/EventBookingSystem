@@ -78,21 +78,26 @@ public class AuthService {
     public LoginResponse login(LoginRequest loginRequest) {
         logger.info("Login request received");
         User loginAttemptUser= usersRepository.findUserByEmail(loginRequest.getEmail());
+
         if (loginAttemptUser == null) {
             logger.warn("Login attempt failed: user not found");
-            throw new InformationNotFoundException("The Email/Password you entered is not correct. Please try again.");
+            throw new InvalidCredentials("The Email/Password you entered is not correct. Please try again.");
         }
+
         if (loginAttemptUser.getStatus() == UserStatus.PENDING_VERIFICATION) {
             throw new VerificationRequiredException("Please verify your email before attempting to login.");
         }
+
         if ((loginAttemptUser.getStatus() == UserStatus.BLACKLISTED)){
             logger.warn("Login attempt blocked for blocked user ID: {} with status: {}", loginAttemptUser.getId(), loginAttemptUser.getStatus());
             throw new InvalidCredentials("Due to violations. Your account has been permanently blocked.");
         }
+
         if (loginAttemptUser.getStatus() == UserStatus.DEACTIVATED) {
             logger.warn("Login attempt blocked for inactive user ID: {} with status: {}", loginAttemptUser.getId(), loginAttemptUser.getStatus());
             throw new InvalidCredentials("This account has been deactivated. Please contact support.");
         }
+
         if (!passwordEncoder.matches(loginRequest.getPassword(), loginAttemptUser.getPasswordHash())) {
             logger.warn("Login attempt failed: incorrect password for user ID: {}", loginAttemptUser.getId());
             throw new InvalidCredentials("The Email/Password you entered is not correct. Please try again.");

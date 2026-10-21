@@ -13,8 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import static com.project.bookngo.model.enums.TokenType.EMAIL_VERIFICATION;
-import static com.project.bookngo.model.enums.TokenType.PASSWORD_RESET;
+import static com.project.bookngo.model.enums.TokenType.*;
 
 @Service
 public class TokenService {
@@ -28,16 +27,16 @@ public class TokenService {
     public String generateToken(User user, TokenType type) {
         logger.info("Generating {} token for user ID: {}", type, user.getId());
         String tokenString = UUID.randomUUID().toString();
-        // 2. create a new Tokens entity
         Tokens token = new Tokens();
         token.setToken(tokenString);
         token.setType(type);
         token.setUser(user);
-        //    - set user, token (the random string), type
         if (type == EMAIL_VERIFICATION) {
             token.setExpires_at(LocalDateTime.now().plusHours(24));
         }else if(type == PASSWORD_RESET){
             token.setExpires_at(LocalDateTime.now().plusMinutes(6));
+        } else if (type == PENALTY_PAYMENT) {
+            token.setExpires_at(LocalDateTime.now().plusMinutes(10));
         }
         tokensRepository.save(token);
         logger.info("{} token generated successfully for user ID: {}", type, user.getId());

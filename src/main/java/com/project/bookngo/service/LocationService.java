@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 @Service
@@ -61,10 +62,16 @@ public class LocationService {
         return locationRepository.findAll().stream().map(this::toResponse).toList();
     }
 
-    public LocationResponse update(Long id, LocationRequest request) {
+    public LocationResponse update(Long id, LocationRequest request) throws AccessDeniedException {
         logger.info("Updating location with ID: {}", id);
         Location location = locationRepository.findById(id).orElseThrow(() ->
                 new InformationNotFoundException("Location with the id:" + id + " does not exist, please try again with another id"));
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user= usersRepository.findUserByEmail(email);
+        if (!location.getProvider().getId().equals(user.getId())){
+            throw new AccessDeniedException("You are not authorized to modify this location");
+        }
+
         String address = request.getAddress() + ", " + request.getCity();
         double[] coords = geocodingService.geocodeAddress(address);
 
@@ -80,10 +87,15 @@ public class LocationService {
         return toResponse(updatedLocation);
     }
 
-    public String delete(Long id) {
+    public String delete(Long id) throws AccessDeniedException {
         logger.info("Deleting location with ID: {}", id);
         Location location = locationRepository.findById(id).orElseThrow(() ->
                 new InformationNotFoundException("Location with the id:" + id + " does not exist, please try again with another id"));
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user= usersRepository.findUserByEmail(email);
+        if (!location.getProvider().getId().equals(user.getId())){
+            throw new AccessDeniedException("You are not authorized to modify this location");
+        }
         locationRepository.delete(location);
         logger.info("Location with ID {} deleted successfully", id);
         return "Location with id:"+ id +"has been deleted successfully";

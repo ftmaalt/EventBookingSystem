@@ -86,6 +86,10 @@ public class ActivitiesService {
         Activities activity = activitiesRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Activity with the id:" + id + " does not exist."));
 
+        if (!activity.getProvider().getId().equals(getCurrentUser().getId())) {
+            throw new InvalidCredentials("You are not authorized to modify this activity.");
+        }
+
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new InformationNotFoundException("Category with the id:" + request.getCategoryId() + " does not exist."));
 

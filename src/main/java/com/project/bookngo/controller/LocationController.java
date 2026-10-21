@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 @RestController
@@ -47,7 +48,7 @@ public class LocationController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('PROVIDER')")
-    public ResponseEntity<LocationResponse> update(@PathVariable Long id,@Valid @RequestBody LocationRequest request) {
+    public ResponseEntity<LocationResponse> update(@PathVariable Long id,@Valid @RequestBody LocationRequest request) throws AccessDeniedException {
         logger.info("Calling update ==>");
         LocationResponse locationResponse =locationService.update(id,request);
         return ResponseEntity.status(HttpStatus.OK).body(locationResponse);
@@ -55,7 +56,7 @@ public class LocationController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('PROVIDER')")
-    public ResponseEntity<String> delete(@PathVariable Long id) {
+    public ResponseEntity<String> delete(@PathVariable Long id) throws AccessDeniedException {
         logger.info("Calling delete ==>");
         String message= locationService.delete(id);
         return ResponseEntity.ok(message);

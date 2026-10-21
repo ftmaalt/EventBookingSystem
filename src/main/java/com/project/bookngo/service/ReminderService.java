@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class ReminderService {
@@ -27,7 +28,7 @@ public class ReminderService {
     public void sendUpcomingBookingReminders(){
         logger.info("Checking for upcoming booking reminders");
         LocalDateTime now= LocalDateTime.now();
-        //finds any bookings coming in 24 hours
+
         LocalDateTime window= now.plusHours(24);
 
         List<Bookings> upcoming = bookingsRepository.findByStatusAndSession_StartTimeBetween(BookingStatus.CONFIRMED, now, window);
@@ -36,7 +37,11 @@ public class ReminderService {
         for (Bookings booking :upcoming) {
             long minutesToBooking = Duration.between(now, booking.getSession().getStartTime()).toMinutes();
             String timeFrame = reminderFrame(minutesToBooking);
-
+            if (Objects.equals(timeFrame, booking.getLastReminderStage())){
+                logger.info("Reminder already sent for stage '{}' for booking ID {}. Skipping booking.",
+                        timeFrame, booking.getBookingId());
+                continue;
+            }
             emailService.sendBookingReminders(booking.getUser().getEmail(), booking, timeFrame);
             booking.setLastReminderStage(timeFrame);
             bookingsRepository.save(booking);
