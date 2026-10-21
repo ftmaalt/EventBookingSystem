@@ -1,7 +1,7 @@
 package com.project.bookngo.service;
 
+import com.project.bookngo.exception.BusinessConflictsException;
 import com.project.bookngo.exception.InformationNotFoundException;
-import com.project.bookngo.exception.InvalidCredentials;
 import com.project.bookngo.exception.InvalidTimeSpecificationException;
 import com.project.bookngo.model.Bookings;
 import com.project.bookngo.model.Sessions;
@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
+import org.springframework.security.access.AccessDeniedException;
 
 @Service
 public class BookingsService {
@@ -70,7 +70,7 @@ public class BookingsService {
         boolean alreadyBooked = bookingsRepository.findByUserIdAndSessionIdAndStatus(user.getId(), session.getId(), BookingStatus.CONFIRMED)
                 .isPresent();
         if (alreadyBooked) {
-            throw new IllegalArgumentException("You already have a booking for this session.");
+            throw new BusinessConflictsException("You already have a booking for this session.");
         }
 
         if (session.getStatus() == SessionStatus.CANCELLED || session.getStatus() == SessionStatus.COMPLETED) {
@@ -81,7 +81,7 @@ public class BookingsService {
         }
 
         if (session.getSpotsLeft() < request.getParticipants()) {
-            throw new IllegalArgumentException("Not enough spots left. Only " + session.getSpotsLeft() + " remaining.");
+            throw new BusinessConflictsException("Not enough spots left. Only " + session.getSpotsLeft() + " remaining.");
         }
 
         session.setSpotsLeft(session.getSpotsLeft() - request.getParticipants());
@@ -135,14 +135,17 @@ public class BookingsService {
         checkOwnershipOrAdmin(booking);
 
         if (booking.getStatus() == BookingStatus.CANCELLED) {
-            throw new IllegalArgumentException("This booking is already cancelled.");
+            throw new BusinessConflictsException("This booking is already cancelled.");
         }
         if (booking.getStatus() == BookingStatus.COMPLETED) {
-            throw new IllegalArgumentException("Cannot cancel a completed booking.");
+            throw new BusinessConflictsException("Cannot cancel a completed booking.");
         }
 
         Sessions session = sessionsRepository.findByIdForUpdate(booking.getSession().getId())
                 .orElseThrow(() -> new InformationNotFoundException("Session not found."));
+        if (!session.getStartTime().isAfter(LocalDateTime.now())) {
+            throw new BusinessConflictsException("Cannot cancel a booking after the session has started.");
+        }
         session.setSpotsLeft(session.getSpotsLeft() + booking.getParticipants());
         if (session.getStatus() == SessionStatus.FULL) {
             session.setStatus(SessionStatus.SCHEDULED);
@@ -166,7 +169,7 @@ public class BookingsService {
         boolean isAdmin = current.getRole() == UserRole.ADMIN;
         if (!isOwner && !isAdmin) {
             logger.warn("Unauthorized access attempt for booking ID: {} by user ID: {}", booking.getBookingId(), current.getId());
-            throw new InvalidCredentials("You are not authorized to access this booking.");
+            throw new AccessDeniedException("You are not authorized to access this booking.");
         }
     }
 
