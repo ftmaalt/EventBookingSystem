@@ -3,8 +3,12 @@ package com.project.bookngo.repository;
 import com.project.bookngo.model.Location;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-    public interface LocationRepository extends JpaRepository<Location, Long> {
+import java.util.List;
+import java.util.Optional;
 
+public interface LocationRepository extends JpaRepository<Location, Long> {
+        List<Location> findByActiveTrue();
+        Optional<Location> findByIdAndActiveTrue(Long id);
     }
 
 

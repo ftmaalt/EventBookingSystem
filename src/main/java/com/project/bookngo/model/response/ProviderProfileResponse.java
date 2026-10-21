@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Getter
 public class ProviderProfileResponse {
-    private Long provider_id;
+    private Long providerId;
     private String businessName;
     private String phone;
     private String description;

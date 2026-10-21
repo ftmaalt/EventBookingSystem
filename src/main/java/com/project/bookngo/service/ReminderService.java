@@ -37,9 +37,8 @@ public class ReminderService {
         for (Bookings booking :upcoming) {
             long minutesToBooking = Duration.between(now, booking.getSession().getStartTime()).toMinutes();
             String timeFrame = reminderFrame(minutesToBooking);
-            if (Objects.equals(timeFrame, booking.getLastReminderStage())){
-                logger.info("Reminder already sent for stage '{}' for booking ID {}. Skipping booking.",
-                        timeFrame, booking.getBookingId());
+            if (timeFrame == null || Objects.equals(timeFrame, booking.getLastReminderStage())) {
+                logger.info("Reminder already sent for stage '{}' for booking ID {}. Skipping booking.", timeFrame, booking.getBookingId());
                 continue;
             }
             emailService.sendBookingReminders(booking.getUser().getEmail(), booking, timeFrame);

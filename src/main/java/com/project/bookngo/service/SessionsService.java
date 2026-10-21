@@ -12,6 +12,7 @@ import com.project.bookngo.model.enums.*;
 import com.project.bookngo.repository.ActivitiesRepository;
 import com.project.bookngo.repository.SessionsRepository;
 import com.project.bookngo.repository.UsersRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -117,6 +118,9 @@ public class SessionsService {
         logger.info("Updating status for session with ID: {}", id);
         Sessions session = sessionsRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Session with the id:" + id + " does not exist."));
+        if (session.getStatus() == SessionStatus.CANCELLED) {
+            return toResponse(session);
+        }
 
         if (session.getSpotsLeft() == 0) {
             session.setStatus(SessionStatus.FULL);
@@ -131,22 +135,36 @@ public class SessionsService {
         return toResponse(saved);
     }
 
+
+    @Transactional
     public String cancelSession(Long id) {
-        logger.info("Cancelling session with ID: {}", id);
-        Sessions session = sessionsRepository.findById(id)
-                .orElseThrow(() -> new InformationNotFoundException("Session with ID: " + id + " not found."));
+        Sessions session = sessionsRepository.findById(id).orElseThrow(() -> new InformationNotFoundException("Session with ID: " + id + " not found."));
 
         checkOwnership(session.getActivity());
 
-        boolean hasBookings = !session.getSpotsLeft().equals(session.getCapacity());
-        if (hasBookings) {
-            throw new BusinessConflictsException("Cannot delete a session with active bookings. Cancel it instead.");
+        if (session.getStatus() == SessionStatus.CANCELLED) {
+            throw new BusinessConflictsException("Session is already cancelled.");
         }
 
-        sessionsRepository.delete(session);
+        if (!session.getStartTime().isAfter(LocalDateTime.now())) {
+            throw new BusinessConflictsException("Cannot cancel a session that has already started.");
+        }
+
+        boolean hasBookings =
+                !session.getSpotsLeft().equals(session.getCapacity());
+
+        if (hasBookings) {
+            throw new BusinessConflictsException("Cannot cancel a session with active bookings.");
+        }
+
+        session.setStatus(SessionStatus.CANCELLED);
+        sessionsRepository.save(session);
+
         logger.info("Session with ID {} cancelled successfully", id);
-        return "Session with id:" + id + " has been deleted successfully.";
+
+        return "Session with ID: " + id + " has been cancelled.";
     }
+
 
     private SessionResponse toResponse(Sessions session) {
         return new SessionResponse(

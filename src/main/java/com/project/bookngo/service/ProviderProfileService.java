@@ -49,7 +49,7 @@ public class ProviderProfileService {
 
     private ProviderProfileResponse toResponse(ProviderProfile profile) {
         return new ProviderProfileResponse(
-                profile.getProvider_id(), profile.getBusinessName(), profile.getPhone(), profile.getDescription(), profile.getUpdatedAt(), profile.getCreatedAt()
+                profile.getProviderId(), profile.getBusinessName(), profile.getPhone(), profile.getDescription(), profile.getUpdatedAt(), profile.getCreatedAt()
         );
     }
 }

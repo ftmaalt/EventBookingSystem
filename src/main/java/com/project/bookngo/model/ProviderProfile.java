@@ -14,7 +14,7 @@ public class ProviderProfile {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long provider_id;
+    private Long providerId;
 
     @Column(nullable = false, length = 150)
     private String businessName;

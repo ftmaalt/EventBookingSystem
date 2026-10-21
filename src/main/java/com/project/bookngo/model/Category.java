@@ -23,6 +23,9 @@ public class Category {
     @Column(name = "description")
     private String description;
 
+    @Column(nullable = false)
+    private Boolean active = true;
+
     //    --- Relationship Mapping ---
     @ToString.Exclude
     @EqualsAndHashCode.Exclude

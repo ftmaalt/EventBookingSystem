@@ -113,7 +113,8 @@ public class ActivitiesService {
             throw new AccessDeniedException("You are not authorized to modify this activity.");
         }
         activity.setUpdatedBy(currentUserService.getCurrentUser().getEmail());
-        activitiesRepository.delete(activity);
+        activity.setStatus(ActivityStatus.INACTIVE);
+        activitiesRepository.save(activity);
         logger.info("Activity with ID {} deleted successfully", id);
         return "Activity with id:" + id + " has been deleted successfully.";
     }

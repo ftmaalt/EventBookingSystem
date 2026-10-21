@@ -1,20 +1,21 @@
 package com.project.bookngo.service;
 
+import com.project.bookngo.exception.BusinessConflictsException;
 import com.project.bookngo.exception.InformationNotFoundException;
-import com.project.bookngo.model.Category;
 import com.project.bookngo.model.Location;
 import com.project.bookngo.model.User;
 import com.project.bookngo.model.request.LocationRequest;
 import com.project.bookngo.model.response.LocationResponse;
 import com.project.bookngo.repository.LocationRepository;
 import com.project.bookngo.repository.UsersRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.AccessDeniedException;
+import org.springframework.security.access.AccessDeniedException;
 import java.util.List;
 
 @Service
@@ -62,7 +63,7 @@ public class LocationService {
         return locationRepository.findAll().stream().map(this::toResponse).toList();
     }
 
-    public LocationResponse update(Long id, LocationRequest request) throws AccessDeniedException {
+    public LocationResponse update(Long id, LocationRequest request){
         logger.info("Updating location with ID: {}", id);
         Location location = locationRepository.findById(id).orElseThrow(() ->
                 new InformationNotFoundException("Location with the id:" + id + " does not exist, please try again with another id"));
@@ -87,19 +88,30 @@ public class LocationService {
         return toResponse(updatedLocation);
     }
 
+
+    @Transactional
     public String delete(Long id) throws AccessDeniedException {
-        logger.info("Deleting location with ID: {}", id);
-        Location location = locationRepository.findById(id).orElseThrow(() ->
-                new InformationNotFoundException("Location with the id:" + id + " does not exist, please try again with another id"));
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user= usersRepository.findUserByEmail(email);
-        if (!location.getProvider().getId().equals(user.getId())){
-            throw new AccessDeniedException("You are not authorized to modify this location");
+        Location location = locationRepository.findById(id)
+                .orElseThrow(() -> new InformationNotFoundException("Location with ID: " + id + " does not exist."));
+
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication().getName();
+
+        User user = usersRepository.findUserByEmail(email);
+
+        if (!location.getProvider().getId().equals(user.getId())) {
+            throw new AccessDeniedException("You are not authorized to modify this location.");
         }
-        locationRepository.delete(location);
-        logger.info("Location with ID {} deleted successfully", id);
-        return "Location with id:"+ id +"has been deleted successfully";
+
+        if (Boolean.FALSE.equals(location.getActive())) {
+            throw new BusinessConflictsException("Location is already inactive.");
+        }
+        location.setActive(false);
+        locationRepository.save(location);
+        logger.info("Location with ID {} deactivated successfully", id);
+        return "Location with ID: " + id + " has been deactivated.";
     }
+
 
     private LocationResponse toResponse(Location location) {
         return new LocationResponse(

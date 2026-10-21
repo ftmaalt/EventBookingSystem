@@ -1,5 +1,6 @@
 package com.project.bookngo.service;
 
+import com.project.bookngo.exception.BusinessConflictsException;
 import com.project.bookngo.exception.InformationNotFoundException;
 import com.project.bookngo.model.Category;
 import com.project.bookngo.model.request.CategoryRequest;
@@ -9,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -51,15 +53,23 @@ public class CategoryService {
         return toResponse(category);
     }
 
-    public String deleteCategory(Long category_id){
-        logger.info("Deleting category with ID: {}", category_id);
-        Category category= categoryRepository.findById(category_id).orElseThrow(()->
-                new InformationNotFoundException("Category with the id:"+ category_id +" does not exist, please try again with another category id")
-        );
-        categoryRepository.delete(category);
-        logger.info("Category with ID {} deleted successfully", category_id);
-        return "Category with id:"+ category_id +"has been deleted successfully";
+
+    @Transactional
+    public String deleteCategory(Long category_id) {
+        Category category = categoryRepository.findById(category_id).orElseThrow(() -> new InformationNotFoundException("Category with ID: " + category_id + " does not exist."));
+
+        if (Boolean.FALSE.equals(category.getActive())) {
+            throw new BusinessConflictsException("Category is already inactive.");
+        }
+
+        category.setActive(false);
+        categoryRepository.save(category);
+
+        logger.info("Category with ID {} deactivated successfully", category_id);
+
+        return "Category with ID: " + category_id + " has been deactivated.";
     }
+
 
     private CategoryResponse toResponse(Category categoryObject) {
         return new CategoryResponse(categoryObject.getId(), categoryObject.getCategoryName(), categoryObject.getDescription());
