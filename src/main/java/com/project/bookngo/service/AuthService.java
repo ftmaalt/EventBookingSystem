@@ -83,6 +83,10 @@ public class AuthService {
             logger.warn("Login attempt failed: user not found");
             throw new InvalidCredentials("The Email/Password you entered is not correct. Please try again.");
         }
+        if (!passwordEncoder.matches(loginRequest.getPassword(), loginAttemptUser.getPasswordHash())) {
+            logger.warn("Login attempt failed: incorrect password for user ID: {}", loginAttemptUser.getId());
+            throw new InvalidCredentials("The Email/Password you entered is not correct. Please try again.");
+        }
 
         if (loginAttemptUser.getStatus() == UserStatus.PENDING_VERIFICATION) {
             throw new VerificationRequiredException("Please verify your email before attempting to login.");
@@ -90,18 +94,17 @@ public class AuthService {
 
         if ((loginAttemptUser.getStatus() == UserStatus.BLACKLISTED)){
             logger.warn("Login attempt blocked for blocked user ID: {} with status: {}", loginAttemptUser.getId(), loginAttemptUser.getStatus());
-            throw new InvalidCredentials("Due to violations. Your account has been permanently blocked.");
+            throw new InvalidCredentials("Due to violations, your account has been permanently blocked.");
         }
+
+
 
         if (loginAttemptUser.getStatus() == UserStatus.DEACTIVATED) {
             logger.warn("Login attempt blocked for inactive user ID: {} with status: {}", loginAttemptUser.getId(), loginAttemptUser.getStatus());
             throw new InvalidCredentials("This account has been deactivated. Please contact support.");
         }
 
-        if (!passwordEncoder.matches(loginRequest.getPassword(), loginAttemptUser.getPasswordHash())) {
-            logger.warn("Login attempt failed: incorrect password for user ID: {}", loginAttemptUser.getId());
-            throw new InvalidCredentials("The Email/Password you entered is not correct. Please try again.");
-        }
+
         MyUserDetails userDetails= new MyUserDetails(loginAttemptUser);
        final String token= jwtUtils.generateJwtToken(userDetails);
         logger.info("Successful login for user ID: {}", loginAttemptUser.getId());
@@ -116,7 +119,6 @@ public class AuthService {
             String resetToken = tokenService.generateToken(user, TokenType.PASSWORD_RESET);
             emailService.sendPasswordResetEmail(user.getEmail(), resetToken);
         }
-            // sending a valid message without actually sending the email to ensure that no data leak happen
     return new GenericMessageResponse("An message was sent to the email with the password reset link.");
     }
     public GenericMessageResponse resetPassword(ResetPasswordRequest passwordRequest){
@@ -136,7 +138,7 @@ public GenericMessageResponse changePassword(ChangePasswordRequest request) {
             throw new InvalidCredentials("The Password you entered is not correct. Please try again.");
     }else{
         if (request.getCurrentPassword().equals(request.getNewPassword())){
-            throw new IllegalArgumentException("Your new Password shouldn't match your current password.");
+                throw new IllegalArgumentException("Your new Password shouldn't match your current password.");
         }
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         usersRepository.save(user);

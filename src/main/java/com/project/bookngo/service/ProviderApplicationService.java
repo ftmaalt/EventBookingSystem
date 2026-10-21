@@ -1,5 +1,6 @@
 package com.project.bookngo.service;
 
+import com.project.bookngo.exception.BusinessConflictsException;
 import com.project.bookngo.exception.InformationExistsException;
 import com.project.bookngo.exception.InformationNotFoundException;
 import com.project.bookngo.model.ProviderApplication;
@@ -131,7 +132,7 @@ public class ProviderApplicationService {
         logger.info("Approving provider application with ID: {}", id);
         ProviderApplication application= applicationRepository.findById(id).orElseThrow(() -> new InformationNotFoundException("Application with id:" + id + " does not exist."));
         if (application.getStatus()!=ApplicationStatus.PENDING){
-            throw new IllegalArgumentException("Only pending applications can be approved.");
+            throw new BusinessConflictsException("Only pending applications can be approved.");
         }
         User admin = getCurrentUser();
         application.setStatus(ApplicationStatus.APPROVED);
@@ -164,8 +165,7 @@ public class ProviderApplicationService {
         logger.info("Rejecting provider application with ID: {}", id);
         ProviderApplication application= applicationRepository.findById(id).orElseThrow(() -> new InformationNotFoundException("Application with id:" + id + " does not exist."));
         if (application.getStatus()!=ApplicationStatus.PENDING){
-            throw new IllegalArgumentException("Only pending applications can be approved.");
-        }
+            throw new BusinessConflictsException("Only pending applications can be rejected.");        }
         User admin = getCurrentUser();
         application.setStatus(ApplicationStatus.REJECTED);
         application.setReviewNote(request.getReviewNote());
@@ -180,11 +180,7 @@ public class ProviderApplicationService {
             notificationMessage += " Note: " + application.getReviewNote();
         }
 
-        notificationService.create(
-                applicant,
-                "provider-application-rejected",
-                notificationMessage
-        );
+        notificationService.create(applicant, "provider-application-rejected", notificationMessage);
 
         return toResponse(application);
     }

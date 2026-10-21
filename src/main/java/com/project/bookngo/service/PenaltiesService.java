@@ -1,5 +1,6 @@
 package com.project.bookngo.service;
 
+import com.project.bookngo.exception.BusinessConflictsException;
 import com.project.bookngo.exception.InformationNotFoundException;
 import com.project.bookngo.exception.InvalidCredentials;
 import com.project.bookngo.model.Penalties;
@@ -11,6 +12,7 @@ import com.project.bookngo.model.response.GenericMessageResponse;
 import com.project.bookngo.repository.PenaltiesRepository;
 import com.project.bookngo.repository.UsersRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -37,12 +39,10 @@ public class PenaltiesService {
         boolean isOwner = penalty.getUser().getId().equals(current.getId());
         boolean isAdmin = current.getRole() == UserRole.ADMIN;
         if (!isOwner && !isAdmin) {
-            throw new InvalidCredentials("You are not authorized to pay this penalty.");
-        }
+            throw new AccessDeniedException("You are not authorized to pay this penalty.");        }
 
         if (penalty.getStatus() == PenaltyStatus.PAID) {
-            throw new IllegalArgumentException("This penalty has already been paid.");
-        }
+            throw new BusinessConflictsException("This penalty has already been paid.");        }
 
         penalty.setStatus(PenaltyStatus.PAID);
         penalty.setPaidAt(LocalDateTime.now());

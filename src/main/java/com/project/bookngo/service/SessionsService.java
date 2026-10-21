@@ -1,7 +1,7 @@
 package com.project.bookngo.service;
 
+import com.project.bookngo.exception.BusinessConflictsException;
 import com.project.bookngo.exception.InformationNotFoundException;
-import com.project.bookngo.exception.InvalidCredentials;
 import com.project.bookngo.exception.InvalidTimeSpecificationException;
 import com.project.bookngo.model.Activities;
 import com.project.bookngo.model.Sessions;
@@ -13,6 +13,7 @@ import com.project.bookngo.repository.ActivitiesRepository;
 import com.project.bookngo.repository.SessionsRepository;
 import com.project.bookngo.repository.UsersRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
@@ -37,7 +38,7 @@ public class SessionsService {
 
     private void checkOwnership(Activities activity) {
         if (!activity.getProvider().getId().equals(getCurrentUser().getId())) {
-            throw new InvalidCredentials("You are not authorized to modify this activity.");
+            throw new AccessDeniedException("You are not authorized to modify this activity.");
         }
     }
 
@@ -96,16 +97,14 @@ public class SessionsService {
         if (LocalDateTime.now().plusHours(24).isAfter(session.getStartTime())) {
             throw new InvalidTimeSpecificationException("Cannot update session: start time must be at least 24 hours from now.");
         }
-        // TODO:only block capacity changes if bookings already exist (spotsLeft has moved from capacity)
         if (!request.getCapacity().equals(session.getCapacity()) && !session.getSpotsLeft().equals(session.getCapacity())) {
-            throw new IllegalArgumentException("Cannot change capacity once bookings exist for this session.");
+            throw new BusinessConflictsException("Cannot change capacity once bookings exist for this session.");
         }
 
         session.setStartTime(request.getStartTime());
         session.setEndTime(request.getEndTime());
         session.setUpdatedAt(LocalDateTime.now());
         if (session.getSpotsLeft().equals(session.getCapacity())) {
-            // TODO:Update For booking.. safe to update both together
             session.setCapacity(request.getCapacity());
             session.setSpotsLeft(request.getCapacity());
         }
@@ -142,7 +141,7 @@ public class SessionsService {
 
         boolean hasBookings = !session.getSpotsLeft().equals(session.getCapacity());
         if (hasBookings) {
-            throw new IllegalArgumentException("Cannot delete a session with active bookings. Cancel it instead.");
+            throw new BusinessConflictsException("Cannot delete a session with active bookings. Cancel it instead.");
         }
 
         sessionsRepository.delete(session);

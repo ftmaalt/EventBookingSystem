@@ -1,7 +1,6 @@
 package com.project.bookngo.service;
 
 import com.project.bookngo.exception.InformationNotFoundException;
-import com.project.bookngo.exception.InvalidCredentials;
 import com.project.bookngo.model.Activities;
 import com.project.bookngo.model.Category;
 import com.project.bookngo.model.Location;
@@ -13,10 +12,10 @@ import com.project.bookngo.repository.ActivitiesRepository;
 import com.project.bookngo.repository.CategoryRepository;
 import com.project.bookngo.repository.LocationRepository;
 import com.project.bookngo.repository.UsersRepository;
-import com.project.bookngo.security.MyUserDetails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
@@ -87,7 +86,8 @@ public class ActivitiesService {
                 .orElseThrow(() -> new InformationNotFoundException("Activity with the id:" + id + " does not exist."));
 
         if (!activity.getProvider().getId().equals(getCurrentUser().getId())) {
-            throw new InvalidCredentials("You are not authorized to modify this activity.");
+            throw new AccessDeniedException(
+                    "You are not authorized to modify this activity.");
         }
 
         Category category = categoryRepository.findById(request.getCategoryId())
@@ -113,7 +113,7 @@ public class ActivitiesService {
         Activities activity = activitiesRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Activity with the id:" + id + " does not exist."));
         if (!activity.getProvider().getId().equals(getCurrentUser().getId())) {
-            throw new InvalidCredentials("You are not authorized to modify this activity.");
+            throw new AccessDeniedException("You are not authorized to modify this activity.");
         }
         activity.setUpdatedBy(getCurrentUser().getEmail());
         activitiesRepository.delete(activity);

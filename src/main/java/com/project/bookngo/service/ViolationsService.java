@@ -8,6 +8,7 @@ import com.project.bookngo.model.request.ReportViolationRequest;
 import com.project.bookngo.model.response.GenericMessageResponse;
 import com.project.bookngo.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -66,7 +67,7 @@ public class ViolationsService {
 
         if (reporter.getRole() == UserRole.PROVIDER) {
             if (session == null || !session.getActivity().getProvider().getId().equals(reporter.getId())) {
-                throw new InvalidCredentials("You can only report violations on your own sessions.");
+                throw new AccessDeniedException("You can only report violations on your own sessions.");
             }
         }
 
