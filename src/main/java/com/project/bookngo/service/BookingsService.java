@@ -37,9 +37,6 @@ public class BookingsService {
     private SessionsRepository sessionsRepository;
 
     @Autowired
-    private UsersRepository usersRepository;
-
-    @Autowired
     private EmailService emailService;
 
     @Autowired

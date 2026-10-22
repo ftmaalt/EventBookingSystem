@@ -35,7 +35,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth.requestMatchers(
+                .authorizeHttpRequests(auth -> auth .requestMatchers(
                                 "/api/auth/verify",
                                 "/api/auth/login",
                                 "/api/auth/register",
@@ -47,7 +47,11 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs",
                                 "/v3/api-docs/**"
-                        ).permitAll().requestMatchers(HttpMethod.GET,
+                        ).permitAll()
+                        .requestMatchers("/api/sessions/*/waitlist",
+                                "/api/sessions/*/waitlist/**")
+                        .authenticated()
+                        .requestMatchers(HttpMethod.GET,
                                 "/api/categories/**",
                                 "/api/locations/**",
                                 "/api/activities/**",
