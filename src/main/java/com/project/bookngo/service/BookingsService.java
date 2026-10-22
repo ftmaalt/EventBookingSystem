@@ -15,6 +15,7 @@ import com.project.bookngo.model.response.BookingResponse;
 import com.project.bookngo.repository.BookingsRepository;
 import com.project.bookngo.repository.SessionsRepository;
 import com.project.bookngo.repository.UsersRepository;
+import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -49,6 +50,9 @@ public class BookingsService {
 
     @Autowired
     private CurrentUserService currentUserService;
+
+    @Autowired
+    private EntityManager entityManager;
 
     /**
      * Creates a new booking for the currently authenticated user.
@@ -128,7 +132,11 @@ public class BookingsService {
         Bookings booking = bookingsRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Booking with the id:" + id + " does not exist."));
         checkOwnershipOrAdmin(booking);
+        Sessions session = sessionsRepository.findByIdForUpdate(booking.getSession().getId())
+                .orElseThrow(() -> new InformationNotFoundException("Session not found."));
 
+        entityManager.refresh(booking);
+        checkOwnershipOrAdmin(booking);
         if (booking.getStatus() == BookingStatus.CANCELLED) {
             throw new BusinessConflictsException("This booking is already cancelled.");
         }
@@ -136,8 +144,6 @@ public class BookingsService {
             throw new BusinessConflictsException("Cannot cancel a completed booking.");
         }
 
-        Sessions session = sessionsRepository.findByIdForUpdate(booking.getSession().getId())
-                .orElseThrow(() -> new InformationNotFoundException("Session not found."));
         if (!session.getStartTime().isAfter(LocalDateTime.now())) {
             throw new BusinessConflictsException("Cannot cancel a booking after the session has started.");
         }
@@ -153,6 +159,10 @@ public class BookingsService {
         logger.info("Booking with ID {} cancelled successfully", id);
         booking.setUpdatedBy(currentUserService.getCurrentUser().getEmail());
         bookingsRepository.save(booking);
+
+        auditLogService.logAction("BOOKING_CANCELLED", currentUserService.getCurrentUser().getEmail(), "Booking", booking.getBookingId(), "booking was cancelled by user successfully");
+
+        logger.info("Booking with id:" + id + " has been cancelled successfully.");
 
         emailService.sendSessionCancelledEmail(booking.getUser().getEmail(), booking);
         return "Booking with id:" + id + " has been cancelled successfully.";
