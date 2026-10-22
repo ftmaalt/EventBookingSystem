@@ -2,7 +2,6 @@ package com.project.bookngo.service;
 
 import com.project.bookngo.exception.BusinessConflictsException;
 import com.project.bookngo.exception.InformationNotFoundException;
-import com.project.bookngo.exception.InvalidCredentials;
 import com.project.bookngo.model.Penalties;
 import com.project.bookngo.model.User;
 import com.project.bookngo.model.enums.PenaltyStatus;
@@ -13,7 +12,6 @@ import com.project.bookngo.repository.PenaltiesRepository;
 import com.project.bookngo.repository.UsersRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;

@@ -1,7 +1,6 @@
 package com.project.bookngo.model.request;
 
-import com.project.bookngo.model.Category;
-import com.project.bookngo.model.Location;
+
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;

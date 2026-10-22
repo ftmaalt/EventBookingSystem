@@ -2,7 +2,6 @@ package com.project.bookngo.controller;
 
 import com.project.bookngo.model.request.ActivityRequest;
 import com.project.bookngo.model.response.ActivityResponse;
-import com.project.bookngo.model.response.CategoryResponse;
 import com.project.bookngo.service.ActivitiesService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -16,7 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/activities")

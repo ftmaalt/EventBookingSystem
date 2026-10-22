@@ -1,6 +1,5 @@
 package com.project.bookngo.repository;
 
-import com.project.bookngo.model.Activities;
 import com.project.bookngo.model.Bookings;
 import com.project.bookngo.model.enums.BookingStatus;
 import org.springframework.data.domain.Page;

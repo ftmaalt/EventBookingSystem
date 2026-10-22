@@ -1,6 +1,5 @@
 package com.project.bookngo.repository;
 
-import com.project.bookngo.model.Activities;
 import com.project.bookngo.model.Sessions;
 import com.project.bookngo.model.enums.SessionStatus;
 import jakarta.persistence.LockModeType;

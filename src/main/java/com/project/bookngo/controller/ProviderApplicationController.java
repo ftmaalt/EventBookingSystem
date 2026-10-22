@@ -2,7 +2,6 @@ package com.project.bookngo.controller;
 
 import com.project.bookngo.model.request.ProviderApplicationRequest;
 import com.project.bookngo.model.request.ReviewApplicationRequest;
-import com.project.bookngo.model.response.ActivityResponse;
 import com.project.bookngo.model.response.ProviderApplicationResponse;
 import com.project.bookngo.service.ProviderApplicationService;
 import jakarta.validation.Valid;

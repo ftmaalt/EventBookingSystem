@@ -1,13 +1,10 @@
 package com.project.bookngo.model.request;
 
-import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
 @Setter
 @Getter
 public class ProviderProfileRequest {

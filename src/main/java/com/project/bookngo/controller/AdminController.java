@@ -3,7 +3,6 @@ package com.project.bookngo.controller;
 import com.project.bookngo.model.request.UpdateUserRoleRequest;
 import com.project.bookngo.model.response.GenericMessageResponse;
 import com.project.bookngo.service.AdminService;
-import com.project.bookngo.service.AuthService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

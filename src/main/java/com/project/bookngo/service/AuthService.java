@@ -3,7 +3,6 @@ package com.project.bookngo.service;
 import com.project.bookngo.model.enums.UserRole;
 import com.project.bookngo.model.enums.UserStatus;
 import com.project.bookngo.exception.InformationExistsException;
-import com.project.bookngo.exception.InformationNotFoundException;
 import com.project.bookngo.exception.InvalidCredentials;
 import com.project.bookngo.exception.VerificationRequiredException;
 import com.project.bookngo.model.User;

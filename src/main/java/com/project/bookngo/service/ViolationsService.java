@@ -1,7 +1,6 @@
 package com.project.bookngo.service;
 
 import com.project.bookngo.exception.InformationNotFoundException;
-import com.project.bookngo.exception.InvalidCredentials;
 import com.project.bookngo.model.*;
 import com.project.bookngo.model.enums.*;
 import com.project.bookngo.model.request.ReportViolationRequest;
@@ -9,7 +8,6 @@ import com.project.bookngo.model.response.GenericMessageResponse;
 import com.project.bookngo.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;

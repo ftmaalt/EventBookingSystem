@@ -2,7 +2,6 @@ package com.project.bookngo.model;
 
 import com.project.bookngo.model.enums.PenaltyStatus;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 

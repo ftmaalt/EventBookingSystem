@@ -2,7 +2,6 @@ package com.project.bookngo.model.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 @AllArgsConstructor
 

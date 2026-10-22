@@ -1,7 +1,5 @@
 package com.project.bookngo.model.response;
 
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

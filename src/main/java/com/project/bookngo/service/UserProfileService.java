@@ -1,7 +1,6 @@
 package com.project.bookngo.service;
 
-import com.project.bookngo.exception.InformationNotFoundException;
-import com.project.bookngo.model.ProviderProfile;
+
 import com.project.bookngo.model.User;
 import com.project.bookngo.model.request.UserProfileRequest;
 import com.project.bookngo.model.response.UserProfileResponse;
@@ -9,7 +8,6 @@ import com.project.bookngo.repository.UsersRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
