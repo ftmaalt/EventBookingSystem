@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,6 +19,7 @@ public interface BookingsRepository extends JpaRepository<Bookings, Long> {
     List<Bookings> findByStatusAndSession_StartTimeBetween(BookingStatus status, LocalDateTime start, LocalDateTime end);
     Optional<Bookings> findByBookingIdAndUserId(Long bookingId, Long userId);
     Optional<Bookings> findByUserIdAndSessionIdAndStatus(Long userId, Long sessionId, BookingStatus status);
+    boolean existsByUserIdAndSessionIdAndStatusIn(Long userId, Long sessionId, Collection<BookingStatus> statuses);
     @Query("SELECT b FROM Bookings b WHERE b.user.id = :userId AND (:status IS NULL OR b.status = :status)")
     Page<Bookings> findMyBookings(@Param("userId") Long userId, @Param("status") BookingStatus status, Pageable pageable);
 }
