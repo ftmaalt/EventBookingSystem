@@ -64,6 +64,7 @@ public class BookingsService {
                 .orElseThrow(() -> new InformationNotFoundException("Session with ID: " + request.getSessionId() + " not found."));
         boolean alreadyBooked = bookingsRepository.findByUserIdAndSessionIdAndStatus(user.getId(), session.getId(), BookingStatus.CONFIRMED)
                 .isPresent();
+
         if (alreadyBooked) {
             throw new BusinessConflictsException("You already have a booking for this session.");
         }

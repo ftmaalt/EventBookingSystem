@@ -1,107 +1,277 @@
 package com.project.bookngo.service;
 
+import com.project.bookngo.exception.BusinessConflictsException;
+import com.project.bookngo.exception.InformationNotFoundException;
+import com.project.bookngo.exception.InvalidTimeSpecificationException;
+import com.project.bookngo.model.Activities;
 import com.project.bookngo.model.Bookings;
 import com.project.bookngo.model.Sessions;
-import com.project.bookngo.model.enums.BookingStatus;
-import com.project.bookngo.model.enums.BookingType;
-import com.project.bookngo.model.enums.SessionStatus;
+import com.project.bookngo.model.User;
+import com.project.bookngo.model.enums.*;
 import com.project.bookngo.model.request.BookingRequest;
+import com.project.bookngo.model.response.BookingResponse;
 import com.project.bookngo.repository.BookingsRepository;
 import com.project.bookngo.repository.SessionsRepository;
+
+import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 class BookingsServiceTest {
 
-    @Autowired
-    private BookingsService bookingsService;
-
-    @Autowired
+    @Mock
     private BookingsRepository bookingsRepository;
 
-    @Autowired
+    @Mock
     private SessionsRepository sessionsRepository;
 
-    @Test
-    @DisplayName("Should not allow booking for a cancelled session")
-    void shouldNotAllowBookingForCancelledSession() {
-        Sessions session = sessionsRepository.findAll().stream()
-                .filter(s -> s.getStatus() == SessionStatus.CANCELLED)
-                .findFirst()
-                .orElse(null);
+    @Mock
+    private CurrentUserService currentUserService;
 
-        if (session != null) {
-            BookingRequest request = new BookingRequest();
-            request.setSessionId(session.getId());
-            request.setParticipants(1);
-            request.setBookingType(BookingType.INDIVIDUAL);
+    @Mock
+    private EmailService emailService;
 
-            assertThrows(Exception.class, () -> bookingsService.createBooking(request));
-        }
-    }
+    @Mock
+    private NotificationService notificationService;
 
+    @Mock
+    private AuditLogService auditLogService;
 
-    @Test
-    @DisplayName("Should not allow booking when a session is full")
-    void shouldNotAllowBookingWhenSessionIsFull() {
-        Sessions session = sessionsRepository.findAll().stream()
-                .filter(s -> s.getSpotsLeft() == 0)
-                .findFirst()
-                .orElse(null);
+    @Mock
+    private EntityManager entityManager;
 
-        if (session != null) {
-            BookingRequest request = new BookingRequest();
-            request.setSessionId(session.getId());
-            request.setParticipants(1);
-            request.setBookingType(BookingType.INDIVIDUAL);
+    @InjectMocks
+    private BookingsService bookingsService;
 
-            assertThrows(Exception.class, () -> bookingsService.createBooking(request));
-        }
-    }
-    @Test
-    @DisplayName("Should not allow a user to book the same session twice")
-    void shouldNotAllowDoubleBooking() {
+    private User customer;
+    private Sessions session;
+    private BookingRequest request;
 
-        Bookings existingBooking = bookingsRepository.findAll().stream()
-                .filter(booking -> booking.getStatus() == BookingStatus.CONFIRMED)
-                .findFirst()
-                .orElseThrow(() ->
-                        new AssertionError("No confirmed booking exists in the test database."));
+    @BeforeEach
+    void setUp() {
 
-        authenticateAs(existingBooking.getUser().getEmail());
+        // Test customer
+        customer = new User();
+        customer.setId(1L);
+        customer.setFullName("Sara Mohamed");
+        customer.setEmail("customer@test.com");
+        customer.setRole(UserRole.USER);
+        customer.setStatus(UserStatus.ACTIVE);
 
-        BookingRequest request = new BookingRequest();
-        request.setSessionId(existingBooking.getSession().getId());
+        // Test activity
+        Activities activity = new Activities();
+        activity.setId(10L);
+        activity.setTitle("Kayaking");
+        activity.setPricePerPerson(
+                new BigDecimal("15.000")
+        );
+        activity.setStatus(ActivityStatus.ACTIVE);
+
+        // Test session
+        session = new Sessions();
+        session.setId(100L);
+        session.setActivity(activity);
+        session.setCapacity(5);
+        session.setSpotsLeft(5);
+        session.setStatus(SessionStatus.SCHEDULED);
+        session.setStartTime(
+                LocalDateTime.now().plusDays(3)
+        );
+        session.setEndTime(
+                LocalDateTime.now().plusDays(3).plusHours(2)
+        );
+
+        // Test request
+        request = new BookingRequest();
+        request.setSessionId(session.getId());
         request.setParticipants(1);
         request.setBookingType(BookingType.INDIVIDUAL);
-
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> bookingsService.createBooking(request));
     }
 
+    private void mockBookingContext() {
+        when(currentUserService.getCurrentUser())
+                .thenReturn(customer);
+
+        when(sessionsRepository.findByIdForUpdate(100L))
+                .thenReturn(Optional.of(session));
+    }
 
     @Test
-    @DisplayName("Should find bookings for an existing user")
-    void shouldFindBookingsByUser() {
-        if (bookingsRepository.count() > 0) {
-            Bookings booking = bookingsRepository.findAll().get(0);
-            assertNotNull(bookingsRepository.findByUserId(booking.getUser().getId()));
-        }
+    @DisplayName("Should reject booking for cancelled session")
+    void shouldNotAllowBookingForCancelledSession() {
+
+        session.setStatus(SessionStatus.CANCELLED);
+        mockBookingContext();
+
+        assertThrows(
+                InvalidTimeSpecificationException.class,
+                () -> bookingsService.createBooking(request)
+        );
+
+        verify(bookingsRepository, never())
+                .save(any(Bookings.class));
     }
 
-    private void authenticateAs(String email) {
+    @Test
+    @DisplayName("Should reject booking when session is full")
+    void shouldNotAllowBookingWhenSessionIsFull() {
 
-        UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken( email, null);
-        SecurityContextHolder.getContext()
-                .setAuthentication(authentication);
+        session.setSpotsLeft(0);
+        session.setStatus(SessionStatus.FULL);
+        mockBookingContext();
+
+        assertThrows(
+                BusinessConflictsException.class,
+                () -> bookingsService.createBooking(request)
+        );
+
+        verify(bookingsRepository, never())
+                .save(any(Bookings.class));
+    }
+
+    @Test
+    @DisplayName("Should reject duplicate booking")
+    void shouldNotAllowDoubleBooking() {
+
+        mockBookingContext();
+
+        Bookings existingBooking = new Bookings();
+        existingBooking.setBookingId(200L);
+        existingBooking.setUser(customer);
+        existingBooking.setSession(session);
+        existingBooking.setStatus(BookingStatus.CONFIRMED);
+
+        when(bookingsRepository
+                .findByUserIdAndSessionIdAndStatus(
+                        1L,
+                        100L,
+                        BookingStatus.CONFIRMED
+                ))
+                .thenReturn(Optional.of(existingBooking));
+
+        assertThrows(
+                BusinessConflictsException.class,
+                () -> bookingsService.createBooking(request)
+        );
+
+        verify(bookingsRepository, never())
+                .save(any(Bookings.class));
+    }
+
+    @Test
+    @DisplayName("Should create booking and decrease available spots")
+    void shouldCreateBookingSuccessfully() {
+
+        mockBookingContext();
+
+        when(bookingsRepository.save(any(Bookings.class)))
+                .thenAnswer(invocation -> {
+                    Bookings booking = invocation.getArgument(0);
+                    booking.setBookingId(200L);
+                    return booking;
+                });
+
+        BookingResponse response =
+                bookingsService.createBooking(request);
+
+        assertNotNull(response);
+        assertEquals(200L, response.getId());
+        assertEquals(BookingStatus.CONFIRMED,
+                response.getStatus());
+
+        assertEquals(4, session.getSpotsLeft());
+
+        verify(sessionsRepository).save(session);
+        verify(bookingsRepository).save(any(Bookings.class));
+
+        verify(emailService).sendBookingVerifiedEmail(
+                eq(customer.getEmail()),
+                any(Bookings.class)
+        );
+    }
+
+    @Test
+    @DisplayName("Should return 404 exception for missing session")
+    void shouldRejectNonexistentSession() {
+
+        when(currentUserService.getCurrentUser())
+                .thenReturn(customer);
+
+        when(sessionsRepository.findByIdForUpdate(100L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                InformationNotFoundException.class,
+                () -> bookingsService.createBooking(request)
+        );
+
+        verify(bookingsRepository, never())
+                .save(any(Bookings.class));
+    }
+
+    @Test
+    @DisplayName("Should retrieve bookings belonging to current user")
+    void shouldFindBookingsByUser() {
+
+        Bookings booking = new Bookings();
+        booking.setBookingId(200L);
+        booking.setUser(customer);
+        booking.setSession(session);
+        booking.setParticipants(1);
+        booking.setBookingType(BookingType.INDIVIDUAL);
+        booking.setStatus(BookingStatus.CONFIRMED);
+        booking.setPaymentStatus(
+                PaymentStatus.PENDING_PAYMENT
+        );
+        booking.setSubtotal(
+                new BigDecimal("15.000")
+        );
+        booking.setTotalPrice(
+                new BigDecimal("15.000")
+        );
+
+        PageRequest pageable = PageRequest.of(0, 10);
+
+        when(currentUserService.getCurrentUser())
+                .thenReturn(customer);
+
+        when(bookingsRepository.findMyBookings(
+                1L,
+                null,
+                pageable
+        )).thenReturn(
+                new PageImpl<>(List.of(booking))
+        );
+
+        Page<BookingResponse> result =
+                bookingsService.getMyBookings(null, pageable);
+
+        assertEquals(1, result.getTotalElements());
+        assertEquals(200L, result.getContent().get(0).getId());
+
+        verify(bookingsRepository).findMyBookings(
+                1L,
+                null,
+                pageable
+        );
     }
 }

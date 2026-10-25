@@ -6,7 +6,6 @@ import com.project.bookngo.model.User;
 import com.project.bookngo.model.response.NotificationResponse;
 import com.project.bookngo.repository.NotificationRepository;
 import com.project.bookngo.repository.UsersRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

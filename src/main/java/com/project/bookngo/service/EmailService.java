@@ -4,7 +4,6 @@ import com.project.bookngo.model.Bookings;
 import com.project.bookngo.model.ProviderApplication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;

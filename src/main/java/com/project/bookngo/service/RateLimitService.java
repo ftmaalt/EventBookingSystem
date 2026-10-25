@@ -3,11 +3,9 @@ package com.project.bookngo.service;
 import com.project.bookngo.config.RateLimitConfig;
 import com.project.bookngo.exception.RateLimitExceededException;
 import com.project.bookngo.utilities.RequestTracker;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service

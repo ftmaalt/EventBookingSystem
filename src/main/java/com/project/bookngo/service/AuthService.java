@@ -13,7 +13,6 @@ import com.project.bookngo.model.response.GenericMessageResponse;
 import com.project.bookngo.repository.UsersRepository;
 import com.project.bookngo.security.JwtUtils;
 import com.project.bookngo.security.MyUserDetails;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

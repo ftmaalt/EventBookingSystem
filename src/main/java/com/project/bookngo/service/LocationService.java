@@ -9,7 +9,6 @@ import com.project.bookngo.model.response.LocationResponse;
 import com.project.bookngo.repository.LocationRepository;
 import com.project.bookngo.repository.UsersRepository;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;

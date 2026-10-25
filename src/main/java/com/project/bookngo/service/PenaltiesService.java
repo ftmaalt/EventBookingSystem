@@ -10,7 +10,6 @@ import com.project.bookngo.model.enums.UserStatus;
 import com.project.bookngo.model.response.GenericMessageResponse;
 import com.project.bookngo.repository.PenaltiesRepository;
 import com.project.bookngo.repository.UsersRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 

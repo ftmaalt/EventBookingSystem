@@ -3,7 +3,6 @@ package com.project.bookngo.service;
 import com.project.bookngo.model.AuditLog;
 import com.project.bookngo.repository.AuditLogRepository;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;

@@ -11,7 +11,6 @@ import com.project.bookngo.model.enums.ActivityStatus;
 import com.project.bookngo.repository.ActivitiesRepository;
 import com.project.bookngo.repository.CategoryRepository;
 import com.project.bookngo.repository.LocationRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
