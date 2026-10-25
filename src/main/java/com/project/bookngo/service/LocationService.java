@@ -9,7 +9,6 @@ import com.project.bookngo.model.response.LocationResponse;
 import com.project.bookngo.repository.LocationRepository;
 import com.project.bookngo.repository.UsersRepository;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
@@ -21,14 +20,20 @@ import java.util.List;
 @Service
 public class LocationService {
 
-    @Autowired
-    private LocationRepository locationRepository;
-    @Autowired
-    private UsersRepository usersRepository;
-    @Autowired
-    private GeocodingService geocodingService;
+
+    private final LocationRepository locationRepository;
+
+    private final UsersRepository usersRepository;
+
+    private final GeocodingService geocodingService;
 
     private static final Logger logger = LoggerFactory.getLogger(LocationService.class);
+
+    public LocationService(LocationRepository locationRepository, UsersRepository usersRepository, GeocodingService geocodingService) {
+        this.locationRepository = locationRepository;
+        this.usersRepository = usersRepository;
+        this.geocodingService = geocodingService;
+    }
 
     public LocationResponse create(LocationRequest request) {
         logger.info("Creating location");

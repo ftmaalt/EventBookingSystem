@@ -18,6 +18,8 @@ public interface ActivitiesRepository extends JpaRepository<Activities,Long> {
     @Query("""
     SELECT a FROM Activities a
     WHERE a.status = com.project.bookngo.model.enums.ActivityStatus.ACTIVE
+      AND a.category.active = true
+      AND a.location.active = true
       AND (:categoryId IS NULL OR a.category.id = :categoryId)
       AND (:locationId IS NULL OR a.location.id = :locationId)
     """)

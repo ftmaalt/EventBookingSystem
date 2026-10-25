@@ -13,7 +13,6 @@ import com.project.bookngo.repository.SessionsRepository;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -23,14 +22,17 @@ import java.util.List;
 @Service
 public class SessionsService {
 
-    @Autowired
-    private SessionsRepository sessionsRepository;
-    @Autowired
-    private ActivitiesRepository activitiesRepository;
-    @Autowired
-    private CurrentUserService currentUserService;
+    private final SessionsRepository sessionsRepository;
+    private final ActivitiesRepository activitiesRepository;
+    private final CurrentUserService currentUserService;
 
     private static final Logger logger = LoggerFactory.getLogger(SessionsService.class);
+
+    public SessionsService(SessionsRepository sessionsRepository, ActivitiesRepository activitiesRepository, CurrentUserService currentUserService) {
+        this.sessionsRepository = sessionsRepository;
+        this.activitiesRepository = activitiesRepository;
+        this.currentUserService = currentUserService;
+    }
 
 
     private void checkOwnership(Activities activity) {

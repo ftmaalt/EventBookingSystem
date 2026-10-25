@@ -8,11 +8,6 @@ public class RequestTracker {
     private final Queue<Long> requestTimes = new LinkedList<>();
 
 
-    public Queue<Long> getRequestTimes() {
-        return requestTimes;
-
-    }
-
 
     public void addRequest(long timestamp) {
 

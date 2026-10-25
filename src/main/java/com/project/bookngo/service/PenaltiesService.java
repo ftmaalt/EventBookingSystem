@@ -10,7 +10,6 @@ import com.project.bookngo.model.enums.UserStatus;
 import com.project.bookngo.model.response.GenericMessageResponse;
 import com.project.bookngo.repository.PenaltiesRepository;
 import com.project.bookngo.repository.UsersRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -19,13 +18,15 @@ import java.time.LocalDateTime;
 @Service
 public class PenaltiesService {
 
-    @Autowired
-    private PenaltiesRepository penaltiesRepository;
-    @Autowired
-    private UsersRepository usersRepository;
+    private final PenaltiesRepository penaltiesRepository;
+    private final UsersRepository usersRepository;
+    private final CurrentUserService currentUserService;
 
-    @Autowired
-    private CurrentUserService currentUserService;
+    public PenaltiesService(PenaltiesRepository penaltiesRepository, UsersRepository usersRepository, CurrentUserService currentUserService) {
+        this.penaltiesRepository = penaltiesRepository;
+        this.usersRepository = usersRepository;
+        this.currentUserService = currentUserService;
+    }
 
     public GenericMessageResponse payPenalty(Long id) {
         Penalties penalty = penaltiesRepository.findById(id)

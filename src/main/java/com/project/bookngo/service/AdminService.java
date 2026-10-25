@@ -6,23 +6,25 @@ import com.project.bookngo.model.enums.UserStatus;
 import com.project.bookngo.model.request.UpdateUserRoleRequest;
 import com.project.bookngo.model.response.GenericMessageResponse;
 import com.project.bookngo.repository.UsersRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 @Service
 public class AdminService {
 
-    @Autowired
-    private UsersRepository usersRepository;
+    private final UsersRepository usersRepository;
 
-    @Autowired
-    private AuditLogService auditLogService;
+    private final AuditLogService auditLogService;
 
-    @Autowired
-    private CurrentUserService currentUserService;
+    private final CurrentUserService currentUserService;
 
     private static final Logger logger = LoggerFactory.getLogger(AdminService.class);
+
+    public AdminService(UsersRepository usersRepository, AuditLogService auditLogService, CurrentUserService currentUserService) {
+        this.usersRepository = usersRepository;
+        this.auditLogService = auditLogService;
+        this.currentUserService = currentUserService;
+    }
 
     // User Role and Authorization
     public GenericMessageResponse updateUserRole(Long userId, UpdateUserRoleRequest request){

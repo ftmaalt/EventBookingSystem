@@ -11,7 +11,6 @@ import com.project.bookngo.model.enums.ActivityStatus;
 import com.project.bookngo.repository.ActivitiesRepository;
 import com.project.bookngo.repository.CategoryRepository;
 import com.project.bookngo.repository.LocationRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -23,18 +22,22 @@ import java.util.List;
 
 @Service
 public class ActivitiesService {
-    @Autowired
-    private ActivitiesRepository activitiesRepository;
 
-    @Autowired
-    private CategoryRepository categoryRepository;
+    private final ActivitiesRepository activitiesRepository;
 
-    @Autowired
-    private LocationRepository locationRepository;
+    private final CategoryRepository categoryRepository;
 
-    @Autowired
-    private CurrentUserService currentUserService;
+    private final LocationRepository locationRepository;
+
+    private final CurrentUserService currentUserService;
     private static final Logger logger = LoggerFactory.getLogger(ActivitiesService.class);
+
+    public ActivitiesService(ActivitiesRepository activitiesRepository, CategoryRepository categoryRepository, LocationRepository locationRepository, CurrentUserService currentUserService) {
+        this.activitiesRepository = activitiesRepository;
+        this.categoryRepository = categoryRepository;
+        this.locationRepository = locationRepository;
+        this.currentUserService = currentUserService;
+    }
 
     public ActivityResponse createActivity(ActivityRequest request) {
         logger.info("Creating activity with title: {}", request.getTitle());

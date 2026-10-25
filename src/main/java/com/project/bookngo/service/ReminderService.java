@@ -3,11 +3,11 @@ package com.project.bookngo.service;
 import com.project.bookngo.model.Bookings;
 import com.project.bookngo.model.enums.BookingStatus;
 import com.project.bookngo.repository.BookingsRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -16,22 +16,27 @@ import java.util.Objects;
 
 @Service
 public class ReminderService {
-    @Autowired
-    private BookingsRepository bookingsRepository;
 
-    @Autowired
-    private EmailService emailService;
+    private final BookingsRepository bookingsRepository;
+
+    private final EmailService emailService;
 
     private static final Logger logger = LoggerFactory.getLogger(ReminderService.class);
 
+    public ReminderService(BookingsRepository bookingsRepository, EmailService emailService) {
+        this.bookingsRepository = bookingsRepository;
+        this.emailService = emailService;
+    }
+
     @Scheduled(fixedRate = 10 * 60 * 1000)// checks for time every 10 minutes
+    @Transactional
     public void sendUpcomingBookingReminders(){
         logger.info("Checking for upcoming booking reminders");
         LocalDateTime now= LocalDateTime.now();
 
         LocalDateTime window= now.plusHours(24);
 
-        List<Bookings> upcoming = bookingsRepository.findByStatusAndSession_StartTimeBetween(BookingStatus.CONFIRMED, now, window);
+        List<Bookings> upcoming = bookingsRepository.findUpcomingBookingsForReminders(BookingStatus.CONFIRMED, now, window);
         logger.info("Found {} upcoming confirmed bookings for reminder processing", upcoming.size());
 
         for (Bookings booking :upcoming) {

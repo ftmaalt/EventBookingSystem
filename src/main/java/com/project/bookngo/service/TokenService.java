@@ -5,7 +5,6 @@ import com.project.bookngo.model.Tokens;
 import com.project.bookngo.model.enums.TokenType;
 import com.project.bookngo.model.User;
 import com.project.bookngo.repository.TokensRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,10 +17,13 @@ import static com.project.bookngo.model.enums.TokenType.*;
 @Service
 public class TokenService {
 
-    @Autowired
-    private TokensRepository tokensRepository;
+    private final TokensRepository tokensRepository;
 
     private static final Logger logger = LoggerFactory.getLogger(TokenService.class);
+
+    public TokenService(TokensRepository tokensRepository) {
+        this.tokensRepository = tokensRepository;
+    }
 
 
     public String generateToken(User user, TokenType type) {

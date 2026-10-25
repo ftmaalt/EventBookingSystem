@@ -10,6 +10,8 @@ import java.util.Optional;
 public interface WaitingListRepository   extends JpaRepository<WaitlistEntry, Long> {
     boolean existsByUserIdAndSessionIdAndStatus(Long userId, Long sessionId, WaitListStatus status);
     Optional<WaitlistEntry> findByUserIdAndSessionIdAndStatus(Long userId, Long sessionId, WaitListStatus status);
-    List<WaitlistEntry> findBySessionIdAndStatusOrderByIdAsc(Long sessionId, WaitListStatus status);
+    List<WaitlistEntry> findBySessionIdAndStatusOrderByEntryIdAsc(Long sessionId, WaitListStatus status);
     long countBySessionIdAndStatusAndEntryIdLessThan(Long sessionId, WaitListStatus status, Long entryId);
+
+    boolean existsBySessionIdAndStatus(Long id, WaitListStatus waitListStatus);
 }

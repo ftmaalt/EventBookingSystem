@@ -2,6 +2,7 @@ package com.project.bookngo.service;
 
 import com.project.bookngo.exception.BusinessConflictsException;
 import com.project.bookngo.exception.InformationNotFoundException;
+import com.project.bookngo.model.Bookings;
 import com.project.bookngo.model.Sessions;
 import com.project.bookngo.model.User;
 import com.project.bookngo.model.WaitlistEntry;
@@ -11,16 +12,19 @@ import com.project.bookngo.repository.BookingsRepository;
 import com.project.bookngo.repository.SessionsRepository;
 import com.project.bookngo.repository.WaitingListRepository;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class WaitingService {
+
     private final WaitingListRepository waitlistRepository;
     private final SessionsRepository sessionsRepository;
     private final BookingsRepository bookingsRepository;
@@ -98,6 +102,74 @@ public class WaitingService {
 
         return new WaitListResponse(entry.getEntryId(), sessionId, entry.getStatus(), entry.getJoinedAt(), position);
     }
+
+    /**
+     * Allocates available seats to waiting customers in FIFO order.
+     *
+     * Must be called within an existing transaction after acquiring
+     * a PESSIMISTIC_WRITE lock on the session row.
+     *
+     * Booking creation, capacity updates, and waitlist status changes
+     * must commit or roll back together.
+     */
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void allocateNextWaitlistedUser(Sessions session) {
+        if (session.getSpotsLeft() <= 0)
+            return;
+
+        if (!session.getStartTime().isAfter(LocalDateTime.now()) || session.getStatus() == SessionStatus.CANCELLED || session.getStatus() == SessionStatus.COMPLETED ||
+                session.getActivity().getStatus() != ActivityStatus.ACTIVE) {
+            return;
+        }
+
+        List<WaitlistEntry> waitingEntries = waitlistRepository.findBySessionIdAndStatusOrderByEntryIdAsc(session.getId(), WaitListStatus.WAITING);
+        for (WaitlistEntry entry : waitingEntries ) {
+            if (session.getSpotsLeft() <= 0)
+                break;
+
+            User user = entry.getUser();
+            if (user == null || user.getStatus() != UserStatus.ACTIVE || user.getRole() != UserRole.USER)
+                continue;
+
+            boolean alreadyBooked = bookingsRepository.existsByUserIdAndSessionIdAndStatusIn(user.getId(), session.getId(), List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT));
+
+            if (alreadyBooked)
+                continue;
+
+            Bookings newBooking = new Bookings();
+
+            newBooking.setUser(user);
+            newBooking.setSession(session);
+            newBooking.setParticipants(1);
+            newBooking.setStatus(BookingStatus.CONFIRMED);
+            newBooking.setBookingType(BookingType.INDIVIDUAL);
+            newBooking.setPaymentStatus(PaymentStatus.PENDING_PAYMENT);
+
+            BigDecimal subtotal = session.getActivity().getPricePerPerson();
+
+            newBooking.setSubtotal(subtotal);
+            newBooking.setDiscountPercent(BigDecimal.ZERO);
+            newBooking.setTotalPrice(subtotal);
+
+            newBooking.setCreatedBy("SYSTEM_WAITLIST");
+            newBooking.setUpdatedBy("SYSTEM_WAITLIST");
+
+            bookingsRepository.save(newBooking);
+
+            session.setSpotsLeft(session.getSpotsLeft()-1);
+            if (session.getSpotsLeft() == 0) {
+                session.setStatus(SessionStatus.FULL);
+            }
+
+            entry.setStatus(WaitListStatus.BOOKED);
+            waitlistRepository.save(entry);
+        }
+
+
+    }
+
+
 
 
 

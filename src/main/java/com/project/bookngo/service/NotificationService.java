@@ -6,7 +6,6 @@ import com.project.bookngo.model.User;
 import com.project.bookngo.model.response.NotificationResponse;
 import com.project.bookngo.repository.NotificationRepository;
 import com.project.bookngo.repository.UsersRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,20 +16,23 @@ import org.slf4j.LoggerFactory;
 @Service
 public class NotificationService {
 
-    @Autowired
-    private NotificationRepository notificationRepository;
+    private final NotificationRepository notificationRepository;
 
-    @Autowired
-    private UsersRepository usersRepository;
+    private final UsersRepository usersRepository;
 
-    @Autowired
-    private SSEService sseService;
+    private final SSEService sseService;
 
-    @Autowired
-    private CurrentUserService currentUserService;
+    private final CurrentUserService currentUserService;
 
     private static final Logger logger =
             LoggerFactory.getLogger(NotificationService.class);
+
+    public NotificationService(NotificationRepository notificationRepository, UsersRepository usersRepository, SSEService sseService, CurrentUserService currentUserService) {
+        this.notificationRepository = notificationRepository;
+        this.usersRepository = usersRepository;
+        this.sseService = sseService;
+        this.currentUserService = currentUserService;
+    }
 
 
     public NotificationResponse create(

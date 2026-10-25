@@ -6,16 +6,14 @@ import com.project.bookngo.exception.InvalidTimeSpecificationException;
 import com.project.bookngo.model.Bookings;
 import com.project.bookngo.model.Sessions;
 import com.project.bookngo.model.User;
-import com.project.bookngo.model.enums.BookingStatus;
-import com.project.bookngo.model.enums.PaymentStatus;
-import com.project.bookngo.model.enums.SessionStatus;
-import com.project.bookngo.model.enums.UserRole;
+import com.project.bookngo.model.WaitlistEntry;
+import com.project.bookngo.model.enums.*;
 import com.project.bookngo.model.request.BookingRequest;
 import com.project.bookngo.model.response.BookingResponse;
 import com.project.bookngo.repository.BookingsRepository;
 import com.project.bookngo.repository.SessionsRepository;
-import com.project.bookngo.repository.UsersRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.project.bookngo.repository.WaitingListRepository;
+import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -30,25 +28,29 @@ import org.springframework.security.access.AccessDeniedException;
 @Service
 public class BookingsService {
 
-    @Autowired
-    private BookingsRepository bookingsRepository;
-
-    @Autowired
-    private SessionsRepository sessionsRepository;
-
-    @Autowired
-    private EmailService emailService;
-
-    @Autowired
-    private NotificationService notificationService;
-
-    @Autowired
-    private AuditLogService auditLogService;
-
+    private final BookingsRepository bookingsRepository;
+    private final SessionsRepository sessionsRepository;
+    private final EmailService emailService;
+    private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
+    private final WaitingService waitingService;
+    private final EntityManager entityManager;
     private static final Logger logger = LoggerFactory.getLogger(BookingsService.class);
+    private final CurrentUserService currentUserService;
+    private final WaitingListRepository waitingListRepository;
 
-    @Autowired
-    private CurrentUserService currentUserService;
+    public BookingsService(BookingsRepository bookingsRepository, SessionsRepository sessionsRepository, EmailService emailService, NotificationService notificationService, AuditLogService auditLogService, WaitingService waitingService, EntityManager entityManager, CurrentUserService currentUserService, WaitingListRepository waitingListRepository) {
+        this.bookingsRepository = bookingsRepository;
+        this.sessionsRepository = sessionsRepository;
+        this.emailService = emailService;
+        this.notificationService = notificationService;
+        this.auditLogService = auditLogService;
+        this.waitingService = waitingService;
+        this.entityManager = entityManager;
+        this.currentUserService = currentUserService;
+        this.waitingListRepository = waitingListRepository;
+    }
+
 
     /**
      * Creates a new booking for the currently authenticated user.
@@ -64,6 +66,7 @@ public class BookingsService {
                 .orElseThrow(() -> new InformationNotFoundException("Session with ID: " + request.getSessionId() + " not found."));
         boolean alreadyBooked = bookingsRepository.findByUserIdAndSessionIdAndStatus(user.getId(), session.getId(), BookingStatus.CONFIRMED)
                 .isPresent();
+
         if (alreadyBooked) {
             throw new BusinessConflictsException("You already have a booking for this session.");
         }
@@ -74,50 +77,58 @@ public class BookingsService {
         if (session.getStartTime().isBefore(LocalDateTime.now())) {
             throw new InvalidTimeSpecificationException("Cannot book a session that has already started.");
         }
-
         if (session.getSpotsLeft() < request.getParticipants()) {
             throw new BusinessConflictsException("Not enough spots left. Only " + session.getSpotsLeft() + " remaining.");
         }
+        boolean hasWaitingCustomers = waitingListRepository.existsBySessionIdAndStatus(session.getId(), WaitListStatus.WAITING);
 
-        session.setSpotsLeft(session.getSpotsLeft() - request.getParticipants());
-        if (session.getSpotsLeft() == 0) {
-            session.setStatus(SessionStatus.FULL);
+        if (hasWaitingCustomers) {
+            throw new BusinessConflictsException("This session has an active waitlist. Available seats must be allocated to waiting customers first.");
         }
-        sessionsRepository.save(session);
 
-        BigDecimal pricePerPerson = session.getActivity().getPricePerPerson();
-        BigDecimal subtotal = pricePerPerson.multiply(BigDecimal.valueOf(request.getParticipants()));
+            session.setSpotsLeft(session.getSpotsLeft() - request.getParticipants());
+            if (session.getSpotsLeft() == 0) {
+                session.setStatus(SessionStatus.FULL);
+            }
 
-        Bookings booking = new Bookings();
-        booking.setUser(user);
-        booking.setCreatedBy(user.getEmail());
-        booking.setUpdatedBy(user.getEmail());
-        booking.setSession(session);
-        booking.setParticipants(request.getParticipants());
-        booking.setBookingType(request.getBookingType());
-        booking.setSubtotal(subtotal);
-        booking.setTotalPrice(subtotal);
-        booking.setStatus(BookingStatus.CONFIRMED);
-        booking.setPaymentStatus(PaymentStatus.PENDING_PAYMENT);
+            sessionsRepository.save(session);
 
-        Bookings saved = bookingsRepository.save(booking);
-        logger.info("Booking created successfully with ID: {} for session ID: {}", saved.getBookingId(), saved.getSession().getId());
+            BigDecimal pricePerPerson = session.getActivity().getPricePerPerson();
+            BigDecimal subtotal = pricePerPerson.multiply(BigDecimal.valueOf(request.getParticipants()));
 
-        emailService.sendBookingVerifiedEmail(saved.getUser().getEmail(), saved);
-        notificationService.create(
-                saved.getUser(),
-                "booking-confirmed",
-                "Booking #" + saved.getBookingId() + " was confirmed successfully."
-        );
+            Bookings booking = new Bookings();
+            booking.setUser(user);
+            booking.setCreatedBy(user.getEmail());
+            booking.setUpdatedBy(user.getEmail());
+            booking.setSession(session);
+            booking.setParticipants(request.getParticipants());
+            booking.setBookingType(request.getBookingType());
+            booking.setDiscountPercent(BigDecimal.ZERO);
+            booking.setSubtotal(subtotal);
+            booking.setTotalPrice(subtotal);
+            booking.setStatus(BookingStatus.CONFIRMED);
+            booking.setPaymentStatus(PaymentStatus.PENDING_PAYMENT);
+
+            Bookings saved = bookingsRepository.save(booking);
+            logger.info("Booking created successfully with ID: {} for session ID: {}", saved.getBookingId(), saved.getSession().getId());
+
+            emailService.sendBookingVerifiedEmail(saved.getUser().getEmail(), saved);
+            notificationService.create(
+                    saved.getUser(),
+                    "booking-confirmed",
+                    "Booking #" + saved.getBookingId() + " was confirmed successfully."
+            );
 
         return toResponse(saved);
     }
+
 
     public BookingResponse getById(Long id) {
         logger.info("Fetching booking with ID: {}", id);
         Bookings booking = bookingsRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Booking with the id:" + id + " does not exist."));
-        checkOwnershipOrAdmin(booking);
+        User currentUser= currentUserService.getCurrentUser();
+        checkOwnershipOrAdmin(booking, currentUser);
         return toResponse(booking);
     }
 
@@ -127,8 +138,12 @@ public class BookingsService {
         logger.info("Cancelling booking with ID: {}", id);
         Bookings booking = bookingsRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Booking with the id:" + id + " does not exist."));
-        checkOwnershipOrAdmin(booking);
+        User currentUser = currentUserService.getCurrentUser();
+        Sessions session = sessionsRepository.findByIdForUpdate(booking.getSession().getId())
+                .orElseThrow(() -> new InformationNotFoundException("Session not found."));
 
+        entityManager.refresh(booking);
+        checkOwnershipOrAdmin(booking, currentUser);
         if (booking.getStatus() == BookingStatus.CANCELLED) {
             throw new BusinessConflictsException("This booking is already cancelled.");
         }
@@ -136,34 +151,31 @@ public class BookingsService {
             throw new BusinessConflictsException("Cannot cancel a completed booking.");
         }
 
-        Sessions session = sessionsRepository.findByIdForUpdate(booking.getSession().getId())
-                .orElseThrow(() -> new InformationNotFoundException("Session not found."));
         if (!session.getStartTime().isAfter(LocalDateTime.now())) {
             throw new BusinessConflictsException("Cannot cancel a booking after the session has started.");
         }
+        booking.setStatus(BookingStatus.CANCELLED);
+        booking.setUpdatedBy(currentUser.getEmail());
+        bookingsRepository.save(booking);
+
         session.setSpotsLeft(session.getSpotsLeft() + booking.getParticipants());
         if (session.getStatus() == SessionStatus.FULL) {
             session.setStatus(SessionStatus.SCHEDULED);
         }
+        waitingService.allocateNextWaitlistedUser(session);
         sessionsRepository.save(session);
 
-
-        booking.setStatus(BookingStatus.CANCELLED);
-        auditLogService.logAction("BOOKING_CANCELLED", currentUserService.getCurrentUser().getEmail(), "Booking", booking.getBookingId(), "Booking was cancelled successfully");
-        logger.info("Booking with ID {} cancelled successfully", id);
-        booking.setUpdatedBy(currentUserService.getCurrentUser().getEmail());
-        bookingsRepository.save(booking);
+        auditLogService.logAction("BOOKING_CANCELLED", currentUserService.getCurrentUser().getEmail(), "Booking", booking.getBookingId(), "booking was cancelled by user successfully");
 
         emailService.sendSessionCancelledEmail(booking.getUser().getEmail(), booking);
         return "Booking with id:" + id + " has been cancelled successfully.";
     }
 
-    private void checkOwnershipOrAdmin(Bookings booking) {
-        User current = currentUserService.getCurrentUser();
-        boolean isOwner = booking.getUser().getId().equals(current.getId());
-        boolean isAdmin = current.getRole() == UserRole.ADMIN;
+    private void checkOwnershipOrAdmin(Bookings booking, User currentUser) {
+        boolean isOwner = booking.getUser().getId().equals(currentUser.getId());
+        boolean isAdmin = currentUser.getRole() == UserRole.ADMIN;
         if (!isOwner && !isAdmin) {
-            logger.warn("Unauthorized access attempt for booking ID: {} by user ID: {}", booking.getBookingId(), current.getId());
+            logger.warn("Unauthorized access attempt for booking ID: {} by user ID: {}", booking.getBookingId(), currentUser.getId());
             throw new AccessDeniedException("You are not authorized to access this booking.");
         }
     }

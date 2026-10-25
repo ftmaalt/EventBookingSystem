@@ -16,7 +16,14 @@ import java.util.Optional;
 public interface BookingsRepository extends JpaRepository<Bookings, Long> {
     List<Bookings> findByUserId(Long userId);
     List<Bookings> findBySessionId(Long sessionId);
-    List<Bookings> findByStatusAndSession_StartTimeBetween(BookingStatus status, LocalDateTime start, LocalDateTime end);
+    @Query("""
+    SELECT b FROM Bookings b
+    JOIN FETCH b.session s
+    JOIN FETCH b.user u
+    WHERE b.status = :status
+      AND s.startTime BETWEEN :start AND :end
+    """)
+    List<Bookings> findUpcomingBookingsForReminders( @Param("status") BookingStatus status, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
     Optional<Bookings> findByBookingIdAndUserId(Long bookingId, Long userId);
     Optional<Bookings> findByUserIdAndSessionIdAndStatus(Long userId, Long sessionId, BookingStatus status);
     boolean existsByUserIdAndSessionIdAndStatusIn(Long userId, Long sessionId, Collection<BookingStatus> statuses);
