@@ -10,8 +10,12 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class CurrentUserService {
-    @Autowired
-    private UsersRepository usersRepository;
+
+    private final UsersRepository usersRepository;
+
+    public CurrentUserService(UsersRepository usersRepository) {
+        this.usersRepository = usersRepository;
+    }
 
     public User getCurrentUser(){
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

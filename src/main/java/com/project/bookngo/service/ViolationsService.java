@@ -9,6 +9,7 @@ import com.project.bookngo.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -16,34 +17,38 @@ import java.util.List;
 @Service
 public class ViolationsService {
 
-    @Autowired
-    private ViolationsRepository violationsRepository;
+    private final ViolationsRepository violationsRepository;
 
-    @Autowired
-    private PenaltiesRepository penaltiesRepository;
+    private final PenaltiesRepository penaltiesRepository;
 
-    @Autowired
-    private UsersRepository usersRepository;
+    private final UsersRepository usersRepository;
 
-    @Autowired
-    private BookingsRepository bookingsRepository;
+    private final BookingsRepository bookingsRepository;
 
-    @Autowired
-    private SessionsRepository sessionsRepository;
+    private final SessionsRepository sessionsRepository;
 
-    @Autowired
-    private ActivitiesRepository activitiesRepository;
 
-    @Autowired
-    private EmailService emailService;
+    private final ActivitiesRepository activitiesRepository;
 
-    @Autowired
-    private AuditLogService auditLogService;
+    private final EmailService emailService;
 
-    @Autowired
-    private CurrentUserService currentUserService;
+    private final AuditLogService auditLogService;
+
+    private final CurrentUserService currentUserService;
 
     private static final BigDecimal PENALTY_FEE = new BigDecimal("10.000");
+
+    public ViolationsService(ViolationsRepository violationsRepository, PenaltiesRepository penaltiesRepository, UsersRepository usersRepository, BookingsRepository bookingsRepository, SessionsRepository sessionsRepository, ActivitiesRepository activitiesRepository, EmailService emailService, AuditLogService auditLogService, CurrentUserService currentUserService) {
+        this.violationsRepository = violationsRepository;
+        this.penaltiesRepository = penaltiesRepository;
+        this.usersRepository = usersRepository;
+        this.bookingsRepository = bookingsRepository;
+        this.sessionsRepository = sessionsRepository;
+        this.activitiesRepository = activitiesRepository;
+        this.emailService = emailService;
+        this.auditLogService = auditLogService;
+        this.currentUserService = currentUserService;
+    }
 
 
     public GenericMessageResponse reportViolation(ReportViolationRequest request) {
@@ -132,7 +137,7 @@ public class ViolationsService {
             penaltiesRepository.save(penalty);
         }
     }
-
+    @Transactional
     private void cancelUpcomingSessionsForProvider(User provider) {
         List<Activities> activities = activitiesRepository.findByProviderId(provider.getId());
         for (Activities activity : activities) {

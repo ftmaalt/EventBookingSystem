@@ -7,26 +7,30 @@ import com.project.bookngo.model.response.UserProfileResponse;
 import com.project.bookngo.repository.UsersRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
 
 @Service
 public class UserProfileService {
 
-    @Autowired
-    private UsersRepository usersRepository;
 
-    @Autowired
-    private FileStorageService fileStorageService;
+    private final UsersRepository usersRepository;
 
-    @Autowired
-    private AuditLogService auditLogService;
+    private final FileStorageService fileStorageService;
 
-    @Autowired
-    private CurrentUserService currentUserService;
+    private final AuditLogService auditLogService;
+
+    private final CurrentUserService currentUserService;
 
     private static final Logger logger = LoggerFactory.getLogger(UserProfileService.class);
+
+    public UserProfileService(UsersRepository usersRepository, FileStorageService fileStorageService, AuditLogService auditLogService, CurrentUserService currentUserService) {
+        this.usersRepository = usersRepository;
+        this.fileStorageService = fileStorageService;
+        this.auditLogService = auditLogService;
+        this.currentUserService = currentUserService;
+    }
 
 
     public UserProfileResponse getMyProfile() {

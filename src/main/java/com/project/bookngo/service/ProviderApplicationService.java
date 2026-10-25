@@ -24,25 +24,29 @@ import java.util.List;
 
 @Service
 public class ProviderApplicationService {
-    @Autowired
-    private ProviderApplicationRepository applicationRepository;
 
-    @Autowired
-    private ProviderProfileRepository profileRepository;
+    private final ProviderApplicationRepository applicationRepository;
 
-    @Autowired
-    private UsersRepository usersRepository;
+    private final ProviderProfileRepository profileRepository;
 
-    @Autowired
-    private EmailService emailService;
+    private final UsersRepository usersRepository;
 
-    @Autowired
-    private NotificationService notificationService;
+    private final EmailService emailService;
 
-    @Autowired
-    private CurrentUserService currentUserService;
+    private final NotificationService notificationService;
+
+    private final CurrentUserService currentUserService;
 
     private static final Logger logger = LoggerFactory.getLogger(ProviderApplicationService.class);
+
+    public ProviderApplicationService(ProviderApplicationRepository applicationRepository, ProviderProfileRepository profileRepository, UsersRepository usersRepository, EmailService emailService, NotificationService notificationService, CurrentUserService currentUserService) {
+        this.applicationRepository = applicationRepository;
+        this.profileRepository = profileRepository;
+        this.usersRepository = usersRepository;
+        this.emailService = emailService;
+        this.notificationService = notificationService;
+        this.currentUserService = currentUserService;
+    }
 
 
     public ProviderApplicationResponse submitApplication(ProviderApplicationRequest applicationRequest){

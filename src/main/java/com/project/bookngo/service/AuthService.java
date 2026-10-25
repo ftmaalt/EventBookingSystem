@@ -23,18 +23,25 @@ import org.slf4j.LoggerFactory;
 @Service
 public class AuthService {
 
-    @Autowired
-    private UsersRepository usersRepository;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-    @Autowired
-    private TokenService tokenService;
-    @Autowired
-    private EmailService emailService;
-    @Autowired
-    private JwtUtils jwtUtils;
+    private final UsersRepository usersRepository;
+
+    private final PasswordEncoder passwordEncoder;
+
+    private final TokenService tokenService;
+
+    private final EmailService emailService;
+
+    private final JwtUtils jwtUtils;
 
     private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
+
+    public AuthService(UsersRepository usersRepository, PasswordEncoder passwordEncoder, TokenService tokenService, EmailService emailService, JwtUtils jwtUtils) {
+        this.usersRepository = usersRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.tokenService = tokenService;
+        this.emailService = emailService;
+        this.jwtUtils = jwtUtils;
+    }
 
 
     // ---registration section---

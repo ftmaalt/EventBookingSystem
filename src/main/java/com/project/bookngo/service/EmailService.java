@@ -15,13 +15,16 @@ import java.math.BigDecimal;
 @Service
 public class EmailService {
 
-    @Autowired
-    private JavaMailSender mailSender;
+    private final JavaMailSender mailSender;
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
     // Links in emails open the React app, not the raw API.
     @Value("${app.frontend-url:http://localhost:5173}")
     private String frontendUrl;
+
+    public EmailService(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
 
     public void sendVerificationEmail(String toEmail, String token) {
         logger.info("Sending verification email to: {}", toEmail);        SimpleMailMessage verificationMessage = new SimpleMailMessage();

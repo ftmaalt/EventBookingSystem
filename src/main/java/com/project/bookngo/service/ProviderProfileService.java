@@ -15,14 +15,19 @@ import org.springframework.stereotype.Service;
 @Service
 public class ProviderProfileService {
 
-    @Autowired
-    private ProviderProfileRepository providerProfileRepository;
-    @Autowired
-    private UsersRepository usersRepository;
-    @Autowired
-    private CurrentUserService currentUserService;
+    private final ProviderProfileRepository providerProfileRepository;
+
+    private final UsersRepository usersRepository;
+
+    private final CurrentUserService currentUserService;
 
     private static final Logger logger = LoggerFactory.getLogger(ProviderProfileService.class);
+
+    public ProviderProfileService(ProviderProfileRepository providerProfileRepository, UsersRepository usersRepository, CurrentUserService currentUserService) {
+        this.providerProfileRepository = providerProfileRepository;
+        this.usersRepository = usersRepository;
+        this.currentUserService = currentUserService;
+    }
 
 
     public ProviderProfileResponse getMyProfile() {

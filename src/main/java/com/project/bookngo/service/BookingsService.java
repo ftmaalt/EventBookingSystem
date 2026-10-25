@@ -14,9 +14,8 @@ import com.project.bookngo.model.request.BookingRequest;
 import com.project.bookngo.model.response.BookingResponse;
 import com.project.bookngo.repository.BookingsRepository;
 import com.project.bookngo.repository.SessionsRepository;
-import com.project.bookngo.repository.UsersRepository;
 import jakarta.persistence.EntityManager;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.autoconfigure.WebMvcProperties;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -31,28 +30,25 @@ import org.springframework.security.access.AccessDeniedException;
 @Service
 public class BookingsService {
 
-    @Autowired
-    private BookingsRepository bookingsRepository;
-
-    @Autowired
-    private SessionsRepository sessionsRepository;
-
-    @Autowired
-    private EmailService emailService;
-
-    @Autowired
-    private NotificationService notificationService;
-
-    @Autowired
-    private AuditLogService auditLogService;
-
+    private final BookingsRepository bookingsRepository;
+    private final SessionsRepository sessionsRepository;
+    private final EmailService emailService;
+    private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
+    private final EntityManager entityManager;
     private static final Logger logger = LoggerFactory.getLogger(BookingsService.class);
+    private final CurrentUserService currentUserService;
 
-    @Autowired
-    private CurrentUserService currentUserService;
+    public BookingsService(BookingsRepository bookingsRepository, SessionsRepository sessionsRepository, EmailService emailService, NotificationService notificationService, AuditLogService auditLogService, EntityManager entityManager, CurrentUserService currentUserService) {
+        this.bookingsRepository = bookingsRepository;
+        this.sessionsRepository = sessionsRepository;
+        this.emailService = emailService;
+        this.notificationService = notificationService;
+        this.auditLogService = auditLogService;
+        this.entityManager = entityManager;
+        this.currentUserService = currentUserService;
+    }
 
-    @Autowired
-    private EntityManager entityManager;
 
     /**
      * Creates a new booking for the currently authenticated user.
@@ -121,7 +117,8 @@ public class BookingsService {
         logger.info("Fetching booking with ID: {}", id);
         Bookings booking = bookingsRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Booking with the id:" + id + " does not exist."));
-        checkOwnershipOrAdmin(booking);
+        User currentUser= currentUserService.getCurrentUser();
+        checkOwnershipOrAdmin(booking, currentUser);
         return toResponse(booking);
     }
 
@@ -131,12 +128,13 @@ public class BookingsService {
         logger.info("Cancelling booking with ID: {}", id);
         Bookings booking = bookingsRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Booking with the id:" + id + " does not exist."));
-        checkOwnershipOrAdmin(booking);
+        User currentUser = currentUserService.getCurrentUser();
+        checkOwnershipOrAdmin(booking, currentUser);
         Sessions session = sessionsRepository.findByIdForUpdate(booking.getSession().getId())
                 .orElseThrow(() -> new InformationNotFoundException("Session not found."));
 
         entityManager.refresh(booking);
-        checkOwnershipOrAdmin(booking);
+        checkOwnershipOrAdmin(booking, currentUser);
         if (booking.getStatus() == BookingStatus.CANCELLED) {
             throw new BusinessConflictsException("This booking is already cancelled.");
         }
@@ -155,25 +153,21 @@ public class BookingsService {
 
 
         booking.setStatus(BookingStatus.CANCELLED);
-        auditLogService.logAction("BOOKING_CANCELLED", currentUserService.getCurrentUser().getEmail(), "Booking", booking.getBookingId(), "Booking was cancelled successfully");
         logger.info("Booking with ID {} cancelled successfully", id);
-        booking.setUpdatedBy(currentUserService.getCurrentUser().getEmail());
+        booking.setUpdatedBy(currentUser.getEmail());
         bookingsRepository.save(booking);
 
         auditLogService.logAction("BOOKING_CANCELLED", currentUserService.getCurrentUser().getEmail(), "Booking", booking.getBookingId(), "booking was cancelled by user successfully");
-
-        logger.info("Booking with id:" + id + " has been cancelled successfully.");
 
         emailService.sendSessionCancelledEmail(booking.getUser().getEmail(), booking);
         return "Booking with id:" + id + " has been cancelled successfully.";
     }
 
-    private void checkOwnershipOrAdmin(Bookings booking) {
-        User current = currentUserService.getCurrentUser();
-        boolean isOwner = booking.getUser().getId().equals(current.getId());
-        boolean isAdmin = current.getRole() == UserRole.ADMIN;
+    private void checkOwnershipOrAdmin(Bookings booking, User currentUser) {
+        boolean isOwner = booking.getUser().getId().equals(currentUser.getId());
+        boolean isAdmin = currentUser.getRole() == UserRole.ADMIN;
         if (!isOwner && !isAdmin) {
-            logger.warn("Unauthorized access attempt for booking ID: {} by user ID: {}", booking.getBookingId(), current.getId());
+            logger.warn("Unauthorized access attempt for booking ID: {} by user ID: {}", booking.getBookingId(), currentUser.getId());
             throw new AccessDeniedException("You are not authorized to access this booking.");
         }
     }

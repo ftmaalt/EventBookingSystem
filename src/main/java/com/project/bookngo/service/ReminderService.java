@@ -16,13 +16,17 @@ import java.util.Objects;
 
 @Service
 public class ReminderService {
-    @Autowired
-    private BookingsRepository bookingsRepository;
 
-    @Autowired
-    private EmailService emailService;
+    private final BookingsRepository bookingsRepository;
+
+    private final EmailService emailService;
 
     private static final Logger logger = LoggerFactory.getLogger(ReminderService.class);
+
+    public ReminderService(BookingsRepository bookingsRepository, EmailService emailService) {
+        this.bookingsRepository = bookingsRepository;
+        this.emailService = emailService;
+    }
 
     @Scheduled(fixedRate = 10 * 60 * 1000)// checks for time every 10 minutes
     public void sendUpcomingBookingReminders(){

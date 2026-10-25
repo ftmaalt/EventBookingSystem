@@ -8,8 +8,8 @@ import io.jsonwebtoken.Jwts;
 
 import java.security.Key;
 import java.util.Date;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class JwtUtils {
@@ -19,7 +19,7 @@ public class JwtUtils {
     @Value("${jwt-expiration-ms}")
     private int jwtExpirationMs;
 
-    Logger logger = Logger.getLogger(JwtUtils.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(JwtUtils.class);
 
     private Key getSigningKey() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());
@@ -43,7 +43,7 @@ public class JwtUtils {
             Jwts.parserBuilder().setSigningKey(getSigningKey()).build().parseClaimsJws(authToken);
             return true;
         } catch (Exception e){
-            logger.log(Level.SEVERE, "Invalid JWT: {0}", e.getMessage());
+            logger.error("Invalid JWT token: {}", e.getMessage());
         }
         return false;
     }

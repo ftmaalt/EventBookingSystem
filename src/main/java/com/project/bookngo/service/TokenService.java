@@ -18,10 +18,13 @@ import static com.project.bookngo.model.enums.TokenType.*;
 @Service
 public class TokenService {
 
-    @Autowired
-    private TokensRepository tokensRepository;
+    private final TokensRepository tokensRepository;
 
     private static final Logger logger = LoggerFactory.getLogger(TokenService.class);
+
+    public TokenService(TokensRepository tokensRepository) {
+        this.tokensRepository = tokensRepository;
+    }
 
 
     public String generateToken(User user, TokenType type) {

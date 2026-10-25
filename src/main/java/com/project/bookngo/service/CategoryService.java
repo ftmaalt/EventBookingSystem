@@ -16,9 +16,13 @@ import java.util.List;
 
 @Service
 public class CategoryService {
-    @Autowired
-    private CategoryRepository categoryRepository;
+
+    private final CategoryRepository categoryRepository;
     private static final Logger logger = LoggerFactory.getLogger(CategoryService.class);
+
+    public CategoryService(CategoryRepository categoryRepository) {
+        this.categoryRepository = categoryRepository;
+    }
 
     public CategoryResponse createCategory( CategoryRequest request){
         logger.info("Creating category: {}", request.getCategory_name());

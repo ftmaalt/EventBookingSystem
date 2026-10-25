@@ -13,13 +13,17 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class RateLimitService {
 
-    @Autowired
-    private RateLimitConfig rateLimitConfig;
+
+    private final RateLimitConfig rateLimitConfig;
 
 
 
     private final Map<String, RequestTracker> ipRequests = new ConcurrentHashMap<>();
     private final Map<String, RequestTracker> emailRequests = new ConcurrentHashMap<>();
+
+    public RateLimitService(RateLimitConfig rateLimitConfig) {
+        this.rateLimitConfig = rateLimitConfig;
+    }
 
 
     public void checkRateLimit(String ipAddress, String email) {
@@ -41,7 +45,7 @@ public class RateLimitService {
         synchronized (tracker){
             removeExpiredRequests(tracker, now);
 
-            if (tracker.getRequestTimes().size()>= rateLimitConfig.getCapacity()){
+            if (tracker.getRequestCount()>= rateLimitConfig.getCapacity()){
                 return false;
             }
             recordRequest(tracker, now);
@@ -51,12 +55,10 @@ public class RateLimitService {
 
 
     private void removeExpiredRequests(RequestTracker tracker, long now) {
-        Queue<Long> requestTimes = tracker.getRequestTimes();
+        while (!tracker.isEmpty()
+                && isExpired(tracker.getOldestRequest(), now)) {
 
-        while (!requestTimes.isEmpty()
-                && isExpired(requestTimes.peek(), now)) {
-
-            requestTimes.poll();
+            tracker.removeOldestRequest();
 
         }
     }
@@ -67,7 +69,7 @@ public class RateLimitService {
 
 
     private void recordRequest(RequestTracker tracker, long now) {
-        tracker.getRequestTimes().add(now);
+        tracker.addRequest(now);
     }
 
 

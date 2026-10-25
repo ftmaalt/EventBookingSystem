@@ -19,13 +19,15 @@ import java.time.LocalDateTime;
 @Service
 public class PenaltiesService {
 
-    @Autowired
-    private PenaltiesRepository penaltiesRepository;
-    @Autowired
-    private UsersRepository usersRepository;
+    private final PenaltiesRepository penaltiesRepository;
+    private final UsersRepository usersRepository;
+    private final CurrentUserService currentUserService;
 
-    @Autowired
-    private CurrentUserService currentUserService;
+    public PenaltiesService(PenaltiesRepository penaltiesRepository, UsersRepository usersRepository, CurrentUserService currentUserService) {
+        this.penaltiesRepository = penaltiesRepository;
+        this.usersRepository = usersRepository;
+        this.currentUserService = currentUserService;
+    }
 
     public GenericMessageResponse payPenalty(Long id) {
         Penalties penalty = penaltiesRepository.findById(id)

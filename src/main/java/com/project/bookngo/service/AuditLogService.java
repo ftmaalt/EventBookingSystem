@@ -12,8 +12,12 @@ import java.time.LocalDateTime;
 
 @Service
 public class AuditLogService {
-    @Autowired
-    private AuditLogRepository auditLogRepository;
+
+    private final AuditLogRepository auditLogRepository;
+
+    public AuditLogService(AuditLogRepository auditLogRepository) {
+        this.auditLogRepository = auditLogRepository;
+    }
 
 
     /**
