@@ -117,14 +117,17 @@ public class WaitingService {
     public void allocateNextWaitlistedUser(Sessions session) {
         if (session.getSpotsLeft() <= 0)
             return;
+
         if (!session.getStartTime().isAfter(LocalDateTime.now()) || session.getStatus() == SessionStatus.CANCELLED || session.getStatus() == SessionStatus.COMPLETED ||
                 session.getActivity().getStatus() != ActivityStatus.ACTIVE) {
             return;
         }
+
         List<WaitlistEntry> waitingEntries = waitlistRepository.findBySessionIdAndStatusOrderByEntryIdAsc(session.getId(), WaitListStatus.WAITING);
         for (WaitlistEntry entry : waitingEntries ) {
             if (session.getSpotsLeft() <= 0)
                 break;
+
             User user = entry.getUser();
             if (user == null || user.getStatus() != UserStatus.ACTIVE || user.getRole() != UserRole.USER)
                 continue;
@@ -133,23 +136,25 @@ public class WaitingService {
 
             if (alreadyBooked)
                 continue;
+
             Bookings newBooking = new Bookings();
-            newBooking.setSession(session);
+
             newBooking.setUser(user);
-            newBooking.setStatus(BookingStatus.CONFIRMED);
+            newBooking.setSession(session);
             newBooking.setParticipants(1);
+            newBooking.setStatus(BookingStatus.CONFIRMED);
             newBooking.setBookingType(BookingType.INDIVIDUAL);
             newBooking.setPaymentStatus(PaymentStatus.PENDING_PAYMENT);
 
-            newBooking.setCreatedBy(user.getEmail());
-            newBooking.setUpdatedBy(user.getEmail());
-
-            //needs to be optimized
             BigDecimal subtotal = session.getActivity().getPricePerPerson();
 
             newBooking.setSubtotal(subtotal);
             newBooking.setDiscountPercent(BigDecimal.ZERO);
             newBooking.setTotalPrice(subtotal);
+
+            newBooking.setCreatedBy("SYSTEM_WAITLIST");
+            newBooking.setUpdatedBy("SYSTEM_WAITLIST");
+
             bookingsRepository.save(newBooking);
 
             session.setSpotsLeft(session.getSpotsLeft()-1);

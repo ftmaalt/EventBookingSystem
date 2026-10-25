@@ -13,6 +13,7 @@ import com.project.bookngo.model.response.BookingResponse;
 import com.project.bookngo.repository.BookingsRepository;
 import com.project.bookngo.repository.SessionsRepository;
 
+import com.project.bookngo.repository.WaitingListRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -59,6 +60,12 @@ class BookingsServiceTest {
     @Mock
     private EntityManager entityManager;
 
+    @Mock
+    private WaitingService waitingService;
+
+    @Mock
+    private WaitingListRepository waitingListRepository;
+
     @InjectMocks
     private BookingsService bookingsService;
 
@@ -69,7 +76,6 @@ class BookingsServiceTest {
     @BeforeEach
     void setUp() {
 
-        // Test customer
         customer = new User();
         customer.setId(1L);
         customer.setFullName("Sara Mohamed");
@@ -77,7 +83,6 @@ class BookingsServiceTest {
         customer.setRole(UserRole.USER);
         customer.setStatus(UserStatus.ACTIVE);
 
-        // Test activity
         Activities activity = new Activities();
         activity.setId(10L);
         activity.setTitle("Kayaking");
@@ -86,7 +91,6 @@ class BookingsServiceTest {
         );
         activity.setStatus(ActivityStatus.ACTIVE);
 
-        // Test session
         session = new Sessions();
         session.setId(100L);
         session.setActivity(activity);
@@ -100,7 +104,6 @@ class BookingsServiceTest {
                 LocalDateTime.now().plusDays(3).plusHours(2)
         );
 
-        // Test request
         request = new BookingRequest();
         request.setSessionId(session.getId());
         request.setParticipants(1);
@@ -274,4 +277,137 @@ class BookingsServiceTest {
                 pageable
         );
     }
+
+    @Test
+    @DisplayName("Cancellation releases seats and invokes waitlist allocation")
+    void shouldCancelBookingAndAllocateWaitlist() {
+
+        Bookings booking = new Bookings();
+        booking.setBookingId(200L);
+        booking.setUser(customer);
+        booking.setSession(session);
+        booking.setParticipants(1);
+        booking.setStatus(BookingStatus.CONFIRMED);
+
+        session.setCapacity(5);
+        session.setSpotsLeft(0);
+        session.setStatus(SessionStatus.FULL);
+
+        when(bookingsRepository.findById(200L))
+                .thenReturn(Optional.of(booking));
+
+        when(currentUserService.getCurrentUser())
+                .thenReturn(customer);
+
+        when(sessionsRepository.findByIdForUpdate(100L))
+                .thenReturn(Optional.of(session));
+
+        String result = bookingsService.cancelBooking(200L);
+
+        assertEquals(BookingStatus.CANCELLED, booking.getStatus());
+        assertEquals(1, session.getSpotsLeft());
+        assertEquals(SessionStatus.SCHEDULED, session.getStatus());
+
+        assertTrue(result.contains("cancelled successfully"));
+
+        verify(entityManager).refresh(booking);
+        verify(waitingService).allocateNextWaitlistedUser(session);
+        verify(bookingsRepository).save(booking);
+        verify(sessionsRepository).save(session);
+    }
+
+
+    @Test
+    @DisplayName("Cannot cancel a booking twice")
+    void shouldRejectAlreadyCancelledBooking() {
+
+        Bookings booking = new Bookings();
+        booking.setBookingId(200L);
+        booking.setUser(customer);
+        booking.setSession(session);
+        booking.setParticipants(1);
+        booking.setStatus(BookingStatus.CANCELLED);
+
+        when(bookingsRepository.findById(200L))
+                .thenReturn(Optional.of(booking));
+
+        when(currentUserService.getCurrentUser())
+                .thenReturn(customer);
+
+        when(sessionsRepository.findByIdForUpdate(100L))
+                .thenReturn(Optional.of(session));
+
+        assertThrows(
+                BusinessConflictsException.class,
+                () -> bookingsService.cancelBooking(200L)
+        );
+
+        verify(waitingService, never())
+                .allocateNextWaitlistedUser(any(Sessions.class));
+
+        verify(bookingsRepository, never())
+                .save(any(Bookings.class));
+
+        verify(sessionsRepository, never())
+                .save(any(Sessions.class));
+    }
+
+    @Test
+    @DisplayName("Cannot cancel a booking after session start")
+    void shouldRejectCancellationAfterSessionStart() {
+
+        Bookings booking = new Bookings();
+        booking.setBookingId(200L);
+        booking.setUser(customer);
+        booking.setSession(session);
+        booking.setParticipants(1);
+        booking.setStatus(BookingStatus.CONFIRMED);
+
+        session.setStartTime(LocalDateTime.now().minusHours(1));
+
+        when(bookingsRepository.findById(200L))
+                .thenReturn(Optional.of(booking));
+
+        when(currentUserService.getCurrentUser())
+                .thenReturn(customer);
+
+        when(sessionsRepository.findByIdForUpdate(100L))
+                .thenReturn(Optional.of(session));
+
+        assertThrows(
+                BusinessConflictsException.class,
+                () -> bookingsService.cancelBooking(200L)
+        );
+
+        verify(waitingService, never())
+                .allocateNextWaitlistedUser(any(Sessions.class));
+
+        verify(bookingsRepository, never())
+                .save(any(Bookings.class));
+    }
+    @Test
+    @DisplayName("Should prevent direct booking when customers are waiting")
+    void shouldRejectDirectBookingWhenWaitlistExists() {
+
+        mockBookingContext();
+
+        when(waitingListRepository.existsBySessionIdAndStatus(
+                100L,
+                WaitListStatus.WAITING
+        )).thenReturn(true);
+
+        assertThrows(
+                BusinessConflictsException.class,
+                () -> bookingsService.createBooking(request)
+        );
+
+        verify(bookingsRepository, never())
+                .save(any(Bookings.class));
+
+        verify(sessionsRepository, never())
+                .save(any(Sessions.class));
+    }
+
+
+
 }
