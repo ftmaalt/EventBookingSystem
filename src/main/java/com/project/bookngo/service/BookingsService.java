@@ -39,7 +39,7 @@ public class BookingsService {
     private final CurrentUserService currentUserService;
     private final WaitingListRepository waitingListRepository;
 
-    public BookingsService(BookingsRepository bookingsRepository, SessionsRepository sessionsRepository, EmailService emailService, NotificationService notificationService, AuditLogService auditLogService, WaitingService waitingService, WaitlistEntry entry, EntityManager entityManager, CurrentUserService currentUserService, WaitingListRepository waitingListRepository) {
+    public BookingsService(BookingsRepository bookingsRepository, SessionsRepository sessionsRepository, EmailService emailService, NotificationService notificationService, AuditLogService auditLogService, WaitingService waitingService, EntityManager entityManager, CurrentUserService currentUserService, WaitingListRepository waitingListRepository) {
         this.bookingsRepository = bookingsRepository;
         this.sessionsRepository = sessionsRepository;
         this.emailService = emailService;
