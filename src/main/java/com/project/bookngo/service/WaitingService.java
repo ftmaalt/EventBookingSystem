@@ -11,6 +11,9 @@ import com.project.bookngo.model.response.WaitListResponse;
 import com.project.bookngo.repository.BookingsRepository;
 import com.project.bookngo.repository.SessionsRepository;
 import com.project.bookngo.repository.WaitingListRepository;
+import com.project.bookngo.service.event.BookingNotificationEvent;
+import com.project.bookngo.service.event.BookingNotificationType;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +32,7 @@ public class WaitingService {
     private final SessionsRepository sessionsRepository;
     private final BookingsRepository bookingsRepository;
     private final CurrentUserService currentUserService;
+    private final ApplicationEventPublisher eventPublisher;
 
 
     @Transactional
@@ -155,7 +159,8 @@ public class WaitingService {
             newBooking.setCreatedBy("SYSTEM_WAITLIST");
             newBooking.setUpdatedBy("SYSTEM_WAITLIST");
 
-            bookingsRepository.save(newBooking);
+           Bookings saved =  bookingsRepository.save(newBooking);
+            eventPublisher.publishEvent(new BookingNotificationEvent(saved.getBookingId(), BookingNotificationType.WAITLIST_ALLOCATED));
 
             session.setSpotsLeft(session.getSpotsLeft()-1);
             if (session.getSpotsLeft() == 0) {
