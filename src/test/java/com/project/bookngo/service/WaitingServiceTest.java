@@ -5,6 +5,8 @@ import com.project.bookngo.model.*;
 import com.project.bookngo.model.enums.*;
 import com.project.bookngo.repository.*;
 
+import com.project.bookngo.service.event.BookingNotificationEvent;
+import com.project.bookngo.service.event.BookingNotificationType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,6 +14,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -35,6 +38,9 @@ class WaitingServiceTest {
 
     @Mock
     private CurrentUserService currentUserService;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private WaitingService waitingService;
@@ -93,7 +99,12 @@ class WaitingServiceTest {
                         100L, WaitListStatus.WAITING
                 ))
                 .thenReturn(List.of(firstEntry, secondEntry));
-
+        when(bookingsRepository.save(any(Bookings.class)))
+                .thenAnswer(invocation -> {
+                    Bookings booking = invocation.getArgument(0);
+                    booking.setBookingId(500L);
+                    return booking;
+                });
         waitingService.allocateNextWaitlistedUser(session);
 
         // First person gets the only available seat.
@@ -128,6 +139,13 @@ class WaitingServiceTest {
 
         verify(waitlistRepository).save(firstEntry);
         verify(waitlistRepository, never()).save(secondEntry);
+
+        verify(eventPublisher).publishEvent(
+                new BookingNotificationEvent(
+                        500L,
+                        BookingNotificationType.WAITLIST_ALLOCATED
+                )
+        );
     }
 
     @Test
@@ -151,7 +169,12 @@ class WaitingServiceTest {
                         100L, WaitListStatus.WAITING
                 ))
                 .thenReturn(List.of(firstEntry, secondEntry));
-
+        when(bookingsRepository.save(any(Bookings.class)))
+                .thenAnswer(invocation -> {
+                    Bookings booking = invocation.getArgument(0);
+                    booking.setBookingId(500L);
+                    return booking;
+                });
         waitingService.allocateNextWaitlistedUser(session);
 
         assertEquals(WaitListStatus.WAITING, firstEntry.getStatus());
@@ -166,6 +189,8 @@ class WaitingServiceTest {
                 captor.getValue().getUser().getId());
 
         assertEquals(0, session.getSpotsLeft());
+        verify(eventPublisher).publishEvent(
+                new BookingNotificationEvent(500L, BookingNotificationType.WAITLIST_ALLOCATED));
     }
 
     @Test

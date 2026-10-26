@@ -4,6 +4,7 @@ import com.project.bookngo.model.Bookings;
 import com.project.bookngo.model.enums.BookingStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -29,4 +30,8 @@ public interface BookingsRepository extends JpaRepository<Bookings, Long> {
     boolean existsByUserIdAndSessionIdAndStatusIn(Long userId, Long sessionId, Collection<BookingStatus> statuses);
     @Query("SELECT b FROM Bookings b WHERE b.user.id = :userId AND (:status IS NULL OR b.status = :status)")
     Page<Bookings> findMyBookings(@Param("userId") Long userId, @Param("status") BookingStatus status, Pageable pageable);
+    @EntityGraph(attributePaths = {"user", "session", "session.activity"})
+    @Query("SELECT b FROM Bookings b WHERE b.bookingId = :bookingId")
+    Optional<Bookings> findForNotification(@Param("bookingId") Long bookingId);
+
 }
