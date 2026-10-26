@@ -6,12 +6,15 @@ import com.project.bookngo.model.*;
 import com.project.bookngo.model.enums.*;
 import com.project.bookngo.model.request.BookingRequest;
 import com.project.bookngo.repository.*;
+import com.project.bookngo.security.JwtUtils;
+import com.project.bookngo.security.MyUserDetails;
 import com.project.bookngo.service.*;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -20,6 +23,11 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.math.BigDecimal;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -27,7 +35,7 @@ import java.util.concurrent.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class BookingConcurrencyIntegrationTest {
 
@@ -55,6 +63,9 @@ class BookingConcurrencyIntegrationTest {
     @Autowired
     private ActivitiesRepository activitiesRepository;
 
+    @Autowired
+    private JwtUtils jwtUtils;
+
     @MockitoBean
     private EmailService emailService;
 
@@ -70,6 +81,9 @@ class BookingConcurrencyIntegrationTest {
 
     private static final long LATCH_TIMEOUT_SECONDS = 10;
     private static final long RESULT_TIMEOUT_SECONDS = 20;
+
+    @LocalServerPort
+    private int port;
 
 
     @BeforeEach
@@ -166,48 +180,6 @@ class BookingConcurrencyIntegrationTest {
         }
     }
 
-    @Test
-    void onlyOneUserCanBookTheLastSeat() throws Exception {
-
-        ExecutorService executor = Executors.newFixedThreadPool(2);
-
-        CountDownLatch ready = new CountDownLatch(2);
-        CountDownLatch start = new CountDownLatch(1);
-
-        try {
-            Future<Boolean> first = executor.submit(
-                    () -> attemptBooking(firstEmail, ready, start));
-
-            Future<Boolean> second = executor.submit(
-                    () -> attemptBooking(secondEmail, ready, start));
-
-            assertTrue(ready.await(LATCH_TIMEOUT_SECONDS, TimeUnit.SECONDS));
-            start.countDown();
-
-            boolean firstSucceeded = first.get(RESULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            boolean secondSucceeded = second.get(RESULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-
-            assertNotEquals(firstSucceeded, secondSucceeded);
-
-            Sessions savedSession = sessionsRepository.findById(sessionId).orElseThrow();
-
-            assertEquals(0, savedSession.getSpotsLeft());
-            assertEquals(SessionStatus.FULL, savedSession.getStatus());
-
-            List<Bookings> savedBookings = bookingsRepository.findBySessionId(sessionId);
-
-            assertEquals(1, savedBookings.size());
-            assertEquals(1, savedBookings.get(0).getParticipants());
-            assertEquals(
-                    BookingStatus.CONFIRMED,
-                    savedBookings.get(0).getStatus());
-
-        } finally {
-            start.countDown();
-            executor.shutdownNow();
-            executor.awaitTermination(5, TimeUnit.SECONDS);
-        }
-    }
 
     private Bookings createConfirmedBooking(User user, Sessions session) {
         Bookings booking = new Bookings();
@@ -267,6 +239,79 @@ class BookingConcurrencyIntegrationTest {
             return false;
         }
     }
+
+    private HttpResponse<String> sendHttpBooking(
+            HttpClient client,
+            String token,
+            CountDownLatch ready,
+            CountDownLatch start
+    ) throws Exception {
+
+        String body = """
+            {"sessionId": %d,"participants": 1,"bookingType": "INDIVIDUAL"
+                }""".formatted(sessionId);
+
+        ready.countDown();
+
+        if (!start.await(LATCH_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+            throw new IllegalStateException("Start signal timed out");
+        }
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:" + port + "/api/bookings"))
+                .header("Authorization", "Bearer " + token)
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(15))
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+
+        return client.send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
+
+    @Test
+    void onlyOneUserCanBookTheLastSeat() throws Exception {
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+
+        try {
+            Future<Boolean> first = executor.submit(
+                    () -> attemptBooking(firstEmail, ready, start));
+
+            Future<Boolean> second = executor.submit(
+                    () -> attemptBooking(secondEmail, ready, start));
+
+            assertTrue(ready.await(LATCH_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+            start.countDown();
+
+            boolean firstSucceeded = first.get(RESULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            boolean secondSucceeded = second.get(RESULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+            assertNotEquals(firstSucceeded, secondSucceeded);
+
+            Sessions savedSession = sessionsRepository.findById(sessionId).orElseThrow();
+
+            assertEquals(0, savedSession.getSpotsLeft());
+            assertEquals(SessionStatus.FULL, savedSession.getStatus());
+
+            List<Bookings> savedBookings = bookingsRepository.findBySessionId(sessionId);
+
+            assertEquals(1, savedBookings.size());
+            assertEquals(1, savedBookings.get(0).getParticipants());
+            assertEquals(
+                    BookingStatus.CONFIRMED,
+                    savedBookings.get(0).getStatus());
+
+        } finally {
+            start.countDown();
+            executor.shutdownNow();
+            executor.awaitTermination(5, TimeUnit.SECONDS);
+        }
+    }
+
 
     @Test
     void simultaneousCancellationsAllocateWaitlist() throws Exception {
@@ -474,4 +519,72 @@ class BookingConcurrencyIntegrationTest {
             executor.awaitTermination(5, TimeUnit.SECONDS);
         }
     }
+
+
+    @Test
+    void concurrentHttpBookingsAllowOnlyOneReservation() throws Exception {
+        User customerA = usersRepository.findUserByEmail(firstEmail);
+        User customerB = usersRepository.findUserByEmail(secondEmail);
+
+        String tokenA = jwtUtils.generateJwtToken(new MyUserDetails(customerA));
+        String tokenB = jwtUtils.generateJwtToken(new MyUserDetails(customerB));
+
+        HttpClient client = HttpClient.newHttpClient();
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+
+        try {
+            Future<HttpResponse<String>> first = executor.submit(
+                    () -> sendHttpBooking(client, tokenA, ready, start)
+            );
+
+            Future<HttpResponse<String>> second = executor.submit(
+                    () -> sendHttpBooking(client, tokenB, ready, start)
+            );
+
+            assertTrue(ready.await(LATCH_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+            start.countDown();
+
+            HttpResponse<String> responseA =
+                    first.get(RESULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+            HttpResponse<String> responseB =
+                    second.get(RESULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+            System.out.println("Customer A: HTTP " + responseA.statusCode());
+            System.out.println("Customer B: HTTP " + responseB.statusCode());
+
+            List<Integer> statuses = List.of(
+                    responseA.statusCode(),
+                    responseB.statusCode()
+            ).stream().sorted().toList();
+
+            assertEquals(List.of(201, 409), statuses, "Responses: A=" + responseA.body() + " B=" + responseB.body());
+
+            List<Bookings> bookings =
+                    bookingsRepository.findBySessionId(sessionId);
+
+            long confirmedCount = bookings.stream().filter(b -> b.getStatus() == BookingStatus.CONFIRMED).count();
+
+            assertEquals(1, bookings.size());
+            assertEquals(1L, confirmedCount);
+
+            Sessions savedSession = sessionsRepository
+                    .findById(sessionId)
+                    .orElseThrow();
+
+            assertEquals(1, savedSession.getCapacity());
+            assertEquals(0, savedSession.getSpotsLeft());
+            assertEquals(SessionStatus.FULL, savedSession.getStatus());
+
+        } finally {
+            start.countDown();
+            executor.shutdownNow();
+            executor.awaitTermination(5, TimeUnit.SECONDS);
+        }
+    }
+
 }
