@@ -68,8 +68,8 @@ class BookingConcurrencyIntegrationTest {
     private String firstEmail;
     private String secondEmail;
 
-    private static final long LATCH_TIMEOUT_SECONDS=10;
-    private static final long RESULT_TIMEOUT_SECONDS=20;
+    private static final long LATCH_TIMEOUT_SECONDS = 10;
+    private static final long RESULT_TIMEOUT_SECONDS = 20;
 
 
     @BeforeEach
@@ -208,6 +208,7 @@ class BookingConcurrencyIntegrationTest {
             executor.awaitTermination(5, TimeUnit.SECONDS);
         }
     }
+
     private Bookings createConfirmedBooking(User user, Sessions session) {
         Bookings booking = new Bookings();
 
@@ -257,6 +258,16 @@ class BookingConcurrencyIntegrationTest {
         }
     }
 
+    private boolean attemptDuplicateCancellation(String email, Long bookingId, CountDownLatch ready, CountDownLatch start) throws Exception {
+        try {
+            attemptCancellation(email, bookingId, ready, start);
+            return true;
+
+        } catch (BusinessConflictsException ex) {
+            return false;
+        }
+    }
+
     @Test
     void simultaneousCancellationsAllocateWaitlist() throws Exception {
         Sessions session = sessionsRepository.findById(sessionId)
@@ -295,10 +306,10 @@ class BookingConcurrencyIntegrationTest {
 
         try {
             Future<String> first = executor.submit(
-                    () -> attemptCancellation(firstEmail,bookingA.getBookingId(), ready, start));
+                    () -> attemptCancellation(firstEmail, bookingA.getBookingId(), ready, start));
 
             Future<String> second = executor.submit(
-                    () -> attemptCancellation(secondEmail,bookingB.getBookingId(), ready, start));
+                    () -> attemptCancellation(secondEmail, bookingB.getBookingId(), ready, start));
             assertTrue(ready.await(LATCH_TIMEOUT_SECONDS, TimeUnit.SECONDS));
             start.countDown();
 
@@ -306,14 +317,14 @@ class BookingConcurrencyIntegrationTest {
             second.get(RESULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
 
-            Bookings cancelledA= bookingsRepository.findById(bookingA.getBookingId()).orElseThrow();
-            Bookings cancelledB= bookingsRepository.findById(bookingB.getBookingId()).orElseThrow();
+            Bookings cancelledA = bookingsRepository.findById(bookingA.getBookingId()).orElseThrow();
+            Bookings cancelledB = bookingsRepository.findById(bookingB.getBookingId()).orElseThrow();
 
             assertAll("Original Bookings", () -> assertEquals(BookingStatus.CANCELLED, cancelledA.getStatus()),
-                    () ->  assertEquals(BookingStatus.CANCELLED, cancelledB.getStatus()));
+                    () -> assertEquals(BookingStatus.CANCELLED, cancelledB.getStatus()));
 
-            WaitlistEntry updatedSara= waitingListRepository.findById(saraEntry.getEntryId()).orElseThrow();
-            WaitlistEntry updatedAli= waitingListRepository.findById(aliEntry.getEntryId()).orElseThrow();
+            WaitlistEntry updatedSara = waitingListRepository.findById(saraEntry.getEntryId()).orElseThrow();
+            WaitlistEntry updatedAli = waitingListRepository.findById(aliEntry.getEntryId()).orElseThrow();
 
             assertAll("Waitlist Entries",
                     () -> assertEquals(WaitListStatus.BOOKED, updatedSara.getStatus()),
@@ -321,12 +332,12 @@ class BookingConcurrencyIntegrationTest {
 
             assertAll("Automatic waitlist bookings",
                     () -> assertTrue(bookingsRepository.findByUserIdAndSessionIdAndStatus(sara.getId(),
-                            sessionId,
-                            BookingStatus.CONFIRMED).isPresent(),
+                                    sessionId,
+                                    BookingStatus.CONFIRMED).isPresent(),
                             "Sara should have a confirmed booking"),
 
                     () -> assertTrue(bookingsRepository.findByUserIdAndSessionIdAndStatus(ali.getId(),
-                            sessionId, BookingStatus.CONFIRMED).isPresent(),
+                                    sessionId, BookingStatus.CONFIRMED).isPresent(),
                             "Ali should have a confirmed booking"
                     ));
             List<Bookings> savedBookings = bookingsRepository.findBySessionId(sessionId);
@@ -407,7 +418,7 @@ class BookingConcurrencyIntegrationTest {
         Sessions savedSession = sessionsRepository.findById(sessionId).orElseThrow();
 
         assertEquals(0, savedSession.getSpotsLeft());
-        assertEquals(SessionStatus.FULL,savedSession.getStatus());
+        assertEquals(SessionStatus.FULL, savedSession.getStatus());
 
         Bookings cancelledBooking = bookingsRepository.findById(bookingA.getBookingId()).orElseThrow();
 
@@ -416,6 +427,51 @@ class BookingConcurrencyIntegrationTest {
 
     }
 
+    @Test
+    void concurrentCancellationOfSameBookingRestoresSeatOnlyOnce()
+            throws Exception {
+        Sessions session = sessionsRepository.findById(sessionId).orElseThrow();
+        User customer = usersRepository.findUserByEmail(firstEmail);
+
+        Bookings booking = createConfirmedBooking(customer, session);
+        session.setSpotsLeft(0);
+        session.setStatus(SessionStatus.FULL);
+        sessionsRepository.saveAndFlush(session);
 
 
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+
+        try {
+            Future<Boolean> first = executor.submit(() -> attemptDuplicateCancellation(firstEmail, booking.getBookingId(), ready, start));
+            Future<Boolean> second = executor.submit(() -> attemptDuplicateCancellation(firstEmail, booking.getBookingId(), ready, start));
+
+            assertTrue(ready.await(LATCH_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+            start.countDown();
+
+            boolean firstSucceeded = first.get(RESULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+            boolean secondSucceeded = second.get(RESULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+            assertNotEquals(firstSucceeded, secondSucceeded);
+            Bookings updatedBooking = bookingsRepository.findById(booking.getBookingId()).orElseThrow();
+
+            Sessions updatedSession = sessionsRepository.findById(sessionId).orElseThrow();
+
+            assertAll("Duplicate cancellation consistency",
+                    () -> assertEquals(BookingStatus.CANCELLED, updatedBooking.getStatus()),
+                    () -> assertEquals(1, updatedSession.getSpotsLeft()),
+                    () -> assertEquals(1, updatedSession.getCapacity()),
+                    () -> assertEquals(SessionStatus.SCHEDULED, updatedSession.getStatus()),
+                    () -> assertEquals(1, bookingsRepository.findBySessionId(sessionId).size())
+
+            );
+        } finally {
+            start.countDown();
+            executor.shutdownNow();
+            executor.awaitTermination(5, TimeUnit.SECONDS);
+        }
+    }
 }
