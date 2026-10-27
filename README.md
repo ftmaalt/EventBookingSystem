@@ -106,6 +106,15 @@ Vite typically serves locally on port 5173; use the URL displayed by Vite. Front
 - These localhost URLs work only while a local backend is running; reviewers must start the project or use a deployed instance.
 - The current API definition provides paths, DTO schemas, and the JWT security scheme. Endpoint-specific descriptions, error-response codes, and examples should be expanded before final evaluation.
 
+## Concurrency & Race Condition Handling
+ 1. Identified a race condition in which two customers attempt to book the last available seat in a session simultaneously.
+ 2. Potential Impact: Both requests may be approved without synchronization (overbooked session)
+ 3. Solution: PostgreSQL pessimistic locking using `@Lock(PESSIMISTIC_WRITE)` and `@Transactional`, ensuring safe seat allocation.
+ 4. Testing approaches : Java `ExecutorService`, `CountDownLatch`, PostgreSQL integration tests, and simultaneous REST requests demonstrated in ```BookingConcurrencyIntegrationTest.java```
+
+
+
+
 ## API endpoint reference
 
 Endpoints below were extracted from the controller mappings in the uploaded source. Access labels describe typical protection,
@@ -316,8 +325,6 @@ Development has used feature-specific branches (including controllers, services,
 - **Booking integrity:** status transitions and remaining capacity must stay consistent under concurrent requests.
 - **Security:** JWT authentication must be combined with role checks and ownership validation, not just route-level authentication.
 - **Configuration:** local SMTP, third-party services, and database credentials need environment-specific management.
-
-These are documented technical challenges; completion of every corrective action is not claimed.
 
 ## Future improvements
 
