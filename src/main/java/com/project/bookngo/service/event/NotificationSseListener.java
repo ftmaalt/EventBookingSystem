@@ -25,11 +25,9 @@ public class NotificationSseListener {
             sseService.sendNotification(event.userId(), event.type(), event.notification());
 
         } catch (Exception ex) {
-            logger.error("Failed to broadcast SSE '{}' to user {}", event.type(), event.userId(), ex);
+            logger.error(
+                    "Failed to broadcast SSE '{}' to user {}", event.type(), event.userId(), ex);
         }
     }
 }
 
-
-
-}
