@@ -6,6 +6,8 @@ import com.project.bookngo.model.User;
 import com.project.bookngo.model.response.NotificationResponse;
 import com.project.bookngo.repository.NotificationRepository;
 import com.project.bookngo.repository.UsersRepository;
+import com.project.bookngo.service.event.NotificationCreatedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,58 +22,39 @@ public class NotificationService {
 
     private final UsersRepository usersRepository;
 
-    private final SSEService sseService;
+    private final ApplicationEventPublisher eventPublisher;
 
     private final CurrentUserService currentUserService;
 
     private static final Logger logger =
             LoggerFactory.getLogger(NotificationService.class);
 
-    public NotificationService(NotificationRepository notificationRepository, UsersRepository usersRepository, SSEService sseService, CurrentUserService currentUserService) {
+    public NotificationService(NotificationRepository notificationRepository, UsersRepository usersRepository, ApplicationEventPublisher eventPublisher, CurrentUserService currentUserService) {
         this.notificationRepository = notificationRepository;
         this.usersRepository = usersRepository;
-        this.sseService = sseService;
+        this.eventPublisher = eventPublisher;
         this.currentUserService = currentUserService;
     }
 
+    @Transactional
+    public NotificationResponse create(User user, String type, String message) {
 
-    public NotificationResponse create(
-            User user,
-            String type,
-            String message
-    ) {
+        logger.info("Creating notification for user ID {} ({})", user.getId(), user.getEmail());
 
-        logger.info(
-                "Creating notification for user ID {} ({})",
-                user.getId(),
-                user.getEmail()
-        );
-
-        Notification notification =
-                new Notification();
+        Notification notification = new Notification();
 
         notification.setUser(user);
         notification.setType(type);
         notification.setMessage(message);
         notification.setRead(false);
 
-        Notification saved =
-                notificationRepository.save(notification);
+        Notification saved = notificationRepository.save(notification);
 
-        logger.info(
-                "Notification saved successfully. ID: {}, user ID: {}",
-                saved.getId(),
-                user.getId()
-        );
+        logger.info("Notification saved successfully. ID: {}, user ID: {}", saved.getId(), user.getId());
 
-        NotificationResponse response =
-                toResponse(saved);
+        NotificationResponse response = toResponse(saved);
 
-        sseService.sendNotification(
-                user.getId(),
-                type,
-                response
-        );
+        eventPublisher.publishEvent( new NotificationCreatedEvent(user.getId(), type, response));
 
         return response;
     }
