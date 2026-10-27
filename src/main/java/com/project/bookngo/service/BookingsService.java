@@ -6,14 +6,16 @@ import com.project.bookngo.exception.InvalidTimeSpecificationException;
 import com.project.bookngo.model.Bookings;
 import com.project.bookngo.model.Sessions;
 import com.project.bookngo.model.User;
-import com.project.bookngo.model.WaitlistEntry;
 import com.project.bookngo.model.enums.*;
 import com.project.bookngo.model.request.BookingRequest;
 import com.project.bookngo.model.response.BookingResponse;
 import com.project.bookngo.repository.BookingsRepository;
 import com.project.bookngo.repository.SessionsRepository;
 import com.project.bookngo.repository.WaitingListRepository;
+import com.project.bookngo.service.event.BookingNotificationEvent;
+import com.project.bookngo.service.event.BookingNotificationType;
 import jakarta.persistence.EntityManager;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -38,8 +40,9 @@ public class BookingsService {
     private static final Logger logger = LoggerFactory.getLogger(BookingsService.class);
     private final CurrentUserService currentUserService;
     private final WaitingListRepository waitingListRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public BookingsService(BookingsRepository bookingsRepository, SessionsRepository sessionsRepository, EmailService emailService, NotificationService notificationService, AuditLogService auditLogService, WaitingService waitingService, EntityManager entityManager, CurrentUserService currentUserService, WaitingListRepository waitingListRepository) {
+    public BookingsService(BookingsRepository bookingsRepository, SessionsRepository sessionsRepository, EmailService emailService, NotificationService notificationService, AuditLogService auditLogService, WaitingService waitingService, EntityManager entityManager, CurrentUserService currentUserService, WaitingListRepository waitingListRepository, ApplicationEventPublisher eventPublisher) {
         this.bookingsRepository = bookingsRepository;
         this.sessionsRepository = sessionsRepository;
         this.emailService = emailService;
@@ -49,6 +52,7 @@ public class BookingsService {
         this.entityManager = entityManager;
         this.currentUserService = currentUserService;
         this.waitingListRepository = waitingListRepository;
+        this.eventPublisher = eventPublisher;
     }
 
 
@@ -110,9 +114,9 @@ public class BookingsService {
             booking.setPaymentStatus(PaymentStatus.PENDING_PAYMENT);
 
             Bookings saved = bookingsRepository.save(booking);
+            eventPublisher.publishEvent(new BookingNotificationEvent(saved.getBookingId(), BookingNotificationType.BOOKING_CONFIRMED));
             logger.info("Booking created successfully with ID: {} for session ID: {}", saved.getBookingId(), saved.getSession().getId());
 
-            emailService.sendBookingVerifiedEmail(saved.getUser().getEmail(), saved);
             notificationService.create(
                     saved.getUser(),
                     "booking-confirmed",
@@ -157,6 +161,7 @@ public class BookingsService {
         booking.setStatus(BookingStatus.CANCELLED);
         booking.setUpdatedBy(currentUser.getEmail());
         bookingsRepository.save(booking);
+        eventPublisher.publishEvent(new BookingNotificationEvent(booking.getBookingId(), BookingNotificationType.BOOKING_CANCELLED));
 
         session.setSpotsLeft(session.getSpotsLeft() + booking.getParticipants());
         if (session.getStatus() == SessionStatus.FULL) {
@@ -167,7 +172,6 @@ public class BookingsService {
 
         auditLogService.logAction("BOOKING_CANCELLED", currentUserService.getCurrentUser().getEmail(), "Booking", booking.getBookingId(), "booking was cancelled by user successfully");
 
-        emailService.sendSessionCancelledEmail(booking.getUser().getEmail(), booking);
         return "Booking with id:" + id + " has been cancelled successfully.";
     }
 

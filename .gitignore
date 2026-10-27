@@ -35,6 +35,7 @@ build/
 
 ### Application Configuration ###
 **/application-dev.properties
+**/application-test.properties
 
 ### Logs ###
 logs
