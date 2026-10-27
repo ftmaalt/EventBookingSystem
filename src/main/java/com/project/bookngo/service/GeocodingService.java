@@ -1,5 +1,6 @@
 package com.project.bookngo.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -23,12 +24,20 @@ public class GeocodingService {
     private final JsonMapper objectMapper;
     private final String apiKey;
 
-    public GeocodingService(JsonMapper objectMapper, @Value("${google.maps.api-key:}") String apiKey){
+    @Autowired
+    public GeocodingService(JsonMapper objectMapper, @Value("${google.maps.api-key:}") String apiKey) {
+        this(
+                objectMapper,
+                apiKey,
+                HttpClient.newBuilder()
+                        .connectTimeout(Duration.ofSeconds(5))
+                        .build()
+        );
+    }
+    GeocodingService(JsonMapper objectMapper, String apiKey, HttpClient httpClient) {
         this.objectMapper = objectMapper;
         this.apiKey = apiKey;
-
-        this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(5)).build();
+        this.httpClient = httpClient;
     }
     /**
      * Resolves a provider-entered address into geographic coordinates
