@@ -650,4 +650,123 @@ class BookingConcurrencyIntegrationTest {
 
         verify(emailService, after(5000).times(1)).sendBookingVerifiedEmail(eq(firstEmail), argThat(booking -> bookingId.equals(booking.getBookingId())));
     }
+
+    @Test
+    void cancelledBookingSendsEmailAfterCommit() {
+        Sessions session = sessionsRepository.findById(sessionId).orElseThrow();
+
+        User customer = usersRepository.findUserByEmail(firstEmail);
+
+        Bookings booking = createConfirmedBooking(customer, session);
+
+        session.setSpotsLeft(0);
+        session.setStatus(SessionStatus.FULL);
+        sessionsRepository.saveAndFlush(session);
+
+        var auth = new UsernamePasswordAuthenticationToken(firstEmail, null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
+
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        try{
+            bookingsService.cancelBooking(booking.getBookingId());
+        }finally {
+            SecurityContextHolder.clearContext();
+        }
+        Bookings updatedBooking = bookingsRepository.findById(booking.getBookingId()).orElseThrow();
+
+        Sessions updatedSession = sessionsRepository.findById(sessionId).orElseThrow();
+
+        assertAll("Cancellation consistency",
+                () -> assertEquals(BookingStatus.CANCELLED,
+                                    updatedBooking.getStatus()
+                        ),
+                () -> assertEquals(1, updatedSession.getSpotsLeft()),
+                () -> assertEquals(
+                        SessionStatus.SCHEDULED,
+                        updatedSession.getStatus()
+                )
+        );
+
+        verify(emailService, timeout(5000).times(1)).sendSessionCancelledEmail(
+                eq(firstEmail),
+                argThat(b -> b.getBookingId().equals(booking.getBookingId())
+                && b.getStatus() == BookingStatus.CANCELLED));
+    }
+
+    @Test
+    void waitlistAllocationSendsEmailAfterCommit() {
+        Sessions session = sessionsRepository.findById(sessionId).orElseThrow();
+
+        User customer = usersRepository.findUserByEmail(firstEmail);
+
+        Bookings originalBooking = createConfirmedBooking(customer, session);
+
+        session.setSpotsLeft(0);
+        session.setStatus(SessionStatus.FULL);
+        sessionsRepository.saveAndFlush(session);
+
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+
+        User sara = createUser(
+                "Sara",
+                "sara-" + suffix + "@test.com",
+                UserRole.USER
+        );
+
+        User ali = createUser(
+                "Ali",
+                "ali-" + suffix + "@test.com",
+                UserRole.USER
+        );
+
+        WaitlistEntry saraEntry = createWaitingEntry(sara, session);
+
+        WaitlistEntry aliEntry = createWaitingEntry(ali, session);
+
+        assertTrue(saraEntry.getEntryId() < aliEntry.getEntryId());
+
+        var auth = new UsernamePasswordAuthenticationToken(firstEmail, null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
+
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        try {
+            bookingsService.cancelBooking(
+                    originalBooking.getBookingId()
+            );
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+
+        WaitlistEntry updatedSara = waitingListRepository.findById(saraEntry.getEntryId()).orElseThrow();
+
+        WaitlistEntry updatedAli = waitingListRepository.findById(aliEntry.getEntryId()).orElseThrow();
+
+        assertEquals(WaitListStatus.BOOKED, updatedSara.getStatus());
+        assertEquals(WaitListStatus.WAITING, updatedAli.getStatus());
+
+        Bookings saraBooking = bookingsRepository
+                .findByUserIdAndSessionIdAndStatus(
+                        sara.getId(),
+                        sessionId,
+                        BookingStatus.CONFIRMED)
+                .orElseThrow();
+
+        assertTrue(bookingsRepository.findByUserIdAndSessionIdAndStatus(
+                                ali.getId(),
+                                sessionId,
+                                BookingStatus.CONFIRMED).isEmpty()
+        );
+
+        Sessions updatedSession = sessionsRepository.findById(sessionId).orElseThrow();
+
+        assertEquals(0, updatedSession.getSpotsLeft());
+        assertEquals(SessionStatus.FULL, updatedSession.getStatus());
+
+        verify(emailService, timeout(5000).times(1)).sendBookingVerifiedEmail(eq(sara.getEmail()), argThat(b -> saraBooking.getBookingId().equals(b.getBookingId())));
+
+        verify(emailService, timeout(5000).times(1)).sendSessionCancelledEmail(eq(firstEmail), any(Bookings.class));
+
+        verify(emailService, never()).sendBookingVerifiedEmail(eq(ali.getEmail()), any(Bookings.class));
+    }
+
 }
