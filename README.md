@@ -315,10 +315,9 @@ Development has used feature-specific branches (including controllers, services,
 - A `LazyInitializationException` was observed in `ReminderService` when accessing a lazy-loaded session from scheduled work. Verify the transactional/fetch fix in the latest running build.
 - OpenAPI paths and schemas are generated, but not all operations document their error codes, examples, or detailed descriptions.
 - Recheck role restrictions on category and session modification endpoints and verify resource ownership.
-- Validate concurrency protection for the last available session spots, cancellation behavior, and rate limiting using a running PostgreSQL instance.
-- Verify the **test Spring profile** and keep production-only credentials outside committed properties files.
+- Verify the ReminderService lazy-loading fix during a scheduled reminder execution.
 - Keep the DBML synchronized with schema changes and exported dbdiagram images.
-
+- Review role restrictions and ownership validation for session status modifications.
 ## Major implementation challenges
 
 - **JPA relationships and scheduled tasks:** lazy entity loading can fail when code accesses relationships after the persistence context closes.
