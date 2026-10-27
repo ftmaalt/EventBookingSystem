@@ -10,17 +10,23 @@ import com.project.bookngo.security.JwtUtils;
 import com.project.bookngo.security.MyUserDetails;
 import com.project.bookngo.service.*;
 
+import com.project.bookngo.service.event.BookingNotificationEvent;
+import com.project.bookngo.service.event.BookingNotificationType;
+import org.hibernate.Transaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -34,6 +40,8 @@ import java.util.UUID;
 import java.util.concurrent.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -65,6 +73,12 @@ class BookingConcurrencyIntegrationTest {
 
     @Autowired
     private JwtUtils jwtUtils;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     @MockitoBean
     private EmailService emailService;
@@ -248,8 +262,8 @@ class BookingConcurrencyIntegrationTest {
     ) throws Exception {
 
         String body = """
-            {"sessionId": %d,"participants": 1,"bookingType": "INDIVIDUAL"
-                }""".formatted(sessionId);
+                {"sessionId": %d,"participants": 1,"bookingType": "INDIVIDUAL"
+                    }""".formatted(sessionId);
 
         ready.countDown();
 
@@ -587,4 +601,53 @@ class BookingConcurrencyIntegrationTest {
         }
     }
 
+    @Test
+    void rolledBackBookingDoesNotSendEmail() {
+        TransactionTemplate transaction = new TransactionTemplate(transactionManager);
+
+        Long bookingId = transaction.execute(status -> {
+            User customer = usersRepository.findUserByEmail(firstEmail);
+
+            Sessions session = sessionsRepository.findById(sessionId).orElseThrow();
+
+            Bookings booking = createConfirmedBooking(customer, session);
+
+            eventPublisher.publishEvent(new BookingNotificationEvent(
+                    booking.getBookingId(), BookingNotificationType.BOOKING_CONFIRMED));
+
+            status.setRollbackOnly();
+            return booking.getBookingId();
+        });
+        assertNotNull(bookingId);
+
+        assertTrue(bookingsRepository.findById(bookingId).isEmpty(), "Booking should not exist after rollback");
+
+        verify(emailService, after(1000).never()).sendBookingVerifiedEmail(eq(firstEmail), any(Bookings.class));
+    }
+
+    @Test
+    void committedBookingSendsEmailAfterCommit() {
+        TransactionTemplate transaction = new TransactionTemplate(transactionManager);
+
+        Long bookingId = transaction.execute(status -> {
+            User customer = usersRepository.findUserByEmail(firstEmail);
+
+            Sessions session = sessionsRepository.findById(sessionId).orElseThrow();
+
+            Bookings booking = createConfirmedBooking(customer, session);
+
+            eventPublisher.publishEvent(new BookingNotificationEvent(
+                    booking.getBookingId(), BookingNotificationType.BOOKING_CONFIRMED));
+
+            verifyNoInteractions(emailService);
+
+            return booking.getBookingId();
+        });
+
+        assertNotNull(bookingId);
+
+        assertTrue(bookingsRepository.findById(bookingId).isPresent());
+
+        verify(emailService, after(5000).times(1)).sendBookingVerifiedEmail(eq(firstEmail), argThat(booking -> bookingId.equals(booking.getBookingId())));
+    }
 }

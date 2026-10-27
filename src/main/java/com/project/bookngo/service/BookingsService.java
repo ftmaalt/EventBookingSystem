@@ -117,7 +117,6 @@ public class BookingsService {
             eventPublisher.publishEvent(new BookingNotificationEvent(saved.getBookingId(), BookingNotificationType.BOOKING_CONFIRMED));
             logger.info("Booking created successfully with ID: {} for session ID: {}", saved.getBookingId(), saved.getSession().getId());
 
-            emailService.sendBookingVerifiedEmail(saved.getUser().getEmail(), saved);
             notificationService.create(
                     saved.getUser(),
                     "booking-confirmed",
@@ -173,7 +172,6 @@ public class BookingsService {
 
         auditLogService.logAction("BOOKING_CANCELLED", currentUserService.getCurrentUser().getEmail(), "Booking", booking.getBookingId(), "booking was cancelled by user successfully");
 
-        emailService.sendSessionCancelledEmail(booking.getUser().getEmail(), booking);
         return "Booking with id:" + id + " has been cancelled successfully.";
     }
 

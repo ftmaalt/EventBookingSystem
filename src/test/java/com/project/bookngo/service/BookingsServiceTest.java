@@ -14,6 +14,8 @@ import com.project.bookngo.repository.BookingsRepository;
 import com.project.bookngo.repository.SessionsRepository;
 
 import com.project.bookngo.repository.WaitingListRepository;
+import com.project.bookngo.service.event.BookingNotificationEvent;
+import com.project.bookngo.service.event.BookingNotificationType;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,12 +25,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.EventListener;
 import java.util.List;
 import java.util.Optional;
 
@@ -65,6 +69,9 @@ class BookingsServiceTest {
 
     @Mock
     private WaitingListRepository waitingListRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private BookingsService bookingsService;
@@ -206,10 +213,8 @@ class BookingsServiceTest {
         verify(sessionsRepository).save(session);
         verify(bookingsRepository).save(any(Bookings.class));
 
-        verify(emailService).sendBookingVerifiedEmail(
-                eq(customer.getEmail()),
-                any(Bookings.class)
-        );
+        verify(eventPublisher).publishEvent(new BookingNotificationEvent(200L, BookingNotificationType.BOOKING_CONFIRMED));
+        verifyNoInteractions(emailService);
     }
 
     @Test
@@ -314,6 +319,9 @@ class BookingsServiceTest {
         verify(waitingService).allocateNextWaitlistedUser(session);
         verify(bookingsRepository).save(booking);
         verify(sessionsRepository).save(session);
+
+        verify(eventPublisher).publishEvent(new BookingNotificationEvent(200L, BookingNotificationType.BOOKING_CANCELLED));
+
     }
 
 
