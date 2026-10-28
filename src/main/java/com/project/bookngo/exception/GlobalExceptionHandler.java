@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -55,6 +56,12 @@ public class GlobalExceptionHandler {
         }
 
         return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiErrorResponse> handleUnreadableBody(HttpMessageNotReadableException ex,
+            HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Request body must contain valid JSON with the expected field types.", request);
     }
 
     @ExceptionHandler(InvalidCredentials.class)

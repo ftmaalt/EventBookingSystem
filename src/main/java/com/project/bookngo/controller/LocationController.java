@@ -1,6 +1,7 @@
 package com.project.bookngo.controller;
 
 import com.project.bookngo.model.request.LocationRequest;
+import com.project.bookngo.model.request.LocationPinUpdateRequest;
 import com.project.bookngo.model.response.LocationResponse;
 import com.project.bookngo.service.LocationService;
 import jakarta.validation.Valid;
@@ -52,6 +53,13 @@ public class LocationController {
         logger.info("Calling update ==>");
         LocationResponse locationResponse =locationService.update(id,request);
         return ResponseEntity.status(HttpStatus.OK).body(locationResponse);
+    }
+
+    @PatchMapping("/{id}/pin")
+    @PreAuthorize("hasRole('PROVIDER')")
+    public ResponseEntity<LocationResponse> updatePin(@PathVariable Long id,
+            @Valid @RequestBody LocationPinUpdateRequest request) {
+        return ResponseEntity.ok(locationService.updatePin(id, request));
     }
 
     @DeleteMapping("/{id}")

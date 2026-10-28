@@ -14,4 +14,5 @@ public class LocationResponse {
     private Double longitude;
     private String googlePlaceId;
     private Boolean active;
+    private Long providerId;
 }

@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import { activitiesApi, sessionsApi } from "../api";
 import { useAuth } from "../auth";
 import Layout from "../components/Layout";
+import LocationMap from "../components/LocationMap";
 import { EmptyState, Loading, SectionHeader, StatusPill } from "../components/ui";
 import { formatDate, formatMoney, getError } from "../utils/format";
 import { isBookable } from "../utils/sessions";
@@ -124,22 +125,12 @@ export default function ActivityDetails() {
                 <strong>
                   {location.name}, {location.address}, {location.city}
                 </strong>
-                {location.latitude != null && location.longitude != null && (
-                  <>
-                    {" · "}
-                    <a
-                      href={`https://www.openstreetmap.org/?mlat=${location.latitude}&mlon=${location.longitude}#map=16/${location.latitude}/${location.longitude}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      View on map
-                    </a>
-                  </>
-                )}
               </p>
             )}
           </div>
         </div>
+
+        <LocationMap location={location} />
 
         <SectionHeader title="Available Sessions" text="Choose a session to continue with your booking." />
         <div className="session-list">

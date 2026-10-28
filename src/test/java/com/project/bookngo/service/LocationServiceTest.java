@@ -113,6 +113,7 @@ class LocationServiceTest {
                 () -> assertEquals(
                         "test-google-place-id", saved.getGooglePlaceId()),
                 () -> assertEquals(provider.getId(), saved.getProvider().getId()),
+                () -> assertEquals(provider.getId(), response.getProviderId()),
                 () -> assertEquals("test-google-place-id", response.getGooglePlaceId())
         );
     }
@@ -152,6 +153,10 @@ class LocationServiceTest {
         when(locationRepository.save(any(Location.class))).thenAnswer(invocation -> invocation.getArgument(0));
         LocationResponse result = locationService.update(10L, request);
         assertAll("Updated location",
+                () -> assertEquals(request.getName(), existing.getName()),
+                () -> assertEquals(request.getAddress(), existing.getAddress()),
+                () -> assertEquals(request.getCity(), existing.getCity()),
+                () -> assertEquals(provider.getId(), result.getProviderId()),
                 () -> assertEquals(
                         "new-place-id",
                         existing.getGooglePlaceId()),
@@ -165,6 +170,55 @@ class LocationServiceTest {
                         "new-place-id",
                         result.getGooglePlaceId()));
         verify(locationRepository).save(existing);
+    }
+
+    /** Demonstrates that text updates are rejected before geocoding when ownership differs. */
+    @Test
+    @DisplayName("Location: another provider cannot update or geocode a location")
+    void shouldRejectUpdateByAnotherProvider() {
+        User owner = new User();
+        owner.setId(99L);
+        Location existing = new Location();
+        existing.setId(10L);
+        existing.setProvider(owner);
+        existing.setName("Original name");
+        when(locationRepository.findById(10L)).thenReturn(Optional.of(existing));
+        when(usersRepository.findUserByEmail(provider.getEmail())).thenReturn(provider);
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> locationService.update(10L, request));
+
+        assertEquals("Original name", existing.getName());
+        verifyNoInteractions(geocodingService);
+        verify(locationRepository, never()).save(any(Location.class));
+    }
+
+    /** Demonstrates that name-only edits preserve a manual pin and do not re-geocode its address. */
+    @Test
+    @DisplayName("Location: name-only edit preserves the authoritative manual pin")
+    void shouldUpdateNameOnly() {
+        Location existing = new Location();
+        existing.setId(10L);
+        existing.setProvider(provider);
+        existing.setName("Old name");
+        existing.setAddress(request.getAddress());
+        existing.setCity(request.getCity());
+        existing.setLatitude(26.2);
+        existing.setLongitude(50.5);
+        existing.setGooglePlaceId(null);
+        when(locationRepository.findById(10L)).thenReturn(Optional.of(existing));
+        when(usersRepository.findUserByEmail(provider.getEmail())).thenReturn(provider);
+        when(locationRepository.save(existing)).thenReturn(existing);
+
+        LocationResponse result = locationService.update(10L, request);
+
+        assertEquals(request.getName(), result.getName());
+        assertEquals(request.getAddress(), result.getAddress());
+        assertEquals(request.getCity(), result.getCity());
+        assertEquals(26.2, result.getLatitude());
+        assertEquals(50.5, result.getLongitude());
+        assertNull(result.getGooglePlaceId());
+        verifyNoInteractions(geocodingService);
     }
 
     /**

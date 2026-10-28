@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 
 import App from "./App";
 import { AuthProvider } from "./auth";
+import { MapsProvider } from "./components/LocationMap";
 
 import "./styles.css";
 
@@ -11,7 +12,9 @@ createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <App />
+        <MapsProvider>
+          <App />
+        </MapsProvider>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>

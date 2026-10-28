@@ -136,8 +136,8 @@ public class DataSeeder implements CommandLineRunner {
                 "BookNGo Creative Studio",
                 "Exhibition Road",
                 "Manama",
-                26.2285,
-                50.5860,
+                26.242552,
+                50.553782,
                 provider1
         );
 
