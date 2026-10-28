@@ -40,14 +40,15 @@ public class LocationService {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User user= usersRepository.findUserByEmail(email);
         String address=request.getAddress()+ ", "+ request.getCity();
-        double[] coords = geocodingService.geocodeAddress(address);
+        GeocodingResult coords = geocodingService.geocodeAddress(address);
         Location location= new Location();
         location.setName(request.getName());
         location.setAddress(request.getAddress());
         location.setCity(request.getCity());
         location.setProvider(user);
-        location.setLatitude(coords[0]);
-        location.setLongitude(coords[1]);
+        location.setLatitude(coords.latitude());
+        location.setLongitude(coords.longitude());
+        location.setGooglePlaceId(coords.placeId());
         location.setActive(true);
 
         Location savedLocation = locationRepository.save(location);
@@ -79,13 +80,13 @@ public class LocationService {
         }
 
         String address = request.getAddress() + ", " + request.getCity();
-        double[] coords = geocodingService.geocodeAddress(address);
-
+        GeocodingResult coords = geocodingService.geocodeAddress(address);
         location.setName(request.getName());
         location.setAddress(request.getAddress());
         location.setCity(request.getCity());
-        location.setLatitude(coords[0]);
-        location.setLongitude(coords[1]);
+        location.setLatitude(coords.latitude());
+        location.setLongitude(coords.longitude());
+        location.setGooglePlaceId(coords.placeId());
 
         Location updatedLocation = locationRepository.save(location);
         logger.info("Location with ID {} updated successfully", id);
@@ -122,7 +123,7 @@ public class LocationService {
         return new LocationResponse(
                 location.getId(), location.getName(), location.getAddress(),
                 location.getCity(), location.getLatitude(), location.getLongitude(),
-                location.getActive()
+                location.getGooglePlaceId(), location.getActive()
         );
     }
 

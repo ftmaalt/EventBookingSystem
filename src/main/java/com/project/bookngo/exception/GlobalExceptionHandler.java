@@ -129,4 +129,19 @@ public class GlobalExceptionHandler {
                 request
         );
     }
+
+
+    /**
+     * Handles failures originating from the external Google
+     * Geocoding API.
+     *
+     * Returns HTTP 502 instead of exposing internal error
+     * details or treating the failure as a booking error.
+     */
+    @ExceptionHandler(GeocodingServiceException.class)
+    public ResponseEntity<ApiErrorResponse> handleGeocodingFailure(GeocodingServiceException ex, HttpServletRequest request) {
+        logger.error("Google Geocoding API failure: {}", ex.getMessage(), ex);
+        return buildErrorResponse(HttpStatus.BAD_GATEWAY, "Unable to verify the location with Google Maps. Please try again later.", request);
+    }
+
 }

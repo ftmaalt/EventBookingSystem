@@ -12,5 +12,6 @@ public class LocationResponse {
     private String city;
     private Double latitude;
     private Double longitude;
+    private String googlePlaceId;
     private Boolean active;
 }

@@ -1,5 +1,6 @@
 package com.project.bookngo.service;
 
+import com.project.bookngo.exception.GeocodingServiceException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -65,6 +66,7 @@ class GeocodingServiceTest {
                   "status": "OK",
                   "results": [
                     {
+                      "place_id": "test-bahrain-harbour",
                       "geometry": {
                         "location": {
                           "lat": 26.2376177,
@@ -78,11 +80,12 @@ class GeocodingServiceTest {
 
         mockGoogleResponse(200, json);
 
-        double[] coordinates =
-                geocodingService.geocodeAddress("Bahrain Financial Harbour, Manama");
+        GeocodingResult result = geocodingService.geocodeAddress("Bahrain Financial Harbour, Manama");
 
-        assertEquals(26.2376177, coordinates[0], 0.0000001);
-        assertEquals(50.5734496, coordinates[1], 0.0000001);
+        assertAll("Google Geocoding result",
+                () -> assertEquals(26.2376177, result.latitude(), 0.0000001),
+                () -> assertEquals(50.5734496, result.longitude(), 0.0000001),
+                () -> assertEquals("test-bahrain-harbour", result.placeId()));
 
         verify(httpClient, times(1)).send(any(HttpRequest.class), org.mockito.ArgumentMatchers.<HttpResponse.BodyHandler<String>>any());
     }
@@ -124,7 +127,7 @@ class GeocodingServiceTest {
 
         mockGoogleResponse(200, json);
 
-        assertThrows(IllegalStateException.class, () -> geocodingService.geocodeAddress("Manama, Bahrain"));
+        assertThrows(GeocodingServiceException.class, () -> geocodingService.geocodeAddress("Manama, Bahrain"));
     }
 
     /**
@@ -137,8 +140,8 @@ class GeocodingServiceTest {
 
         mockGoogleResponse(503, "");
 
-        IllegalStateException exception = assertThrows(
-                IllegalStateException.class, () -> geocodingService.geocodeAddress("Manama, Bahrain"));
+        GeocodingServiceException exception = assertThrows(
+                GeocodingServiceException.class, () -> geocodingService.geocodeAddress("Manama, Bahrain"));
 
         assertTrue(exception.getMessage().contains("503"));
     }
