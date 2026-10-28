@@ -1300,7 +1300,7 @@ These commands run the frontend tests and create the production build.
 - **GitHub Repository:** [https://github.com/ftmaalt/EventBookingSystem]
 - **Trello User Stories:** [https://trello.com/b/WOpNyReb/project2-user-stories]
 - **Trello Planning Board:** [https://trello.com/b/gYvDWs6d/project2-planning]
-- **Swagger UI:**http://localhost:8080/swagger-ui/index.html
+- **Swagger UI:** http://localhost:8080/swagger-ui/index.html
 - **Google Maps Setup & Testing:** [frontend/MAPS.md](frontend/MAPS.md)
 
 ---
