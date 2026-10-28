@@ -80,15 +80,14 @@ public class SessionsService {
         return sessionsRepository.findByActivityId(activityId).stream().map(this::toResponse).toList();
     }
 
+    @Transactional
     public SessionResponse updateSession(Long id, SessionRequest request) {
         logger.info("Updating session with ID: {}", id);
-        Sessions session = sessionsRepository.findById(id)
-                .orElseThrow(() -> new InformationNotFoundException("Session with the id:" + id + " does not exist."));
-
+        Sessions session = sessionsRepository.findByIdForUpdate(id).orElseThrow(() -> new InformationNotFoundException("Session with the id:" + id + " does not exist."));
         checkOwnership(session.getActivity());
 
-        if (session.getStatus() == SessionStatus.IN_PROGRESS || session.getStatus() == SessionStatus.COMPLETED) {
-            throw new InvalidTimeSpecificationException("Cannot update a session that is in progress or completed.");
+        if (session.getStatus() == SessionStatus.IN_PROGRESS || session.getStatus() == SessionStatus.COMPLETED || session.getStatus() == SessionStatus.CANCELLED) {
+            throw new InvalidTimeSpecificationException("Cannot modify a session that is in progress, completed, or cancelled.");
         }
         if (request.getEndTime().isBefore(request.getStartTime())) {
             throw new InvalidTimeSpecificationException("Session start time must be before end time.");
@@ -112,21 +111,21 @@ public class SessionsService {
         logger.info("Session with ID {} updated successfully", id);
         return toResponse(updated);
     }
-
+    @Transactional
     public SessionResponse updateSessionStatus(Long id) {
         logger.info("Updating status for session with ID: {}", id);
-        Sessions session = sessionsRepository.findById(id)
-                .orElseThrow(() -> new InformationNotFoundException("Session with the id:" + id + " does not exist."));
-        if (session.getStatus() == SessionStatus.CANCELLED) {
-            return toResponse(session);
-        }
+        Sessions session = sessionsRepository.findByIdForUpdate(id).orElseThrow(() -> new InformationNotFoundException("Session with the id:" + id + " does not exist."));
+        checkOwnership(session.getActivity());
 
-        if (session.getSpotsLeft() == 0) {
-            session.setStatus(SessionStatus.FULL);
-        } else if (!LocalDateTime.now().isBefore(session.getStartTime()) && LocalDateTime.now().isBefore(session.getEndTime())) {
-            session.setStatus(SessionStatus.IN_PROGRESS);
-        } else if (!LocalDateTime.now().isBefore(session.getEndTime())) {
+        LocalDateTime now = LocalDateTime.now();
+        if (!now.isBefore(session.getEndTime())) {
             session.setStatus(SessionStatus.COMPLETED);
+        } else if (!now.isBefore(session.getStartTime())) {
+            session.setStatus(SessionStatus.IN_PROGRESS);
+        } else if (session.getSpotsLeft() == 0) {
+            session.setStatus(SessionStatus.FULL);
+        } else {
+            session.setStatus(SessionStatus.SCHEDULED);
         }
 
         Sessions saved = sessionsRepository.save(session);
@@ -137,7 +136,7 @@ public class SessionsService {
 
     @Transactional
     public String cancelSession(Long id) {
-        Sessions session = sessionsRepository.findById(id).orElseThrow(() -> new InformationNotFoundException("Session with ID: " + id + " not found."));
+        Sessions session = sessionsRepository.findByIdForUpdate(id).orElseThrow(() -> new InformationNotFoundException("Session with ID: " + id + " not found."));
 
         checkOwnership(session.getActivity());
 

@@ -31,6 +31,9 @@ public class Location {
     @Column(nullable = false)
     private Double longitude;
 
+    @Column(name = "google_place_id", columnDefinition = "text")
+    private String googlePlaceId;
+
 
 //    --- Relationship Mapping ---
     @JsonIgnore

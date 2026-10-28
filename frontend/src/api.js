@@ -124,6 +124,7 @@ export const locationsApi = {
   getById: (id) => api.get(`/api/locations/${id}`),
   create: (data) => api.post("/api/locations", data),
   update: (id, data) => api.put(`/api/locations/${id}`, data),
+  updatePin: (id, data) => api.patch(`/api/locations/${id}/pin`, data),
   remove: (id) => api.delete(`/api/locations/${id}`),
 };
 

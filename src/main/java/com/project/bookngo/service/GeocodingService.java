@@ -1,5 +1,7 @@
 package com.project.bookngo.service;
 
+import com.project.bookngo.exception.GeocodingServiceException;
+import org.springframework.beans.factory.annotation.Autowired;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -23,12 +25,20 @@ public class GeocodingService {
     private final JsonMapper objectMapper;
     private final String apiKey;
 
-    public GeocodingService(JsonMapper objectMapper, @Value("${google.maps.api-key:}") String apiKey){
+    @Autowired
+    public GeocodingService(JsonMapper objectMapper, @Value("${google.maps.api-key:}") String apiKey) {
+        this(
+                objectMapper,
+                apiKey,
+                HttpClient.newBuilder()
+                        .connectTimeout(Duration.ofSeconds(5))
+                        .build()
+        );
+    }
+    GeocodingService(JsonMapper objectMapper, String apiKey, HttpClient httpClient) {
         this.objectMapper = objectMapper;
         this.apiKey = apiKey;
-
-        this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(5)).build();
+        this.httpClient = httpClient;
     }
     /**
      * Resolves a provider-entered address into geographic coordinates
@@ -42,7 +52,7 @@ public class GeocodingService {
      * @throws IllegalStateException if Google Maps is unavailable,
      *         rejects the request, or returns an invalid response
      */
-    public double[] geocodeAddress(String fullAddress) {
+    public GeocodingResult geocodeAddress(String fullAddress) {
         if (fullAddress == null || fullAddress.isBlank()) {
             throw new IllegalArgumentException("A valid address is required.");
         }
@@ -66,7 +76,7 @@ public class GeocodingService {
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() != 200) {
-                throw new IllegalStateException("Google Maps returned HTTP " + response.statusCode());
+                throw new GeocodingServiceException("Google Maps returned HTTP " + response.statusCode());
             }
 
             JsonNode root = objectMapper.readTree(response.body());
@@ -78,33 +88,33 @@ public class GeocodingService {
             }
 
             if (!"OK".equals(status)) {
-                throw new IllegalStateException("Google Maps geocoding failed: " + status);
+                throw new GeocodingServiceException("Google Maps geocoding failed: " + status);
             }
 
             JsonNode results = root.path("results");
 
             if (!results.isArray() || results.isEmpty()) {
-                throw new IllegalStateException("Google Maps returned no location data.");
+                throw new GeocodingServiceException("Google Maps returned no location data.");
             }
 
-            JsonNode coordinates = results.get(0).path("geometry").path("location");
+            JsonNode firstResult = results.get(0);
 
-            if (!coordinates.hasNonNull("lat") || !coordinates.hasNonNull("lng")) {
-                throw new IllegalStateException("Google Maps returned invalid coordinates.");
+            JsonNode coordinates = firstResult.path("geometry").path("location");
+
+            if (!coordinates.hasNonNull("lat") || !coordinates.hasNonNull("lng")){
+                throw new GeocodingServiceException("\"Google Maps returned invalid coordinates.");
             }
-
-            return new double[] {
-                    coordinates.path("lat").asDouble(),
-                    coordinates.path("lng").asDouble()
-            };
+            return new GeocodingResult(coordinates.path("lat").asDouble(),
+                    coordinates.path("lng").asDouble(),
+                    firstResult.path("place_id").asText());
 
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
 
-            throw new IllegalStateException("Google Maps request was interrupted.", ex);
+            throw new GeocodingServiceException("Google Maps request was interrupted.", ex);
 
         } catch (IOException ex) {
-            throw new IllegalStateException("Unable to communicate with Google Maps.", ex);
+            throw new GeocodingServiceException("Unable to communicate with Google Maps.", ex);
         }
     }
 }

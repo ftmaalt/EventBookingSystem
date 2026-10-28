@@ -5,6 +5,8 @@ import com.project.bookngo.exception.InformationNotFoundException;
 import com.project.bookngo.model.Location;
 import com.project.bookngo.model.User;
 import com.project.bookngo.model.request.LocationRequest;
+import com.project.bookngo.model.request.LocationPinUpdateRequest;
+import com.project.bookngo.model.enums.UserRole;
 import com.project.bookngo.model.response.LocationResponse;
 import com.project.bookngo.repository.LocationRepository;
 import com.project.bookngo.repository.UsersRepository;
@@ -16,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.security.access.AccessDeniedException;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class LocationService {
@@ -40,14 +43,15 @@ public class LocationService {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User user= usersRepository.findUserByEmail(email);
         String address=request.getAddress()+ ", "+ request.getCity();
-        double[] coords = geocodingService.geocodeAddress(address);
+        GeocodingResult coords = geocodingService.geocodeAddress(address);
         Location location= new Location();
         location.setName(request.getName());
         location.setAddress(request.getAddress());
         location.setCity(request.getCity());
         location.setProvider(user);
-        location.setLatitude(coords[0]);
-        location.setLongitude(coords[1]);
+        location.setLatitude(coords.latitude());
+        location.setLongitude(coords.longitude());
+        location.setGooglePlaceId(coords.placeId());
         location.setActive(true);
 
         Location savedLocation = locationRepository.save(location);
@@ -78,14 +82,17 @@ public class LocationService {
             throw new AccessDeniedException("You are not authorized to modify this location");
         }
 
-        String address = request.getAddress() + ", " + request.getCity();
-        double[] coords = geocodingService.geocodeAddress(address);
-
+        // Descriptive name edits must not overwrite a provider's authoritative pin.
+        if (!Objects.equals(location.getAddress(), request.getAddress()) ||
+                !Objects.equals(location.getCity(), request.getCity())) {
+            GeocodingResult coords = geocodingService.geocodeAddress(request.getAddress() + ", " + request.getCity());
+            location.setLatitude(coords.latitude());
+            location.setLongitude(coords.longitude());
+            location.setGooglePlaceId(coords.placeId());
+        }
         location.setName(request.getName());
         location.setAddress(request.getAddress());
         location.setCity(request.getCity());
-        location.setLatitude(coords[0]);
-        location.setLongitude(coords[1]);
 
         Location updatedLocation = locationRepository.save(location);
         logger.info("Location with ID {} updated successfully", id);
@@ -93,6 +100,33 @@ public class LocationService {
         return toResponse(updatedLocation);
     }
 
+
+    /** Saves an owner's manual pin without geocoding or changing the descriptive location. */
+    @Transactional
+    public LocationResponse updatePin(Long id, LocationPinUpdateRequest request) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = usersRepository.findUserByEmail(email);
+        // Keep the service safe even when called outside the secured controller.
+        if (user == null || user.getRole() != UserRole.PROVIDER) {
+            throw new AccessDeniedException("Only providers may edit location pins.");
+        }
+        Location location = locationRepository.findById(id).orElseThrow(() ->
+                new InformationNotFoundException("Location with ID: " + id + " does not exist."));
+        if (!location.getProvider().getId().equals(user.getId())) {
+            throw new AccessDeniedException("You are not authorized to modify this location.");
+        }
+        Double latitude = request.getLatitude();
+        Double longitude = request.getLongitude();
+        if (latitude == null || longitude == null || !Double.isFinite(latitude) || !Double.isFinite(longitude)
+                || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+            throw new IllegalArgumentException("Latitude must be between -90 and 90; longitude must be between -180 and 180.");
+        }
+        location.setLatitude(latitude);
+        location.setLongitude(longitude);
+        // An entrance selected by a person is not a verified match for the former Google place.
+        location.setGooglePlaceId(null);
+        return toResponse(locationRepository.save(location));
+    }
 
     @Transactional
     public String delete(Long id) throws AccessDeniedException {
@@ -122,7 +156,7 @@ public class LocationService {
         return new LocationResponse(
                 location.getId(), location.getName(), location.getAddress(),
                 location.getCity(), location.getLatitude(), location.getLongitude(),
-                location.getActive()
+                location.getGooglePlaceId(), location.getActive(), location.getProvider().getId()
         );
     }
 

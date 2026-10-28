@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,6 +25,7 @@ public class SessionsController {
 
 
     @PostMapping
+    @PreAuthorize("hasRole('PROVIDER')")
     public ResponseEntity<SessionResponse> createSession(@Valid @RequestBody SessionRequest request) {
         logger.info("Calling createSession ===>");
         SessionResponse createdSession = sessionsService.createSession(request);
@@ -45,6 +47,7 @@ public class SessionsController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('PROVIDER')")
     public ResponseEntity<SessionResponse> updateSession(@PathVariable Long id, @Valid @RequestBody SessionRequest request) {
         logger.info("Calling updateSession ===>");
         SessionResponse updatedSession = sessionsService.updateSession(id, request);
@@ -52,6 +55,7 @@ public class SessionsController {
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('PROVIDER')")
     public ResponseEntity<SessionResponse> updateSessionStatus(@PathVariable Long id) {
         logger.info("Calling updateSessionStatus ===>");
         SessionResponse updatedSession = sessionsService.updateSessionStatus(id);
@@ -59,6 +63,7 @@ public class SessionsController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('PROVIDER')")
     public ResponseEntity<String> cancelSession(@PathVariable Long id) {
         logger.info("Calling cancelSession ===>");
         String message = sessionsService.cancelSession(id);

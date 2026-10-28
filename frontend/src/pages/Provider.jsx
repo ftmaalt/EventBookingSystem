@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { activitiesApi, locationsApi, providerApi, sessionsApi } from "../api";
 import { useAuth } from "../auth";
 import Layout from "../components/Layout";
+import LocationMap, { getCoordinates } from "../components/LocationMap";
+import LocationPinEditor from "../components/LocationPinEditor";
 import { EmptyState, Feedback, Input, Loading, SectionHeader, Select, StatusPill, TextArea } from "../components/ui";
 import ViolationForm from "../components/ViolationForm";
 import { formatDate, formatMoney, getError, toInputDateTime } from "../utils/format";
@@ -403,15 +405,42 @@ function ActivitiesTab() {
 }
 
 function LocationsTab() {
-  const { locations, reload } = useLookups();
+  const { user } = useAuth();
+  const [pinEditing, setPinEditing] = useState(null);
+  const { locations, reload, upsertLocation } = useLookups();
+  const [editingId, setEditingId] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const submitting = useRef(false);
+  const formRef = useRef(null);
+  const canEdit = (location) => user?.id != null && location?.providerId != null && location.providerId === user.id;
+  const [previewId, setPreviewId] = useState(null);
+  const preview = locations.find((location) => location.id === previewId) || locations[0];
   const [form, setForm] = useState(EMPTY_LOCATION);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
   const update = (field, value) => setForm((previous) => ({ ...previous, [field]: value }));
 
+  const cancelEditing = () => {
+    setEditingId(null);
+    setForm(EMPTY_LOCATION);
+    setError("");
+    setMessage("");
+  };
+
+  const startEditing = (location) => {
+    if (submitting.current || pinEditing || !canEdit(location)) return;
+    setEditingId(location.id);
+    setForm({ name: location.name, address: location.address, city: location.city });
+    setPreviewId(location.id);
+    setMessage("");
+    setError("");
+    formRef.current?.querySelector("input")?.focus();
+  };
+
   const submit = async (event) => {
     event.preventDefault();
+    if (submitting.current || pinEditing) return;
     setMessage("");
     setError("");
 
@@ -420,26 +449,48 @@ function LocationsTab() {
       return;
     }
 
+    if (editingId != null && !canEdit(locations.find((location) => location.id === editingId))) {
+      setError("You can only edit locations you own.");
+      return;
+    }
+
+    submitting.current = true;
+    setSaving(true);
     try {
-      await locationsApi.create({ name: form.name.trim(), address: form.address.trim(), city: form.city.trim() });
-      setMessage("Location created.");
+      const payload = { name: form.name.trim(), address: form.address.trim(), city: form.city.trim() };
+      const response = editingId != null
+        ? await locationsApi.update(editingId, payload)
+        : await locationsApi.create(payload);
+      setMessage(editingId != null ? "Location updated." : "Location created.");
+      setEditingId(null);
       setForm(EMPTY_LOCATION);
       await reload();
+      upsertLocation(response.data);
+      setPreviewId(response.data.id);
     } catch (err) {
       setError(getError(err));
+    } finally {
+      submitting.current = false;
+      setSaving(false);
     }
   };
 
   return (
     <div className="two-column">
-      <form className="form-card" onSubmit={submit}>
-        <h2>Add a location</h2>
+      <form className="form-card" onSubmit={submit} ref={formRef} aria-busy={saving}>
+        <h2>{editingId != null ? "Edit location" : "Add a location"}</h2>
         <p className="muted">The map coordinates are looked up automatically from the address.</p>
-        <Feedback error={error} message={message} />
-        <Input label="Name" value={form.name} onChange={(value) => update("name", value)} />
-        <Input label="Address" value={form.address} onChange={(value) => update("address", value)} />
-        <Input label="City" value={form.city} onChange={(value) => update("city", value)} />
-        <button className="primary-button">Create location</button>
+        <div aria-live="polite"><Feedback error={error} message={message} /></div>
+        <Input label="Name" maxLength={120} disabled={saving || Boolean(pinEditing)} value={form.name} onChange={(value) => update("name", value)} />
+        <Input label="Address" maxLength={255} disabled={saving || Boolean(pinEditing)} value={form.address} onChange={(value) => update("address", value)} />
+        <Input label="City" maxLength={80} disabled={saving || Boolean(pinEditing)} value={form.city} onChange={(value) => update("city", value)} />
+        <div className="button-row">
+          <button className="primary-button" disabled={saving || Boolean(pinEditing)}>
+            {saving ? "Saving…" : editingId != null ? "Save changes" : "Create location"}
+          </button>
+          {editingId != null && <button type="button" className="secondary-button" disabled={saving}
+            onClick={cancelEditing}>Cancel Editing</button>}
+        </div>
       </form>
 
       <div className="form-card">
@@ -456,10 +507,34 @@ function LocationsTab() {
                     {location.address}, {location.city}
                   </span>
                 </div>
+                <div className="button-row">
+                  <button type="button" className="small-button" aria-pressed={preview?.id === location.id}
+                    disabled={Boolean(pinEditing)} onClick={() => setPreviewId(location.id)}>Preview map</button>
+                  {canEdit(location) && <button type="button" className="small-button" disabled={saving || Boolean(pinEditing)}
+                    aria-label={`Edit ${location.name}`} onClick={() => startEditing(location)}>Edit</button>}
+                  {canEdit(location) && <button type="button" className="small-button"
+                    disabled={saving || Boolean(pinEditing) || !getCoordinates(location)}
+                    onClick={() => {
+                      if (!canEdit(location) || submitting.current) return;
+                      cancelEditing();
+                      setPreviewId(location.id);
+                      setPinEditing(location);
+                    }}>Edit Pin Location</button>}
+                </div>
               </div>
             ))}
           </div>
         )}
+        {pinEditing ? <LocationPinEditor key={pinEditing.id} location={pinEditing}
+          onCancel={() => setPinEditing(null)} onSaved={(saved) => {
+            upsertLocation(saved);
+            setPreviewId(saved.id);
+            setPinEditing(null);
+            setMessage("Pin location saved.");
+          }} /> : preview && <>
+          <h3>Map preview: {preview.name}</h3>
+          <LocationMap location={preview} />
+        </>}
       </div>
     </div>
   );
