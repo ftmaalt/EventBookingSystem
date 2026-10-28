@@ -2,20 +2,22 @@ import { labelize } from "../utils/format";
 
 export function Loading() {
   return (
-    <div className="loading-page">
-      <div className="spinner" />
+    <div className="loading-page" role="status" aria-live="polite">
+      <div className="spinner" aria-hidden="true" />
       <p>Loading...</p>
     </div>
   );
 }
 
-export function SectionHeader({ title, text }) {
+export function SectionHeader({ title, text, eyebrow, action }) {
   return (
     <div className="section-header">
       <div>
+        {eyebrow && <span className="eyebrow">{eyebrow}</span>}
         <h2>{title}</h2>
         {text && <p>{text}</p>}
       </div>
+      {action}
     </div>
   );
 }
@@ -23,7 +25,7 @@ export function SectionHeader({ title, text }) {
 export function EmptyState({ title, text }) {
   return (
     <div className="empty-state">
-      <div>◌</div>
+      <div aria-hidden="true">✦</div>
       <h3>{title}</h3>
       <p>{text}</p>
     </div>
@@ -75,10 +77,20 @@ export function StatusPill({ status }) {
 export function Feedback({ error, message }) {
   return (
     <>
-      {error && <div className="error-box">{error}</div>}
-      {message && <div className="success-box">{message}</div>}
+      {error && <div className="error-box" role="alert">{error}</div>}
+      {message && <div className="success-box" role="status">{message}</div>}
     </>
   );
+}
+
+export function ActivitySkeletons({ count = 3 }) {
+  return <div role="status" aria-label="Loading experiences" className="activity-grid skeleton-grid">
+    {Array.from({ length: count }, (_, index) => <div className="activity-card skeleton-card" key={index} aria-hidden="true">
+      <div className="skeleton-block skeleton-cover" /><div className="activity-content">
+        <div className="skeleton-block" /><div className="skeleton-block" /><div className="skeleton-block short" />
+      </div>
+    </div>)}
+  </div>;
 }
 
 export function Pagination({ page, totalPages, onChange }) {

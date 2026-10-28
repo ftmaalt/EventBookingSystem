@@ -1,7 +1,10 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
+import { useAuth } from "../auth";
 import Layout from "../components/Layout";
+import SearchBar from "../components/SearchBar";
 import { SectionHeader } from "../components/ui";
+import { useLookups } from "../utils/useLookups";
 
 const STEPS = [
   ["01", "Explore", "Browse activities and filter them by category and location."],
@@ -11,35 +14,50 @@ const STEPS = [
 ];
 
 export default function Landing() {
+  const navigate = useNavigate();
+  const { token } = useAuth();
+  const { categories } = useLookups();
+
   return (
     <Layout>
-      <section className="hero">
+      <section className="hero editorial-hero" aria-labelledby="hero-title">
         <div className="hero-content">
-          <span className="eyebrow">BOOK · EXPLORE · EXPERIENCE</span>
-          <h1>
-            Find your next
-            <span> experience.</span>
-          </h1>
-          <p>Discover activities, explore available sessions and reserve your spot through one simple platform.</p>
+          <h1 id="hero-title">Make room for <span>memorable</span> moments.</h1>
+          <p>Discover experiences worth stepping out for.</p>
+          <p className="hero-description">Something new to try. Someone to share it with. A story to take home.</p>
           <div className="hero-actions">
-            <Link className="primary-button" to="/register">
-              Get Started
-            </Link>
-            <Link className="secondary-button" to="/activities">
-              Browse activities
-            </Link>
+            <Link className="primary-button" to="/activities">Explore Experiences <span aria-hidden="true">↗</span></Link>
+            <a className="text-link" href="#how-it-works">How it works <span aria-hidden="true">↓</span></a>
           </div>
         </div>
 
-        <div className="hero-card">
-          <div className="hero-card-icon">✦</div>
-          <h3>Everything in one place</h3>
-          <p>Activities, sessions, bookings and real-time notifications, all in one account.</p>
+        <div className="hero-visual">
+          <div className="adventure-quote">
+            <figure className="quote-paper">
+              <blockquote><p>“The purpose of life is to live it, to taste experience to the utmost, to reach out eagerly and without fear for newer and richer experience.”</p></blockquote>
+              <figcaption>— <strong>Eleanor Roosevelt</strong></figcaption>
+            </figure>
+          </div>
         </div>
       </section>
 
-      <section className="section">
-        <SectionHeader title="How it works" text="From discovery to confirmation in four steps." />
+      <section className="section discovery-search-section" aria-label="Find an experience">
+        <SearchBar onSearch={(query) => navigate(query ? `/activities?q=${encodeURIComponent(query)}` : "/activities")} />
+      </section>
+
+      {categories.length > 0 && <section className="section category-section" aria-labelledby="category-title">
+        <div className="section-header"><div><span className="eyebrow">FOLLOW YOUR CURIOSITY</span>
+          <h2 id="category-title">Find your kind of moment.</h2></div>
+          <Link className="text-link" to="/activities">Explore all <span aria-hidden="true">↗</span></Link></div>
+        <div className="category-grid">{categories.slice(0, 6).map((category, index) =>
+          <Link className="category-card" key={category.category_id} to={`/activities?category=${category.category_id}`}>
+            <span className="category-card-symbol" aria-hidden="true">{["✳", "◇", "✧", "○", "✦", "⌁"][index % 6]}</span>
+            <span>{category.category_name}</span><span className="category-arrow" aria-hidden="true">↗</span>
+          </Link>)}</div>
+      </section>}
+
+      <section className="section how-section" id="how-it-works">
+        <SectionHeader eyebrow="FROM MAYBE TO MEMORY" title="Make a little plan." text="From discovery to confirmation in four simple steps." />
         <div className="feature-grid">
           {STEPS.map(([number, title, text]) => (
             <div className="feature-card" key={number}>
@@ -49,6 +67,13 @@ export default function Landing() {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="community-note section">
+        <span className="community-symbol" aria-hidden="true">✦</span>
+        <div><span className="eyebrow">YOUR NEXT CHAPTER</span><h2>Good moments deserve<br /><em>a place on your calendar.</em></h2>
+          <p>Find something that feels like you. Then make it happen.</p></div>
+        <Link className="primary-button" to={token ? "/dashboard" : "/register"}>{token ? "Visit your dashboard" : "Find your next moment"} <span aria-hidden="true">↗</span></Link>
       </section>
     </Layout>
   );

@@ -1,27 +1,33 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap");
 
 :root {
-    --bg: #f7f7f4;
+    --bg: #F8F5EF;
     --white: #ffffff;
-    --text: #1d2230;
-    --muted: #737987;
-    --border: #e5e5df;
+    --text: #252321;
+    --muted: #6d625e;
+    --border: #ded2c8;
+    --control-border: #99818b;
 
-    --primary: #7064d8;
-    --primary-dark: #5e53c5;
-    --primary-light: #eeecfb;
+    --primary: #692F45;
+    --primary-dark: #502236;
+    --primary-light: #f0e8f2;
+    --lilac: #B8A7C9;
+    --sage: #8FA58A;
+    --sand: #E9DCD1;
+    --heading-font: "Playfair Display", Georgia, serif;
+    --body-font: "DM Sans", sans-serif;
 
-    --green: #258763;
-    --green-light: #e1f5ec;
+    --green: #445b40;
+    --green-light: #e9eee5;
 
-    --red: #c74e4e;
-    --red-light: #ffe7e7;
+    --red: #a33140;
+    --red-light: #fbe9eb;
 
-    --yellow: #a67813;
-    --yellow-light: #fff3d2;
+    --yellow: #775315;
+    --yellow-light: #faf0d8;
 
     --shadow:
-            0 15px 45px rgba(30, 32, 45, 0.08);
+            0 16px 42px rgba(69, 34, 47, 0.07);
 }
 
 .location-map {
@@ -397,45 +403,6 @@ main {
     gap: 12px;
 
     margin-top: 28px;
-}
-
-.hero-card {
-    min-height: 320px;
-
-    padding: 40px;
-
-    border-radius: 30px;
-
-    background:
-            linear-gradient(
-                    135deg,
-                    #eae7fb,
-                    #f2e8df
-            );
-
-    display: flex;
-
-    flex-direction: column;
-
-    justify-content: flex-end;
-}
-
-.hero-card-icon {
-    font-size: 75px;
-
-    color: var(--primary);
-
-    margin-bottom: auto;
-}
-
-.hero-card h3 {
-    margin-bottom: 5px;
-}
-
-.hero-card p {
-    color: var(--muted);
-
-    line-height: 1.6;
 }
 
 /* ==================================================

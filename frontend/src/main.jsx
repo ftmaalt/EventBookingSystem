@@ -7,6 +7,7 @@ import { AuthProvider } from "./auth";
 import { MapsProvider } from "./components/LocationMap";
 
 import "./styles.css";
+import "./theme.css";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
