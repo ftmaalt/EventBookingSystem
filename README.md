@@ -382,8 +382,6 @@ The complete API documentation, including the remaining endpoints, request/respo
 
 **Swagger UI:** http://localhost:8080/swagger-ui/index.html
 
-**OpenAPI JSON:** http://localhost:8080/v3/api-docs
-
 ---
 
 # Part 2 — Project 2: Secure Spring Boot REST API
