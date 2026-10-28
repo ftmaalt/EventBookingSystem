@@ -17,7 +17,7 @@ Focus outlines, labeled search/filter inputs, touch-sized controls, color contra
 
 The homepage retains search, real category navigation, the how-it-works section, and the account call to action. The Social Edit and More to explore sections and their activity-fetching code were removed at the user's request. Category navigation uses the current category lookup and links to `?category=<id>`. Experience browsing remains on the discovery page.
 
-The hero now displays the user-supplied Eleanor Roosevelt quote on a scalloped ivory paper card with lilac stripes, inspired by the supplied reference. This is CSS and text only. The top announcement strip, wordmark subtitle, hero label/footnote/floating note, and footer's Social Edit tagline were removed from JSX, with their unused styling removed as well.
+The hero displays the user-supplied Eleanor Roosevelt quote in the original arched plum card, with ivory text, a fine inset border, and lilac shadow. The category section also has a plum background with light category cards. This is CSS and text only. The top announcement strip, wordmark subtitle, hero label/footnote/floating note, and footer's Social Edit tagline were removed from JSX, with their unused styling removed as well.
 
 Activity discovery keeps its existing pagination, category/location filtering, 300 ms search debounce, and client-side text matching. It additionally accepts header/homepage `q` and `category` parameters, including navigation searches while the page is already mounted. The existing text-search limit of 100 fetched activities remains unchanged.
 
