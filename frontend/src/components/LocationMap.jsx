@@ -13,11 +13,6 @@ function FollowPin({ position }) {
   return null;
 }
 
-export function MapsProvider({ children }) {
-  // A single stable loader survives route changes and provider tab switches.
-  return apiKey ? <APIProvider apiKey={apiKey} libraries={libraries}>{children}</APIProvider> : children;
-}
-
 export function getCoordinates(location) {
   const lat = location?.latitude;
   const lng = location?.longitude;
@@ -84,8 +79,11 @@ export default function LocationMap({ location, editable = false, onPositionChan
           <p className="location-map-state" role="status">Map coordinates are unavailable for this location.</p>
         ) : !apiKey ? (
           <p className="location-map-state" role="status">Map preview is not configured. Use the directions link below.</p>
-        ) : <MapPreview position={position} name={location?.name || "Activity location"}
-          editable={editable} onPositionChange={onPositionChange} disabled={disabled} />}
+        ) : <APIProvider apiKey={apiKey} libraries={libraries}>
+          {/* The library shares its script loader and map cache across mounts. */}
+          <MapPreview position={position} name={location?.name || "Activity location"}
+            editable={editable} onPositionChange={onPositionChange} disabled={disabled} />
+        </APIProvider>}
       </div>
       {url && <a className="location-map-link" href={url} target="_blank" rel="noopener noreferrer">Open in Google Maps <span className="muted">(opens in a new tab)</span></a>}
     </section>

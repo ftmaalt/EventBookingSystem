@@ -80,7 +80,7 @@ export default function Register() {
   return (
     <Layout>
       <div className="auth-page">
-        <form className="auth-card" onSubmit={submit}>
+        <form autoComplete="off" className="auth-card" onSubmit={submit}>
           <span className="eyebrow">JOIN BOOK N GO</span>
           <h1>Create account</h1>
           <p className="muted">Create an account to start booking activities.</p>
@@ -102,7 +102,7 @@ export default function Register() {
             type="password"
             value={form.password}
             onChange={(value) => update("password", value)}
-            autoComplete="new-password"
+            autoComplete="off"
           />
           <PasswordRules password={form.password} />
 

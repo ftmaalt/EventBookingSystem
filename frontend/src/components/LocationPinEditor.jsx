@@ -37,7 +37,7 @@ export default function LocationPinEditor({ location, onSaved, onCancel }) {
   };
 
   return (
-    <form onSubmit={save} aria-label={`Edit pin for ${location.name}`} aria-busy={saving}>
+    <form autoComplete="off" onSubmit={save} aria-label={`Edit pin for ${location.name}`} aria-busy={saving}>
       <h3>Edit pin: {location.name}</h3>
       <p className="muted">Drag the pin to the building or entrance. Zoom in or choose Satellite for more detail.
         You can also enter coordinates with the keyboard. Changes are temporary until saved.</p>

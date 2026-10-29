@@ -59,7 +59,7 @@ export default function ResetPassword() {
   return (
     <Layout>
       <div className="auth-page">
-        <form className="auth-card" onSubmit={submit}>
+        <form autoComplete="off" className="auth-card" onSubmit={submit}>
           <span className="eyebrow">PASSWORD RECOVERY</span>
           <h1>Choose a new password</h1>
 
@@ -68,14 +68,14 @@ export default function ResetPassword() {
             type="password"
             value={newPassword}
             onChange={setNewPassword}
-            autoComplete="new-password"
+            autoComplete="off"
           />
           <Input
             label="Confirm new password"
             type="password"
             value={confirmPassword}
             onChange={setConfirmPassword}
-            autoComplete="new-password"
+            autoComplete="off"
           />
           <Feedback error={error} />
 

@@ -229,7 +229,7 @@ function CategoriesTab() {
 
   return (
     <div className="two-column">
-      <form className="form-card" onSubmit={submit}>
+      <form autoComplete="off" className="form-card" onSubmit={submit}>
         <h2>{editingId ? "Edit category" : "Add category"}</h2>
         <Feedback error={error} message={message} />
         <Input label="Name" value={form.category_name} onChange={(value) => setForm({ ...form, category_name: value })} />

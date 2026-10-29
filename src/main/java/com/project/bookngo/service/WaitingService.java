@@ -8,6 +8,9 @@ import com.project.bookngo.model.User;
 import com.project.bookngo.model.WaitlistEntry;
 import com.project.bookngo.model.enums.*;
 import com.project.bookngo.model.response.WaitListResponse;
+import com.project.bookngo.model.response.WaitlistedSessionResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import com.project.bookngo.repository.BookingsRepository;
 import com.project.bookngo.repository.SessionsRepository;
 import com.project.bookngo.repository.WaitingListRepository;
@@ -33,6 +36,12 @@ public class WaitingService {
     private final BookingsRepository bookingsRepository;
     private final CurrentUserService currentUserService;
     private final ApplicationEventPublisher eventPublisher;
+
+    @Transactional(readOnly = true)
+    public Page<WaitlistedSessionResponse> getMyWaitlistedSessions(Pageable pageable) {
+        User user = currentUserService.getCurrentUser();
+        return waitlistRepository.findWaitingSessionsByUserId(user.getId(), pageable);
+    }
 
 
     @Transactional

@@ -1,5 +1,4 @@
-/* The Social Edit. Semantic colors live in styles.css; these shared rules preserve
-   the established dashboard/form classes while giving every route the same identity. */
+
 body { font-family: var(--body-font); line-height: 1.6; }
 ::selection { background: var(--lilac); color: var(--text); }
 h1, h2 { color: var(--primary); font-family: var(--heading-font); font-weight: 600; letter-spacing: -.035em; line-height: 1.16; }
@@ -208,6 +207,16 @@ tbody tr:hover { background: #fcf9f5; }
 .session-card { padding: 24px; border-color: var(--border); }
 .session-card strong { color: var(--primary); font-size: 15px; }
 .session-right { flex-shrink: 0; }
+.waitlist-controls { max-width: 360px; min-width: 0; }
+.waitlist-controls .button-row { margin-top: 0; justify-content: flex-end; }
+.waitlist-controls .error-box, .waitlist-controls .success-box { margin-bottom: 0; }
+.session-waitlist { flex-shrink: 1; min-width: 0; align-items: center; justify-content: flex-end; }
+.session-waitlist .waitlist-controls { flex: 0 1 auto; }
+.session-right > .primary-button, .waitlist-controls .button-row > .primary-button { min-width: 160px; }
+.waitlist-controls .button-row > .secondary-button { min-width: 160px; }
+.waitlisted-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 22px; }
+.waitlisted-toolbar p { margin: 0; }
+.status-pill.waitlisted { color: var(--primary); background: var(--primary-light); }
 .booking-card { padding: 36px; }
 .booking-summary { background: var(--primary-light); padding: 22px; }
 .booking-summary strong { color: var(--primary); }

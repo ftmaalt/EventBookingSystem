@@ -47,7 +47,7 @@ export default function ViolationForm() {
   };
 
   return (
-    <form className="form-card" onSubmit={submit}>
+    <form autoComplete="off" className="form-card" onSubmit={submit}>
       <h2>Report a violation</h2>
       <p className="muted">Providers can only report violations on their own sessions, so a session ID is required.</p>
 

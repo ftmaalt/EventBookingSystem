@@ -79,7 +79,7 @@ function ActivityForm({ editing, categories, locations, onSaved, onCancel }) {
   };
 
   return (
-    <form className="form-card" onSubmit={submit}>
+    <form autoComplete="off" className="form-card" onSubmit={submit}>
       <h2>{editing ? "Edit activity" : "Create activity"}</h2>
       <Feedback error={error} />
 
@@ -264,7 +264,7 @@ function SessionManager({ activity }) {
         </div>
       )}
 
-      <form onSubmit={submit}>
+      <form autoComplete="off" onSubmit={submit}>
         <h3>{editingId ? `Edit session #${editingId}` : "Add a session"}</h3>
         <Input label="Start" type="datetime-local" value={form.startTime} onChange={(value) => update("startTime", value)} />
         <Input label="End" type="datetime-local" value={form.endTime} onChange={(value) => update("endTime", value)} />
@@ -477,7 +477,7 @@ function LocationsTab() {
 
   return (
     <div className="two-column">
-      <form className="form-card" onSubmit={submit} ref={formRef} aria-busy={saving}>
+      <form autoComplete="off" className="form-card" onSubmit={submit} ref={formRef} aria-busy={saving}>
         <h2>{editingId != null ? "Edit location" : "Add a location"}</h2>
         <p className="muted">The map coordinates are looked up automatically from the address.</p>
         <div aria-live="polite"><Feedback error={error} message={message} /></div>
@@ -582,7 +582,7 @@ function ProfileTab() {
   }
 
   return (
-    <form className="form-card" onSubmit={submit}>
+    <form autoComplete="off" className="form-card" onSubmit={submit}>
       <h2>{profile?.businessName || "Business profile"}</h2>
       <Feedback error={error} message={message} />
       {profile && (

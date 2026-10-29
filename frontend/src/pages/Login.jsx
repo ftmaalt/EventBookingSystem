@@ -42,20 +42,20 @@ export default function Login() {
   return (
     <Layout>
       <div className="auth-page">
-        <form className="auth-card" onSubmit={submit}>
+        <form autoComplete="off" className="auth-card" onSubmit={submit}>
           <span className="eyebrow">BOOK N GO</span>
           <h1>Welcome back</h1>
           <p className="muted">Login to continue.</p>
 
           <Feedback message={notice} error={error} />
 
-          <Input label="Email" type="email" value={email} onChange={setEmail} autoComplete="email" />
+          <Input label="Email" type="email" value={email} onChange={setEmail} autoComplete="off" />
           <Input
             label="Password"
             type="password"
             value={password}
             onChange={setPassword}
-            autoComplete="current-password"
+            autoComplete="off"
           />
 
           <p className="auth-switch">

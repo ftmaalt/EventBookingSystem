@@ -1,33 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 
 import { activitiesApi, bookingsApi, sessionsApi } from "../api";
 import Layout from "../components/Layout";
+import WaitlistedBookings from "../components/WaitlistedBookings";
 import { EmptyState, Feedback, Loading, Pagination, SectionHeader, StatusPill } from "../components/ui";
 import { formatDate, formatMoney, getError, labelize } from "../utils/format";
+import { createBookingDetailsLoader } from "../utils/bookingDetails";
 
 const PAGE_SIZE = 10;
 // New bookings are confirmed immediately, so there is no pending-payment status to filter on.
 const STATUS_TABS = ["", "CONFIRMED", "COMPLETED", "CANCELLED"];
-
-/** Loads the session and activity behind each booking so the list can show real names and times. */
-async function loadDetails(bookings, known) {
-  const details = { ...known };
-  const missing = [...new Set(bookings.map((booking) => booking.sessionId))].filter((id) => !details[id]);
-
-  await Promise.all(
-    missing.map(async (sessionId) => {
-      try {
-        const session = (await sessionsApi.getById(sessionId)).data;
-        const activity = (await activitiesApi.getById(session.activityId)).data;
-        details[sessionId] = { session, activity };
-      } catch {
-        details[sessionId] = null;
-      }
-    })
-  );
-  return details;
-}
 
 function BookingCard({ booking, detail, onCancel }) {
   return (
@@ -69,11 +52,16 @@ function BookingCard({ booking, detail, onCancel }) {
 
 export default function Bookings() {
   const location = useLocation();
+  const [params, setParams] = useSearchParams();
+  const waitlisted = params.get("tab") === "waitlisted";
 
   const [bookings, setBookings] = useState([]);
   const [details, setDetails] = useState({});
-  // Cache of session/activity details, kept in a ref so reloading the list does not depend on it.
-  const detailCache = useRef({});
+  const requestVersion = useRef(0);
+  const [loadDetails] = useState(() => createBookingDetailsLoader({
+    loadSession: sessionsApi.getById,
+    loadActivity: activitiesApi.getById,
+  }));
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -82,6 +70,8 @@ export default function Bookings() {
   const [message, setMessage] = useState(location.state?.message || "");
 
   const load = useCallback(async () => {
+    const version = ++requestVersion.current;
+    if (waitlisted) return;
     setLoading(true);
     try {
       const response = await bookingsApi.getAll({
@@ -90,20 +80,24 @@ export default function Bookings() {
         status: status || undefined,
         sort: "createdAt,desc",
       });
+      if (version !== requestVersion.current) return;
       const items = response.data.content || [];
       setBookings(items);
       setTotalPages(response.data.totalPages || 0);
-      detailCache.current = await loadDetails(items, detailCache.current);
-      setDetails(detailCache.current);
+      const nextDetails = await loadDetails(items);
+      if (version !== requestVersion.current) return;
+      setDetails(nextDetails);
+      setError("");
     } catch (err) {
-      setError(getError(err));
+      if (version === requestVersion.current) setError(getError(err));
     } finally {
-      setLoading(false);
+      if (version === requestVersion.current) setLoading(false);
     }
-  }, [page, status]);
+  }, [page, status, loadDetails, waitlisted]);
 
   useEffect(() => {
     load();
+    return () => { ++requestVersion.current; };
   }, [load]);
 
   const cancel = async (bookingId) => {
@@ -124,6 +118,7 @@ export default function Bookings() {
   const changeStatus = (value) => {
     setStatus(value);
     setPage(0);
+    setParams((previous) => { const next = new URLSearchParams(previous); next.delete("tab"); return next; });
   };
 
   return (
@@ -133,12 +128,16 @@ export default function Bookings() {
 
         <div className="tabs">
           {STATUS_TABS.map((value) => (
-            <button key={value} className={status === value ? "active" : ""} onClick={() => changeStatus(value)}>
+            <button key={value} className={!waitlisted && status === value ? "active" : ""}
+              aria-pressed={!waitlisted && status === value} onClick={() => changeStatus(value)}>
               {value ? labelize(value) : "ALL"}
             </button>
           ))}
+          <button className={waitlisted ? "active" : ""} aria-pressed={waitlisted}
+            onClick={() => setParams({ tab: "waitlisted" })}>WAITLISTED</button>
         </div>
 
+        {waitlisted ? <WaitlistedBookings /> : <>
         <Feedback error={error} message={message} />
 
         {loading ? (
@@ -154,6 +153,7 @@ export default function Bookings() {
         )}
 
         <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+        </>}
       </div>
     </Layout>
   );
