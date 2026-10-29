@@ -36,12 +36,12 @@ export default function ForgotPassword() {
   return (
     <Layout>
       <div className="auth-page">
-        <form className="auth-card" onSubmit={submit}>
+        <form autoComplete="off" className="auth-card" onSubmit={submit}>
           <span className="eyebrow">PASSWORD RECOVERY</span>
           <h1>Forgot password?</h1>
           <p className="muted">Enter your email and we will send you a link to reset your password.</p>
 
-          <Input label="Email" type="email" value={email} onChange={setEmail} autoComplete="email" />
+          <Input label="Email" type="email" value={email} onChange={setEmail} autoComplete="off" />
           <Feedback error={error} message={message} />
 
           <button className="primary-button full" disabled={loading}>

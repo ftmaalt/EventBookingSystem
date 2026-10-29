@@ -82,8 +82,8 @@ public class ActivitiesService {
         Activities activity = activitiesRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Activity with the id:" + id + " does not exist."));
 
-        if (!activity.getProvider().getId().equals(currentUserService.getCurrentUser()
-.getId())) {
+        User provider = currentUserService.getCurrentUser();
+        if (!activity.getProvider().getId().equals(provider.getId())) {
             throw new AccessDeniedException(
                     "You are not authorized to modify this activity.");
         }
@@ -100,7 +100,7 @@ public class ActivitiesService {
         activity.setDurationMinutes(request.getDurationMinutes());
         activity.setCategory(category);
         activity.setLocation(location);
-        activity.setUpdatedBy(currentUserService.getCurrentUser().getEmail());
+        activity.setUpdatedBy(provider.getEmail());
         Activities updated = activitiesRepository.save(activity);
         logger.info("Activity with ID {} updated successfully", id);
         return toResponse(updated);
@@ -110,10 +110,11 @@ public class ActivitiesService {
         logger.info("Attempting to delete activity with ID: {}", id);
         Activities activity = activitiesRepository.findById(id)
                 .orElseThrow(() -> new InformationNotFoundException("Activity with the id:" + id + " does not exist."));
-        if (!activity.getProvider().getId().equals(currentUserService.getCurrentUser().getId())) {
+        User provider = currentUserService.getCurrentUser();
+        if (!activity.getProvider().getId().equals(provider.getId())) {
             throw new AccessDeniedException("You are not authorized to modify this activity.");
         }
-        activity.setUpdatedBy(currentUserService.getCurrentUser().getEmail());
+        activity.setUpdatedBy(provider.getEmail());
         activity.setStatus(ActivityStatus.INACTIVE);
         activitiesRepository.save(activity);
         logger.info("Activity with ID {} deleted successfully", id);

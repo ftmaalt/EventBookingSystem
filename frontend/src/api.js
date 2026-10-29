@@ -139,6 +139,15 @@ export const sessionsApi = {
   remove: (id) => api.delete(`/api/sessions/${id}`),
 };
 
+/* ---------- WAITLIST ---------- */
+
+export const waitlistApi = {
+  getAll: (params = {}, config = {}) => api.get("/api/waitlist/me", { ...config, params }),
+  join: (sessionId) => api.post(`/api/sessions/${sessionId}/waitlist`),
+  getMine: (sessionId, config = {}) => api.get(`/api/sessions/${sessionId}/waitlist/me`, config),
+  leave: (sessionId) => api.delete(`/api/sessions/${sessionId}/waitlist/me`),
+};
+
 /* ---------- BOOKINGS ---------- */
 
 export const bookingsApi = {

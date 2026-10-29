@@ -97,7 +97,7 @@ export default function Activities() {
         <SectionHeader eyebrow="A LITTLE DISCOVERY GOES A LONG WAY" title="Find your next experience." text="Make time for something out of the ordinary." />
 
         <div className="filters">
-          <label className="filter-field"><span>What inspires you?</span><input type="search" placeholder="Search activities..." value={search} onChange={(event) => setSearch(event.target.value)} /></label>
+          <label className="filter-field"><span>What inspires you?</span><input type="search" autoComplete="off" placeholder="Search activities..." value={search} onChange={(event) => setSearch(event.target.value)} /></label>
           <label className="filter-field"><span>Your kind of experience</span>
           <select
             value={categoryId}

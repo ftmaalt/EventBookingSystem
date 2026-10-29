@@ -24,7 +24,11 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-
+/**
+ * Integration tests for transaction-safe real-time SSE notifications.
+ * Verifies that SSE events are dispatched only after a successful database
+ * commit and are suppressed when a transaction rolls back.
+ */
 @SpringBootTest
 @ActiveProfiles("test")
 class NotificationAfterCommitIntegrationTest {
@@ -62,7 +66,12 @@ class NotificationAfterCommitIntegrationTest {
 
         customer = usersRepository.saveAndFlush(customer);
     }
-
+    /**
+     * Requirement: Deliver real-time SSE notifications only after successful commits.
+     * Given a notification created within a transaction, when the transaction
+     * commits, then the notification remains persisted and SSE broadcasts it
+     * exactly once. No SSE message is sent before the commit.
+     */
     @Test
     void committedNotificationSendsSseAfterCommit() {
 
@@ -82,7 +91,12 @@ class NotificationAfterCommitIntegrationTest {
 
         assertEquals(1, notificationRepository.findTop30ByUserIdOrderByCreatedAtDesc(customer.getId()).size());
     }
-
+    /**
+     * Requirement: Prevent real-time notifications for rolled-back transactions.
+     * Given a notification created within a transaction, when the transaction
+     * rolls back, then no notification is persisted and no SSE event is sent.
+     * Verifies transaction-safe asynchronous notification handling.
+     */
     @Test
     void rolledBackNotificationDoesNotSendSse() {
 

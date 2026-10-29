@@ -97,7 +97,7 @@ export default function ApplyProvider() {
               Your application is waiting for review. We will notify you as soon as an administrator decides.
             </p>
           ) : (
-            <form onSubmit={submit}>
+            <form autoComplete="off" onSubmit={submit}>
               <p className="muted provider-application-intro">
                 {latest?.status === "REJECTED"
                   ? "Your last application was not approved. You are welcome to apply again."

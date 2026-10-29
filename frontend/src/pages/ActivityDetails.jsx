@@ -2,55 +2,28 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { activitiesApi, sessionsApi } from "../api";
-import { useAuth } from "../auth";
 import Layout from "../components/Layout";
 import LocationMap from "../components/LocationMap";
+import SessionCard from "../components/SessionCard";
 import { EmptyState, Loading, SectionHeader, StatusPill } from "../components/ui";
 import { formatDate, formatMoney, getError } from "../utils/format";
 import { isBookable } from "../utils/sessions";
 import { useLookups } from "../utils/useLookups";
 
-function SessionCard({ session, loggedIn }) {
-  const bookable = isBookable(session);
-
-  return (
-    <div className="session-card">
-      <div>
-        <strong>{formatDate(session.startTime)}</strong>
-        <span>Until {formatDate(session.endTime)}</span>
-        <span>
-          {session.spotsLeft} of {session.capacity} spots remaining
-        </span>
-      </div>
-      <div className="session-right">
-        <StatusPill status={session.status} />
-        {!bookable ? (
-          <button className="secondary-button" disabled>
-            Unavailable
-          </button>
-        ) : (
-          <Link
-            className="primary-button"
-            to={loggedIn ? `/book/${session.id}` : "/login"}
-            state={loggedIn ? undefined : { from: `/book/${session.id}` }}
-          >
-            {loggedIn ? "Book Now" : "Login to book"}
-          </Link>
-        )}
-      </div>
-    </div>
-  );
-}
-
 export default function ActivityDetails() {
   const { id } = useParams();
-  const { token } = useAuth();
   const { categoryById, locationById } = useLookups();
 
   const [activity, setActivity] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const refreshSessions = () => {
+    sessionsApi.getByActivity(id).then(({ data }) => {
+      setSessions([...(data || [])].sort((a, b) => a.startTime.localeCompare(b.startTime)));
+    }).catch(() => {}); // A waitlist conflict remains visible even if refreshing sessions fails.
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -148,7 +121,9 @@ export default function ActivityDetails() {
           {sessions.length === 0 ? (
             <EmptyState title="No sessions" text="There are currently no sessions for this activity." />
           ) : (
-            sessions.map((session) => <SessionCard key={session.id} session={session} loggedIn={Boolean(token)} />)
+            sessions.map((session) => <SessionCard key={session.id} session={session}
+              activityActive={activity.status === "ACTIVE"} returnTo={`/activities/${id}`}
+              onSessionRefresh={refreshSessions} />)
           )}
         </div>
       </div>

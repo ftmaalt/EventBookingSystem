@@ -104,10 +104,11 @@ export default function Booking() {
 
           {!bookable && <div className="error-box">This session is no longer available for booking.</div>}
 
-          <form onSubmit={submit}>
+          <form autoComplete="off" onSubmit={submit}>
             <label className="field">
               <span>Participants</span>
               <input
+                autoComplete="off"
                 type="number"
                 min="1"
                 max={session.spotsLeft}

@@ -42,7 +42,15 @@ import java.util.concurrent.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-
+/**
+ * Integration tests for concurrency, race-condition prevention,
+ * transaction-safe waitlist allocation, concurrent REST requests, and
+ * asynchronous booking notifications using a real PostgreSQL test database.
+ *
+ * The tests coordinate simultaneous operations with ExecutorService and
+ * CountDownLatch; they verify the resulting database state rather than
+ * relying only on returned service responses.
+ */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class BookingConcurrencyIntegrationTest {
@@ -283,6 +291,13 @@ class BookingConcurrencyIntegrationTest {
     }
 
 
+    /**
+     * Requirement: Prevent race conditions and overbooking with thread-safe operations.
+     * Given one available seat and two customers, when two ExecutorService threads
+     * attempt to book simultaneously, then exactly one succeeds and PostgreSQL
+     * contains one confirmed booking with zero seats remaining.
+     * Demonstrates pessimistic database locking and CountDownLatch coordination.
+     */
     @Test
     void onlyOneUserCanBookTheLastSeat() throws Exception {
 
@@ -326,7 +341,12 @@ class BookingConcurrencyIntegrationTest {
         }
     }
 
-
+    /**
+     * Requirement: Handle multiple concurrent cancellations and waitlist allocation safely.
+     * Given two occupied seats and two FIFO waitlist entries, when both customers
+     * cancel in parallel, then each waiting customer receives one confirmed booking.
+     * Verifies that no seats are lost, duplicated, or overallocated.
+     */
     @Test
     void simultaneousCancellationsAllocateWaitlist() throws Exception {
         Sessions session = sessionsRepository.findById(sessionId)
@@ -423,7 +443,12 @@ class BookingConcurrencyIntegrationTest {
             executor.awaitTermination(5, TimeUnit.SECONDS);
         }
     }
-
+    /**
+     * Requirement: Prevent double cancellation from corrupting shared session capacity.
+     * Given one confirmed booking, when two threads cancel that same booking
+     * simultaneously, then only one request succeeds and exactly one seat is restored.
+     * Demonstrates safe concurrent state transitions and database consistency.
+     */
     @Test
     void cancellationAllocatesSeatToFirstWaitlistedUser() {
         Sessions session = sessionsRepository.findById(sessionId).orElseThrow();
@@ -485,7 +510,12 @@ class BookingConcurrencyIntegrationTest {
 
 
     }
-
+    /**
+     * Requirement: Prevent double cancellation from corrupting shared session capacity.
+     * Given one confirmed booking, when two threads cancel that same booking
+     * simultaneously, then only one request succeeds and exactly one seat is restored.
+     * Demonstrates safe concurrent state transitions and database consistency.
+     */
     @Test
     void concurrentCancellationOfSameBookingRestoresSeatOnlyOnce()
             throws Exception {
@@ -533,8 +563,13 @@ class BookingConcurrencyIntegrationTest {
             executor.awaitTermination(5, TimeUnit.SECONDS);
         }
     }
-
-
+    /**
+     * Requirement: Demonstrate real concurrent REST requests and conflict handling.
+     * Given two authenticated users and one remaining seat, when both send
+     * POST /api/bookings at the same time, then the API returns one HTTP 201
+     * and one HTTP 409 without creating a duplicate or overbooked reservation.
+     * Exercises the HTTP, JWT security, service, and PostgreSQL layers together.
+     */
     @Test
     void concurrentHttpBookingsAllowOnlyOneReservation() throws Exception {
         User customerA = usersRepository.findUserByEmail(firstEmail);
@@ -600,7 +635,12 @@ class BookingConcurrencyIntegrationTest {
             executor.awaitTermination(5, TimeUnit.SECONDS);
         }
     }
-
+    /**
+     * Requirement: Keep asynchronous side effects consistent with database transactions.
+     * Given a booking notification event published inside a transaction, when
+     * that transaction rolls back, then the booking is not persisted and no
+     * confirmation email is sent. Verifies AFTER_COMMIT event handling.
+     */
     @Test
     void rolledBackBookingDoesNotSendEmail() {
         TransactionTemplate transaction = new TransactionTemplate(transactionManager);
@@ -624,7 +664,12 @@ class BookingConcurrencyIntegrationTest {
 
         verify(emailService, after(1000).never()).sendBookingVerifiedEmail(eq(firstEmail), any(Bookings.class));
     }
-
+    /**
+     * Requirement: Process booking email notifications asynchronously after commit.
+     * Given a booking event published inside a transaction, when the transaction
+     * commits successfully, then exactly one confirmation email is dispatched.
+     * Verifies that no email is sent while the transaction is still open.
+     */
     @Test
     void committedBookingSendsEmailAfterCommit() {
         TransactionTemplate transaction = new TransactionTemplate(transactionManager);
@@ -651,6 +696,12 @@ class BookingConcurrencyIntegrationTest {
         verify(emailService, after(5000).times(1)).sendBookingVerifiedEmail(eq(firstEmail), argThat(booking -> bookingId.equals(booking.getBookingId())));
     }
 
+    /**
+     * Requirement: Notify customers of successful booking cancellations.
+     * Given a confirmed booking, when cancellation commits, then the booking
+     * becomes CANCELLED, its seat is restored, and the cancellation email is sent.
+     * Verifies that notification delivery follows a committed state change.
+     */
     @Test
     void cancelledBookingSendsEmailAfterCommit() {
         Sessions session = sessionsRepository.findById(sessionId).orElseThrow();
@@ -692,7 +743,13 @@ class BookingConcurrencyIntegrationTest {
                 argThat(b -> b.getBookingId().equals(booking.getBookingId())
                 && b.getStatus() == BookingStatus.CANCELLED));
     }
-
+    /**
+     * Requirement: Send correct asynchronous notifications after waitlist allocation.
+     * Given two FIFO waitlist entries and a cancelled full-session booking,
+     * when the first waiting customer receives the released seat, then that
+     * customer gets a confirmation email and the cancelling customer gets a
+     * cancellation email; the still-waiting customer receives no booking email.
+     */
     @Test
     void waitlistAllocationSendsEmailAfterCommit() {
         Sessions session = sessionsRepository.findById(sessionId).orElseThrow();

@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ActivitiesRepository extends JpaRepository<Activities,Long> {
+    Optional<Activities> findByProviderIdAndTitle(Long providerId, String title);
+
     List<Activities> findByProviderId(Long providerId);
     List<Activities> findByStatus(ActivityStatus status);
     Optional<Activities> findByIdAndStatus(Long id, ActivityStatus status);

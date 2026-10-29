@@ -5,11 +5,11 @@ export default function SearchBar({ onSearch, compact = false }) {
   const id = useId();
   const [value, setValue] = useState("");
   return (
-    <form className={`experience-search${compact ? " compact" : ""}`} role="search"
+    <form autoComplete="off" className={`experience-search${compact ? " compact" : ""}`} role="search"
       onSubmit={(event) => { event.preventDefault(); onSearch(value.trim()); }}>
       <label className="sr-only" htmlFor={id}>Search experiences</label>
       <span aria-hidden="true" className="search-symbol">⌕</span>
-      <input id={id} type="search" placeholder={compact ? "Search experiences" : "What would you love to try?"}
+      <input id={id} type="search" autoComplete="off" placeholder={compact ? "Search experiences" : "What would you love to try?"}
         value={value} onChange={(event) => setValue(event.target.value)} />
       <button type="submit" className={compact ? "search-submit" : "primary-button"} aria-label="Search experiences">
         {compact ? "→" : "Find an experience"}

@@ -137,7 +137,7 @@ export default function Profile() {
           <div className="profile-forms">
             <Feedback error={error} message={message} />
 
-            <form className="form-card" onSubmit={updateProfile}>
+            <form autoComplete="off" className="form-card" onSubmit={updateProfile}>
               <h2>Personal Information</h2>
               <Input label="Full name" value={name} onChange={setName} />
               <Input
@@ -152,21 +152,21 @@ export default function Profile() {
               <button className="primary-button">Save Changes</button>
             </form>
 
-            <form className="form-card" onSubmit={changePassword}>
+            <form autoComplete="off" className="form-card" onSubmit={changePassword}>
               <h2>Change Password</h2>
               <Input
                 label="Current password"
                 type="password"
                 value={currentPassword}
                 onChange={setCurrentPassword}
-                autoComplete="current-password"
+                autoComplete="off"
               />
               <Input
                 label="New password"
                 type="password"
                 value={newPassword}
                 onChange={setNewPassword}
-                autoComplete="new-password"
+                autoComplete="off"
               />
               <button className="secondary-button">Change Password</button>
             </form>

@@ -37,7 +37,7 @@ export function Input({ label, type = "text", value, onChange, hint, ...rest }) 
   return (
     <label className="field">
       <span>{label}</span>
-      <input type={type} value={value ?? ""} onChange={(event) => onChange(event.target.value)} {...rest} />
+      <input type={type} value={value ?? ""} onChange={(event) => onChange(event.target.value)} {...rest} autoComplete="off" />
       {hint && <small>{hint}</small>}
     </label>
   );
@@ -47,7 +47,7 @@ export function TextArea({ label, value, onChange, ...rest }) {
   return (
     <label className="field">
       <span>{label}</span>
-      <textarea value={value ?? ""} onChange={(event) => onChange(event.target.value)} {...rest} />
+      <textarea value={value ?? ""} onChange={(event) => onChange(event.target.value)} {...rest} autoComplete="off" />
     </label>
   );
 }
