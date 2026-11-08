@@ -9,10 +9,11 @@ import com.project.bookngo.repository.*;
 import com.project.bookngo.security.JwtUtils;
 import com.project.bookngo.security.MyUserDetails;
 import com.project.bookngo.service.*;
-
+import java.util.HashSet;
+import java.util.Set;
 import com.project.bookngo.service.event.BookingNotificationEvent;
 import com.project.bookngo.service.event.BookingNotificationType;
-import org.hibernate.Transaction;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,6 +81,9 @@ class BookingConcurrencyIntegrationTest {
     private ActivitiesRepository activitiesRepository;
 
     @Autowired
+    private TokensRepository tokensRepository;
+
+    @Autowired
     private JwtUtils jwtUtils;
 
     @Autowired
@@ -100,6 +104,10 @@ class BookingConcurrencyIntegrationTest {
     private Long sessionId;
     private String firstEmail;
     private String secondEmail;
+    private final Set<String> testUserEmails = new HashSet<>();
+    private Long activityId;
+    private Long locationId;
+    private Long categoryId;
 
     private static final long LATCH_TIMEOUT_SECONDS = 10;
     private static final long RESULT_TIMEOUT_SECONDS = 20;
@@ -126,6 +134,7 @@ class BookingConcurrencyIntegrationTest {
         category.setDescription("Concurrency test category");
         category.setActive(true);
         category = categoryRepository.save(category);
+        categoryId = category.getId();
 
         Location location = new Location();
         location.setName("Test Location");
@@ -136,6 +145,7 @@ class BookingConcurrencyIntegrationTest {
         location.setActive(true);
         location.setProvider(provider);
         location = locationRepository.save(location);
+        locationId = location.getId();
 
         Activities activity = new Activities();
         activity.setTitle("Concurrency Test Activity");
@@ -147,6 +157,7 @@ class BookingConcurrencyIntegrationTest {
         activity.setCategory(category);
         activity.setLocation(location);
         activity = activitiesRepository.save(activity);
+        activityId = activity.getId();
 
         Sessions session = new Sessions();
         session.setActivity(activity);
@@ -169,7 +180,7 @@ class BookingConcurrencyIntegrationTest {
         user.setMustChangePassword(false);
         user.setStrikeCount((short) 0);
         user.setConsecutiveViolations((short) 0);
-
+        testUserEmails.add(email);
         return usersRepository.save(user);
     }
 
@@ -825,5 +836,71 @@ class BookingConcurrencyIntegrationTest {
 
         verify(emailService, never()).sendBookingVerifiedEmail(eq(ali.getEmail()), any(Bookings.class));
     }
+    @AfterEach
+    void cleanUp() {
+        TransactionTemplate cleanupTransaction =
+                new TransactionTemplate(transactionManager);
 
+        cleanupTransaction.executeWithoutResult(status -> {
+
+            // 1. Delete waitlist entries and bookings for session
+            if (sessionId != null) {
+                List<WaitlistEntry> waitlistEntries = waitingListRepository.findAll()
+                        .stream()
+                        .filter(entry -> entry.getSession() != null
+                                && sessionId.equals(entry.getSession().getId()))
+                        .toList();
+
+                waitingListRepository.deleteAll(waitlistEntries);
+                waitingListRepository.flush();
+
+                List<Bookings> bookings = bookingsRepository.findBySessionId(sessionId);
+
+                bookingsRepository.deleteAll(bookings);
+                bookingsRepository.flush();
+
+                // 2. Delete session
+                sessionsRepository.findById(sessionId).ifPresent(session -> {
+                    sessionsRepository.delete(session);
+                    sessionsRepository.flush();
+                });
+            }
+
+            // 3. Delete activity, location, and category
+            if (activityId != null) {
+                activitiesRepository.findById(activityId).ifPresent(activity -> {
+                    activitiesRepository.delete(activity);
+                    activitiesRepository.flush();
+                });
+            }
+
+            if (locationId != null) {
+                locationRepository.findById(locationId).ifPresent(location -> {
+                    locationRepository.delete(location);
+                    locationRepository.flush();
+                });
+            }
+
+            if (categoryId != null) {
+                categoryRepository.findById(categoryId).ifPresent(category -> {
+                    categoryRepository.delete(category);
+                    categoryRepository.flush();
+                });
+            }
+            // 4. Delete test users and their tokens
+            for (String email : testUserEmails) {
+                User user = usersRepository.findUserByEmail(email);
+
+                if (user != null) {
+                    tokensRepository.deleteAllByUser_Id(user.getId());
+                    usersRepository.delete(user);
+                }
+            }
+            testUserEmails.clear();
+            sessionId = null;
+            activityId = null;
+            locationId = null;
+            categoryId = null;
+        });
+    }
 }

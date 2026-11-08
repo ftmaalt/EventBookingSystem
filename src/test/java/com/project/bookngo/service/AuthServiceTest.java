@@ -9,16 +9,22 @@ import com.project.bookngo.model.enums.UserStatus;
 import com.project.bookngo.model.request.LoginRequest;
 import com.project.bookngo.model.request.RegisterRequest;
 import com.project.bookngo.model.response.GenericMessageResponse;
+import com.project.bookngo.repository.TokensRepository;
 import com.project.bookngo.repository.UsersRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
+import org.junit.jupiter.api.AfterEach;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@ActiveProfiles("test")
 class AuthServiceTest {
 
     @Autowired
@@ -30,12 +36,17 @@ class AuthServiceTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private TokensRepository tokensRepository;
+
+    private final List<String> testEmails = new ArrayList<>();
+
 
     @Test
     @DisplayName("Should register a new user successfully")
     void shouldRegisterNewUser() {
         String email = "testuser" + System.currentTimeMillis() + "@example.com";
-
+        testEmails.add(email);
         RegisterRequest request = new RegisterRequest();
         request.setEmail(email);
         request.setFullname("Test User");
@@ -60,7 +71,7 @@ class AuthServiceTest {
     @DisplayName("Should reject registration when email already exists")
     void shouldNotRegisterUserWithExistingEmail() {
         String email = "existing" + System.currentTimeMillis() + "@example.com";
-
+        testEmails.add(email);
         RegisterRequest request = new RegisterRequest();
         request.setEmail(email);
         request.setFullname("Existing User");
@@ -81,7 +92,7 @@ class AuthServiceTest {
     void shouldHashUserPassword() {
         String email = "passwordtest" + System.currentTimeMillis() + "@example.com";
         String rawPassword = "Password123!";
-
+        testEmails.add(email);
         RegisterRequest request = new RegisterRequest();
         request.setEmail(email);
         request.setFullname("Password Test");
@@ -102,7 +113,7 @@ class AuthServiceTest {
     @DisplayName("Should prevent an unverified user from logging in")
     void shouldNotAllowUnverifiedUserToLogin() {
         String email = "unverified" + System.currentTimeMillis() + "@example.com";
-
+        testEmails.add(email);
         RegisterRequest registerRequest = new RegisterRequest();
         registerRequest.setEmail(email);
         registerRequest.setFullname("Unverified User");
@@ -126,7 +137,7 @@ class AuthServiceTest {
     @DisplayName("Should reject login when the password is incorrect")
     void shouldNotAllowLoginWithIncorrectPassword() {
         String email = "wrongpassword" + System.currentTimeMillis() + "@example.com";
-
+        testEmails.add(email);
         User user = new User();
         user.setEmail(email);
         user.setFullName("Password Test");
@@ -148,5 +159,19 @@ class AuthServiceTest {
                 InvalidCredentials.class,
                 () -> authService.login(loginRequest)
         );
+    }
+
+    @AfterEach
+    void cleanUp() {
+        for (String email : testEmails) {
+            User user = usersRepository.findUserByEmail(email);
+
+            if (user != null) {
+                tokensRepository.deleteAllByUser_Id(user.getId());
+                usersRepository.delete(user);
+            }
+        }
+
+        testEmails.clear();
     }
 }
