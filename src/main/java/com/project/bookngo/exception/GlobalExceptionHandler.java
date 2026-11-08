@@ -97,6 +97,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({BusinessConflictsException.class, InformationExistsException.class})
     public ResponseEntity<ApiErrorResponse> handleConflict(RuntimeException ex, HttpServletRequest request) {
+        logger.warn("Conflict while processing {} {}: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
 
         return buildErrorResponse(
                 HttpStatus.CONFLICT,

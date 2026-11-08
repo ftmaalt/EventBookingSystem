@@ -46,7 +46,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request,HttpServletRequest httpRequest) {
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request,HttpServletRequest httpRequest) {
         logger.info("Calling login==>");
         String ipAddress = httpRequest.getRemoteAddr();
         rateLimitService.checkRateLimit(ipAddress, request.getEmail());

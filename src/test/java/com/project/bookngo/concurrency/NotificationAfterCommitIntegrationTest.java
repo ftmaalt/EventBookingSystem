@@ -8,10 +8,9 @@ import com.project.bookngo.repository.NotificationRepository;
 import com.project.bookngo.repository.UsersRepository;
 import com.project.bookngo.service.NotificationService;
 import com.project.bookngo.service.SSEService;
-
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -111,5 +110,18 @@ class NotificationAfterCommitIntegrationTest {
         assertTrue(notificationRepository.findTop30ByUserIdOrderByCreatedAtDesc(customer.getId()).isEmpty());
 
         verify(sseService, after(1000).never()).sendNotification(eq(customer.getId()), eq("booking-confirmed"), any(NotificationResponse.class));
+    }
+
+    @AfterEach
+    void cleanUp() {
+        if (customer != null) {
+            TransactionTemplate cleanupTransaction =
+                    new TransactionTemplate(transactionManager);
+
+            cleanupTransaction.executeWithoutResult(status -> {
+                notificationRepository.deleteByUserId(customer.getId());
+                usersRepository.delete(customer);
+            });
+        }
     }
 }

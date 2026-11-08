@@ -32,7 +32,6 @@ public class BookingsService {
 
     private final BookingsRepository bookingsRepository;
     private final SessionsRepository sessionsRepository;
-    private final EmailService emailService;
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
     private final WaitingService waitingService;
@@ -42,10 +41,9 @@ public class BookingsService {
     private final WaitingListRepository waitingListRepository;
     private final ApplicationEventPublisher eventPublisher;
 
-    public BookingsService(BookingsRepository bookingsRepository, SessionsRepository sessionsRepository, EmailService emailService, NotificationService notificationService, AuditLogService auditLogService, WaitingService waitingService, EntityManager entityManager, CurrentUserService currentUserService, WaitingListRepository waitingListRepository, ApplicationEventPublisher eventPublisher) {
+    public BookingsService(BookingsRepository bookingsRepository, SessionsRepository sessionsRepository, NotificationService notificationService, AuditLogService auditLogService, WaitingService waitingService, EntityManager entityManager, CurrentUserService currentUserService, WaitingListRepository waitingListRepository, ApplicationEventPublisher eventPublisher) {
         this.bookingsRepository = bookingsRepository;
         this.sessionsRepository = sessionsRepository;
-        this.emailService = emailService;
         this.notificationService = notificationService;
         this.auditLogService = auditLogService;
         this.waitingService = waitingService;
