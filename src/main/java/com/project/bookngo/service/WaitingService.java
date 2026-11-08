@@ -9,19 +9,21 @@ import com.project.bookngo.model.WaitlistEntry;
 import com.project.bookngo.model.enums.*;
 import com.project.bookngo.model.response.WaitListResponse;
 import com.project.bookngo.model.response.WaitlistedSessionResponse;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import com.project.bookngo.repository.BookingsRepository;
 import com.project.bookngo.repository.SessionsRepository;
 import com.project.bookngo.repository.WaitingListRepository;
 import com.project.bookngo.service.event.BookingNotificationEvent;
 import com.project.bookngo.service.event.BookingNotificationType;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -30,6 +32,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class WaitingService {
+
+    private static final Logger logger = LoggerFactory.getLogger(WaitingService.class);
 
     private final WaitingListRepository waitlistRepository;
     private final SessionsRepository sessionsRepository;
@@ -43,28 +47,28 @@ public class WaitingService {
         return waitlistRepository.findWaitingSessionsByUserId(user.getId(), pageable);
     }
 
-
     @Transactional
     public WaitListResponse joinWaitlist(Long sessionId) {
         User user = currentUserService.getCurrentUser();
-        Sessions session = sessionsRepository.findByIdForUpdate(sessionId)
-                .orElseThrow(() -> new InformationNotFoundException("No session with ID: " + sessionId));
-
-        if (session.getStatus() == SessionStatus.CANCELLED || session.getStatus() == SessionStatus.COMPLETED){
+        Sessions session = sessionsRepository.findByIdForUpdate(sessionId).orElseThrow(() -> new InformationNotFoundException("No session with ID: " + sessionId));
+        if (session.getStatus() == SessionStatus.CANCELLED || session.getStatus() == SessionStatus.COMPLETED) {
             throw new BusinessConflictsException("The waitlist is unavailable for this session.");
         }
 
-        if (!session.getStartTime().isAfter(LocalDateTime.now())){
-            throw new BusinessConflictsException("You cannot join the waitlist for a session that has already started");
+        if (!session.getStartTime().isAfter(LocalDateTime.now())) {
+            throw new BusinessConflictsException("You cannot join the waitlist for a session that has already started.");
         }
 
         if (session.getSpotsLeft() > 0) {
             throw new BusinessConflictsException("This session still has available spots. You can book directly.");
         }
+
         if (user.getRole() != UserRole.USER || user.getStatus() != UserStatus.ACTIVE) {
             throw new AccessDeniedException("Only active customers can join the waitlist.");
         }
-        boolean hasBooking = bookingsRepository.existsByUserIdAndSessionIdAndStatusIn(user.getId(), sessionId, List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT));
+
+        boolean hasBooking = bookingsRepository.existsByUserIdAndSessionIdAndStatusIn(user.getId(), sessionId,
+                List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT));
 
         if (hasBooking) {
             throw new BusinessConflictsException("You already have an active booking for this session.");
@@ -75,8 +79,9 @@ public class WaitingService {
         }
 
         boolean alreadyWaiting = waitlistRepository.existsByUserIdAndSessionIdAndStatus(user.getId(), sessionId, WaitListStatus.WAITING);
-        if (alreadyWaiting){
-            throw new BusinessConflictsException( "You are already on the waitlist for this session.");
+
+        if (alreadyWaiting) {
+            throw new BusinessConflictsException("You are already on the waitlist for this session.");
         }
 
         WaitlistEntry entry = new WaitlistEntry();
@@ -85,8 +90,7 @@ public class WaitingService {
         entry.setStatus(WaitListStatus.WAITING);
 
         WaitlistEntry savedEntry = waitlistRepository.save(entry);
-
-        long position = waitlistRepository.countBySessionIdAndStatusAndEntryIdLessThan(sessionId, WaitListStatus.WAITING, savedEntry.getEntryId())+ 1;
+        long position = waitlistRepository.countBySessionIdAndStatusAndEntryIdLessThan(sessionId, WaitListStatus.WAITING, savedEntry.getEntryId()) + 1;
 
         return new WaitListResponse(savedEntry.getEntryId(), sessionId, savedEntry.getStatus(), savedEntry.getJoinedAt(), position);
     }
@@ -94,64 +98,70 @@ public class WaitingService {
     @Transactional
     public String leaveWaitlist(Long sessionId) {
         User user = currentUserService.getCurrentUser();
-
-        sessionsRepository.findByIdForUpdate(sessionId).orElseThrow(() -> new InformationNotFoundException("Session with Id " + sessionId +" doesn't exist."));
+        sessionsRepository.findByIdForUpdate(sessionId).orElseThrow(() -> new InformationNotFoundException("Session with Id " + sessionId + " doesn't exist."));
 
         WaitlistEntry entry = waitlistRepository.findByUserIdAndSessionIdAndStatus(user.getId(), sessionId, WaitListStatus.WAITING).orElseThrow(() -> new InformationNotFoundException("You do not have an active waitlist entry for this session."));
 
         entry.setStatus(WaitListStatus.CANCELLED);
         waitlistRepository.save(entry);
-
         return "You have successfully left the waitlist.";
     }
 
     @Transactional(readOnly = true)
-    public WaitListResponse getMyWaitListEntry(Long sessionId){
-        User user= currentUserService.getCurrentUser();
-
-        WaitlistEntry entry = waitlistRepository.findByUserIdAndSessionIdAndStatus(user.getId(), sessionId, WaitListStatus.WAITING).orElseThrow(() -> new InformationNotFoundException("You did not apply for the waitlist for this session"));
-
-        long position = waitlistRepository.countBySessionIdAndStatusAndEntryIdLessThan(sessionId, WaitListStatus.WAITING, entry.getEntryId())+1;
-
+    public WaitListResponse getMyWaitListEntry(Long sessionId) {
+        User user = currentUserService.getCurrentUser();
+        WaitlistEntry entry = waitlistRepository.findByUserIdAndSessionIdAndStatus(user.getId(), sessionId, WaitListStatus.WAITING).orElseThrow(() -> new InformationNotFoundException("You did not apply for the waitlist for this session."));
+        long position = waitlistRepository.countBySessionIdAndStatusAndEntryIdLessThan(sessionId, WaitListStatus.WAITING, entry.getEntryId()) + 1;
         return new WaitListResponse(entry.getEntryId(), sessionId, entry.getStatus(), entry.getJoinedAt(), position);
     }
 
     /**
-     * Allocates available seats to waiting customers in FIFO order.
-     *
-     * Must be called within an existing transaction after acquiring
-     * a PESSIMISTIC_WRITE lock on the session row.
-     *
-     * Booking creation, capacity updates, and waitlist status changes
-     * must commit or roll back together.
+     * Allocates available seats to eligible waiting customers in FIFO order.
+     * This method must execute inside an existing transaction after the
+     * caller has acquired a PESSIMISTIC_WRITE lock on the session row.
+     * Booking creation, session capacity updates, and waitlist status changes
+     * therefore commit or roll back together.
      */
-
     @Transactional(propagation = Propagation.MANDATORY)
     public void allocateNextWaitlistedUser(Sessions session) {
-        if (session.getSpotsLeft() <= 0)
+        if (session.getSpotsLeft() <= 0) {
             return;
+        }
+        List<WaitlistEntry> waitingEntries = waitlistRepository.findBySessionIdAndStatusOrderByEntryIdAsc(session.getId(), WaitListStatus.WAITING);
+        if (waitingEntries.isEmpty()) {
+            return;
+        }
+        boolean sessionUnavailable = !session.getStartTime().isAfter(LocalDateTime.now()) || session.getStatus() == SessionStatus.CANCELLED || session.getStatus() == SessionStatus.COMPLETED || session.getActivity().getStatus() != ActivityStatus.ACTIVE;
+        if (sessionUnavailable) {
+            logger.warn("Expiring {} waitlist entries because session {} is no longer eligible for allocation.", waitingEntries.size(), session.getId());
 
-        if (!session.getStartTime().isAfter(LocalDateTime.now()) || session.getStatus() == SessionStatus.CANCELLED || session.getStatus() == SessionStatus.COMPLETED ||
-                session.getActivity().getStatus() != ActivityStatus.ACTIVE) {
+            expireEntries(waitingEntries);
             return;
         }
 
-        List<WaitlistEntry> waitingEntries = waitlistRepository.findBySessionIdAndStatusOrderByEntryIdAsc(session.getId(), WaitListStatus.WAITING);
-        for (WaitlistEntry entry : waitingEntries ) {
-            if (session.getSpotsLeft() <= 0)
+        for (WaitlistEntry entry : waitingEntries) {
+            if (session.getSpotsLeft() <= 0) {
                 break;
-
+            }
             User user = entry.getUser();
-            if (user == null || user.getStatus() != UserStatus.ACTIVE || user.getRole() != UserRole.USER)
+            if (user == null || user.getStatus() != UserStatus.ACTIVE || user.getRole() != UserRole.USER) {
+                logger.warn("Expiring waitlist entry {} for session {} because its user is not an active customer.", entry.getEntryId(), session.getId());
+                expireEntry(entry);
                 continue;
+            }
 
-            boolean alreadyBooked = bookingsRepository.existsByUserIdAndSessionIdAndStatusIn(user.getId(), session.getId(), List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT));
+            boolean alreadyBooked = bookingsRepository.existsByUserIdAndSessionIdAndStatusIn(
+                            user.getId(),
+                            session.getId(),
+                            List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT));
 
-            if (alreadyBooked)
+            if (alreadyBooked) {
+                logger.warn("Expiring waitlist entry {} for session {} because user {} already has an active booking.", entry.getEntryId(), session.getId(), user.getId());
+                expireEntry(entry);
                 continue;
+            }
 
             Bookings newBooking = new Bookings();
-
             newBooking.setUser(user);
             newBooking.setSession(session);
             newBooking.setParticipants(1);
@@ -164,27 +174,32 @@ public class WaitingService {
             newBooking.setSubtotal(subtotal);
             newBooking.setDiscountPercent(BigDecimal.ZERO);
             newBooking.setTotalPrice(subtotal);
-
             newBooking.setCreatedBy("SYSTEM_WAITLIST");
             newBooking.setUpdatedBy("SYSTEM_WAITLIST");
 
-           Bookings saved =  bookingsRepository.save(newBooking);
-            eventPublisher.publishEvent(new BookingNotificationEvent(saved.getBookingId(), BookingNotificationType.WAITLIST_ALLOCATED));
+            Bookings savedBooking = bookingsRepository.save(newBooking);
 
-            session.setSpotsLeft(session.getSpotsLeft()-1);
+            session.setSpotsLeft(session.getSpotsLeft() - 1);
+
             if (session.getSpotsLeft() == 0) {
                 session.setStatus(SessionStatus.FULL);
             }
 
             entry.setStatus(WaitListStatus.BOOKED);
             waitlistRepository.save(entry);
+            eventPublisher.publishEvent(new BookingNotificationEvent(savedBooking.getBookingId(), BookingNotificationType.WAITLIST_ALLOCATED));
+
+            logger.info("Allocated session {} to waitlist user {}. Booking ID: {}. Remaining spots: {}.", session.getId(), user.getId(), savedBooking.getBookingId(), session.getSpotsLeft());
         }
-
-
     }
 
+    private void expireEntry(WaitlistEntry entry) {
+        entry.setStatus(WaitListStatus.EXPIRED);
+        waitlistRepository.save(entry);
+    }
 
-
-
-
+    private void expireEntries(List<WaitlistEntry> entries) {
+        entries.forEach(entry -> entry.setStatus(WaitListStatus.EXPIRED));
+        waitlistRepository.saveAll(entries);
+    }
 }
