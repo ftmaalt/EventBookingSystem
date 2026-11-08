@@ -5,6 +5,7 @@ import com.project.bookngo.model.enums.BookingStatus;
 import com.project.bookngo.repository.BookingsRepository;
 import com.project.bookngo.service.EmailService;
 
+import com.project.bookngo.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 
 import org.slf4j.Logger;
@@ -23,6 +24,7 @@ public class BookingNotificationListener {
 
     private final BookingsRepository bookingsRepository;
     private final EmailService emailService;
+    private final NotificationService notificationService;
 
     @Async("notificationExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -45,14 +47,14 @@ public class BookingNotificationListener {
                                 booking.getStatus());
                         return;
                     }
-                    emailService.sendBookingVerifiedEmail(
-                            email, booking
-                    );
+                    emailService.sendBookingVerifiedEmail(email, booking);
+                    notificationService.create(booking.getUser(),
+                            "waitlist-allocated",
+                            "A seat became available and booking #" +
+                                    booking.getBookingId() + " was confirmed from the waitlist.");
                 }
                 case BOOKING_CANCELLED -> {
-                    emailService.sendSessionCancelledEmail(
-                            email, booking
-                    );
+                    emailService.sendSessionCancelledEmail(email, booking);
                 }
             }
             logger.info(

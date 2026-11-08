@@ -90,6 +90,22 @@ class WaitingServiceTest {
         secondEntry.setSession(session);
         secondEntry.setStatus(WaitListStatus.WAITING);
     }
+    private void mockBookingSave() {
+        when(bookingsRepository.save(any(Bookings.class)))
+                .thenAnswer(invocation -> {
+                    Bookings booking = invocation.getArgument(0);
+                    booking.setBookingId(500L);
+                    return booking;
+                });
+    }
+
+    private void mockWaitingEntries() {
+        when(waitlistRepository
+                .findBySessionIdAndStatusOrderByEntryIdAsc(
+                        100L, WaitListStatus.WAITING
+                ))
+                .thenReturn(List.of(firstEntry, secondEntry));
+    }
 
     @Test
     void shouldAllocateFirstWaitingCustomer() {
@@ -177,13 +193,14 @@ class WaitingServiceTest {
                 });
         waitingService.allocateNextWaitlistedUser(session);
 
-        assertEquals(WaitListStatus.WAITING, firstEntry.getStatus());
+        assertEquals(WaitListStatus.EXPIRED, firstEntry.getStatus());
         assertEquals(WaitListStatus.BOOKED, secondEntry.getStatus());
 
         ArgumentCaptor<Bookings> captor =
                 ArgumentCaptor.forClass(Bookings.class);
 
         verify(bookingsRepository).save(captor.capture());
+        verify(waitlistRepository).save(firstEntry);
 
         assertEquals(secondUser.getId(),
                 captor.getValue().getUser().getId());
@@ -195,12 +212,54 @@ class WaitingServiceTest {
 
     @Test
     void shouldNotAllocateAfterSessionStarts() {
-
         session.setStartTime(LocalDateTime.now().minusMinutes(1));
+        mockWaitingEntries();
+
+        waitingService.allocateNextWaitlistedUser(session);
+        assertEquals(WaitListStatus.EXPIRED, firstEntry.getStatus());
+        assertEquals(WaitListStatus.EXPIRED, secondEntry.getStatus());
+
+        verify(waitlistRepository).saveAll(List.of(firstEntry, secondEntry));
+
+        verifyNoInteractions(bookingsRepository);
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    void shouldExpireCustomerWhoAlreadyHasAnActiveBooking() {
+        mockWaitingEntries();
+        mockBookingSave();
+
+        when(bookingsRepository.existsByUserIdAndSessionIdAndStatusIn(
+                firstUser.getId(),
+                session.getId(),
+                List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT)))
+                .thenReturn(true);
 
         waitingService.allocateNextWaitlistedUser(session);
 
+        assertEquals(WaitListStatus.EXPIRED, firstEntry.getStatus());
+        assertEquals(WaitListStatus.BOOKED, secondEntry.getStatus());
+
+        verify(waitlistRepository).save(firstEntry);
+        verify(waitlistRepository).save(secondEntry);
+        verify(bookingsRepository).save(any(Bookings.class));
+
+        assertEquals(0, session.getSpotsLeft());
+    }
+
+    @Test
+    void shouldExpireAllEntriesWhenSessionHasAlreadyStarted() {
+        session.setStartTime(LocalDateTime.now().minusMinutes(1));
+
+        mockWaitingEntries();
+        waitingService.allocateNextWaitlistedUser(session);
+
+        assertEquals(WaitListStatus.EXPIRED, firstEntry.getStatus());
+        assertEquals(WaitListStatus.EXPIRED, secondEntry.getStatus());
+
+        verify(waitlistRepository).saveAll(List.of(firstEntry, secondEntry));
         verifyNoInteractions(bookingsRepository);
-        verifyNoInteractions(waitlistRepository);
+        verifyNoInteractions(eventPublisher);
     }
 }
