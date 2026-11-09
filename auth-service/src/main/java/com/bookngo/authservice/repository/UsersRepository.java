@@ -1,7 +1,8 @@
-package com.project.bookngo.repository;
+package com.bookngo.authservice.repository;
 
-import com.project.bookngo.model.User;
-import com.project.bookngo.model.enums.UserRole;
+
+import com.bookngo.authservice.model.User;
+import com.bookngo.authservice.model.enums.UserRole;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

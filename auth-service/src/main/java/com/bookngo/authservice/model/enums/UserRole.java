@@ -1,4 +1,4 @@
-package com.project.bookngo.model.enums;
+package com.bookngo.authservice.model.enums;
 
 public enum UserRole {
     USER,

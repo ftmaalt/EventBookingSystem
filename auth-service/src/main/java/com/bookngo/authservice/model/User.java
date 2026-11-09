@@ -1,7 +1,8 @@
-package com.project.bookngo.model;
+package com.bookngo.authservice.model;
 
-import com.project.bookngo.model.enums.UserRole;
-import com.project.bookngo.model.enums.UserStatus;
+
+import com.bookngo.authservice.model.enums.UserRole;
+import com.bookngo.authservice.model.enums.UserStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -11,7 +12,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Getter
 @Setter
@@ -21,61 +21,50 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
 
-
-    @Column(length = 100)
     @NotBlank
+    @Column(name = "full_name", length = 100, nullable = false)
     private String fullName;
 
-    @Column(unique = true, length = 150)
     @NotBlank
+    @Column(name = "email", length = 150, nullable = false, unique = true)
     private String email;
 
-    @Column(length = 255)
     @NotBlank
+    @Column(name = "password_hash", length = 255, nullable = false)
     private String passwordHash;
 
-    @Column(length = 20)
+    @Column(name = "phone",length = 20)
     private String phone;
 
-    @Enumerated(EnumType.STRING)
-    @Column
     @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false)
     private UserRole role;
 
     @Enumerated(EnumType.STRING)
-    @Column
-
+    @Column(name = "status")
     private UserStatus status;
-    @Column(length = 255)
+
+    @Column(name = "profile_picture_path", length = 255)
     private String profilePicturePath;
 
-    @Column
+    @Column(name = "must_change_password")
     private Boolean mustChangePassword;
 
-    @Column
+    @Column(name = "strike_count")
     private Short strikeCount;
 
-    @Column
+    @Column(name = "consecutive_violations")
     private Short consecutiveViolations;
 
     @CreationTimestamp
-    @Column(updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-
-    //    --- Relationship Mapping ---
-
-    @OneToMany(mappedBy = "user")
-    private List<Penalties> penalties;
-
-    @OneToMany(mappedBy = "user")
-    private List<Bookings> bookings;
-
-    @OneToMany(mappedBy = "user")
-    private List<Violations> violations;
 }
