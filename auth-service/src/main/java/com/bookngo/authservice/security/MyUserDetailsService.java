@@ -1,7 +1,7 @@
-package com.project.bookngo.security;
+package com.bookngo.authservice.security;
 
-import com.project.bookngo.model.User;
-import com.project.bookngo.repository.UsersRepository;
+import com.bookngo.authservice.model.User;
+import com.bookngo.authservice.repository.UsersRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

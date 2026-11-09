@@ -1,5 +1,6 @@
-package com.project.bookngo.config;
-import com.project.bookngo.security.JwtRequestFilter;
+package com.bookngo.authservice.config;
+
+import com.bookngo.authservice.security.JwtRequestFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -28,6 +29,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtRequestFilter jwtRequestFilter;
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -42,23 +44,16 @@ public class SecurityConfig {
                                 "/api/auth/forgotPassword",
                                 "/api/auth/resetPassword",
                                 "/error",
-                                "/uploads/**",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs",
                                 "/v3/api-docs/**"
                         ).permitAll()
-                        .requestMatchers("/api/sessions/*/waitlist",
-                                "/api/sessions/*/waitlist/**")
-                        .authenticated()
-                        .requestMatchers(HttpMethod.GET,
-                                "/api/categories/**",
-                                "/api/locations/**",
-                                "/api/activities/**",
-                                "/api/sessions/**"
-                        ).permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest()
-                        .authenticated()) .exceptionHandling(ex -> ex
+                        .authenticated())
+
+                        .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(
                                 (request, response, authException) -> {
                                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication required.");

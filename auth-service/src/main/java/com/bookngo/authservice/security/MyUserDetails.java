@@ -1,7 +1,8 @@
-package com.project.bookngo.security;
+package com.bookngo.authservice.security;
 
-import com.project.bookngo.model.User;
-import com.project.bookngo.model.enums.UserStatus;
+
+import com.bookngo.authservice.model.User;
+import com.bookngo.authservice.model.enums.UserStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,7 +16,6 @@ import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
-
 public class MyUserDetails implements UserDetails {
     @Getter
     private User user;
