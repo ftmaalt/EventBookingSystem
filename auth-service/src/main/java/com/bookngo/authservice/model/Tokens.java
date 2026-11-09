@@ -1,11 +1,10 @@
-package com.project.bookngo.model;
+package com.bookngo.authservice.model;
 
+import com.bookngo.authservice.model.enums.TokenType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.project.bookngo.model.enums.TokenType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jdk.jfr.Timestamp;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -15,35 +14,35 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name="tokens")
 public class Tokens {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long tokens_id;
+    @Column(name = "tokens_id")
+    private Long tokensId;
 
     @NotBlank
-    @Column(length = 100)
+    @Column(name = "token", length = 100, nullable = false)
     private String token;
 
     @NotNull
     @Enumerated(EnumType.STRING)
-    @Column
+    @Column(name = "type", nullable = false)
     private TokenType type;
 
-    @Timestamp
-    @Column
-    private LocalDateTime expires_at;
+    @Column(name = "expires_at")
+    private LocalDateTime expiresAt;
 
-    @Timestamp
-    @Column
-    private LocalDateTime used_at;
+    @Column(name = "used_at")
+    private LocalDateTime usedAt;
 
     @CreationTimestamp
-    @Column(updatable = false)
-    private LocalDateTime created_at;
+    @Column(name = "created_at", updatable = false, nullable = false)
+    private LocalDateTime createdAt;
 
     //    --- Relationship Mapping ---
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id")
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
 

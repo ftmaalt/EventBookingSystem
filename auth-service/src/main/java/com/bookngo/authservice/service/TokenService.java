@@ -1,10 +1,10 @@
-package com.project.bookngo.service;
+package com.bookngo.authservice.service;
 
-import com.project.bookngo.exception.InformationNotFoundException;
-import com.project.bookngo.model.Tokens;
-import com.project.bookngo.model.enums.TokenType;
-import com.project.bookngo.model.User;
-import com.project.bookngo.repository.TokensRepository;
+import com.bookngo.authservice.exception.InformationNotFoundException;
+import com.bookngo.authservice.model.Tokens;
+import com.bookngo.authservice.model.User;
+import com.bookngo.authservice.model.enums.TokenType;
+import com.bookngo.authservice.repository.TokensRepository;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +12,8 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import static com.project.bookngo.model.enums.TokenType.*;
+import static com.bookngo.authservice.model.enums.TokenType.*;
+
 
 @Service
 public class TokenService {
@@ -34,11 +35,11 @@ public class TokenService {
         token.setType(type);
         token.setUser(user);
         if (type == EMAIL_VERIFICATION) {
-            token.setExpires_at(LocalDateTime.now().plusHours(24));
+            token.setExpiresAt(LocalDateTime.now().plusHours(24));
         }else if(type == PASSWORD_RESET){
-            token.setExpires_at(LocalDateTime.now().plusMinutes(6));
+            token.setExpiresAt(LocalDateTime.now().plusMinutes(6));
         } else if (type == PENALTY_PAYMENT) {
-            token.setExpires_at(LocalDateTime.now().plusMinutes(10));
+            token.setExpiresAt(LocalDateTime.now().plusMinutes(10));
         }
         tokensRepository.save(token);
         logger.info("{} token generated successfully for user ID: {}", type, user.getId());
@@ -52,13 +53,13 @@ public class TokenService {
         if (token.getType() != expectedType) {
             throw new InformationNotFoundException("Invalid token.");
         }
-        if (token.getUsed_at() != null) {
+        if (token.getUsedAt() != null) {
             throw new InformationNotFoundException("This token has already been used.");
         }
-        if (token.getExpires_at().isBefore(LocalDateTime.now())) {
+        if (token.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new InformationNotFoundException("This token has expired.");
         }
-        token.setUsed_at(LocalDateTime.now());
+        token.setUsedAt(LocalDateTime.now());
         tokensRepository.save(token);
         logger.info("{} token validated successfully for user ID: {}", expectedType, token.getUser().getId());
         return token.getUser();

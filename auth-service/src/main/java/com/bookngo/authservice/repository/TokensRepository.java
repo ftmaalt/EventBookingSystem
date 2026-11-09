@@ -1,5 +1,5 @@
-package com.project.bookngo.repository;
-import com.project.bookngo.model.Tokens;
+package com.bookngo.authservice.repository;
+import com.bookngo.authservice.model.Tokens;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
