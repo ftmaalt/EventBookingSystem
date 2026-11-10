@@ -1,4 +1,4 @@
-package com.project.bookngo.model.enums;
+package com.bookngo.catalogservice.model.enums;
 
 public enum ActivityStatus {
     ACTIVE,

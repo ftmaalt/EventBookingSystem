@@ -1,4 +1,4 @@
-package com.project.bookngo.model.response;
+package com.bookngo.catalogservice.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

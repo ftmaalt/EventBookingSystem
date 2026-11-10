@@ -1,8 +1,8 @@
 package com.bookngo.authservice.security;
 
 
-import com.bookngo.authservice.model.User;
-import com.bookngo.authservice.model.enums.UserStatus;
+import com.bookngo.catalogservice.model.model.User;
+import com.bookngo.catalogservice.model.model.enums.UserStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

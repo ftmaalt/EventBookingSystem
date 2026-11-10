@@ -1,6 +1,6 @@
 package com.bookngo.catalogservice.service;
 
-import com.project.bookngo.exception.GeocodingServiceException;
+import com.bookngo.catalogservice.exception.GeocodingServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -32,8 +32,7 @@ public class GeocodingService {
                 apiKey,
                 HttpClient.newBuilder()
                         .connectTimeout(Duration.ofSeconds(5))
-                        .build()
-        );
+                        .build());
     }
     GeocodingService(JsonMapper objectMapper, String apiKey, HttpClient httpClient) {
         this.objectMapper = objectMapper;

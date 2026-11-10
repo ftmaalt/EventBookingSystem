@@ -1,9 +1,9 @@
 package com.bookngo.authservice.service;
 
 import com.bookngo.authservice.exception.InformationNotFoundException;
-import com.bookngo.authservice.model.Tokens;
-import com.bookngo.authservice.model.User;
-import com.bookngo.authservice.model.enums.TokenType;
+import com.bookngo.catalogservice.model.model.Tokens;
+import com.bookngo.catalogservice.model.model.User;
+import com.bookngo.catalogservice.model.model.enums.TokenType;
 import com.bookngo.authservice.repository.TokensRepository;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
@@ -11,8 +11,6 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
-
-import static com.bookngo.authservice.model.enums.TokenType.*;
 
 
 @Service

@@ -1,11 +1,11 @@
-package com.project.bookngo.model.response;
+package com.bookngo.catalogservice.dto.response;
 
+import com.bookngo.catalogservice.model.enums.ActivityStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import com.project.bookngo.model.enums.ActivityStatus;
 
 @AllArgsConstructor
 @Getter

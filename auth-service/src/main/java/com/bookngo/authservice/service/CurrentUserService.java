@@ -1,6 +1,6 @@
 package com.bookngo.authservice.service;
 
-import com.bookngo.authservice.model.User;
+import com.bookngo.catalogservice.model.model.User;
 import com.bookngo.authservice.repository.UsersRepository;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.core.Authentication;

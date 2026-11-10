@@ -1,7 +1,7 @@
 package com.bookngo.authservice.service;
 
 
-import com.bookngo.authservice.model.AuditLog;
+import com.bookngo.catalogservice.model.model.AuditLog;
 import com.bookngo.authservice.repository.AuditLogRepository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;

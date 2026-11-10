@@ -1,8 +1,9 @@
-package com.project.bookngo.controller;
+package com.bookngo.catalogservice.controller;
 
-import com.project.bookngo.model.request.ActivityRequest;
-import com.project.bookngo.model.response.ActivityResponse;
-import com.project.bookngo.service.ActivitiesService;
+
+import com.bookngo.catalogservice.dto.request.ActivityRequest;
+import com.bookngo.catalogservice.dto.response.ActivityResponse;
+import com.bookngo.catalogservice.service.ActivitiesService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

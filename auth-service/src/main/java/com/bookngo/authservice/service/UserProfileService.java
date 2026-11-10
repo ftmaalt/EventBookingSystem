@@ -3,7 +3,7 @@ package com.bookngo.authservice.service;
 
 import com.bookngo.authservice.dto.request.UserProfileRequest;
 import com.bookngo.authservice.dto.response.UserProfileResponse;
-import com.bookngo.authservice.model.User;
+import com.bookngo.catalogservice.model.model.User;
 import com.bookngo.authservice.repository.UsersRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

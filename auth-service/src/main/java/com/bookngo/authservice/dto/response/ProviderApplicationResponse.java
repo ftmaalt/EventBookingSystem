@@ -1,6 +1,6 @@
 package com.bookngo.authservice.dto.response;
 
-import com.bookngo.authservice.model.enums.ApplicationStatus;
+import com.bookngo.catalogservice.model.model.enums.ApplicationStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

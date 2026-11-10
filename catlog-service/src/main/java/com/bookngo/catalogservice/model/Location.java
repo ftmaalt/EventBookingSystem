@@ -1,4 +1,4 @@
-package com.project.bookngo.model;
+package com.bookngo.catalogservice.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -36,9 +36,7 @@ public class Location {
 
 
 //    --- Relationship Mapping ---
-    @JsonIgnore
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "provider_id", nullable = false)
-    private User provider;
+    @Column(name = "provider_id", nullable = false)
+    private Long providerId;
 
 }

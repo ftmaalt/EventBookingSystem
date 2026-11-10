@@ -1,7 +1,7 @@
 package com.bookngo.authservice.dto.response;
 
-import com.bookngo.authservice.model.enums.UserRole;
-import com.bookngo.authservice.model.enums.UserStatus;
+import com.bookngo.catalogservice.model.model.enums.UserRole;
+import com.bookngo.catalogservice.model.model.enums.UserStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

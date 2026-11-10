@@ -1,22 +1,19 @@
 package com.bookngo.catalogservice.service;
 
-import com.project.bookngo.exception.BusinessConflictsException;
-import com.project.bookngo.exception.InformationNotFoundException;
-import com.project.bookngo.model.Location;
-import com.project.bookngo.model.User;
-import com.project.bookngo.model.request.LocationRequest;
-import com.project.bookngo.model.request.LocationPinUpdateRequest;
-import com.project.bookngo.model.enums.UserRole;
-import com.project.bookngo.model.response.LocationResponse;
-import com.project.bookngo.repository.LocationRepository;
-import com.project.bookngo.repository.UsersRepository;
-import jakarta.transaction.Transactional;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
+import com.bookngo.catalogservice.dto.request.LocationPinUpdateRequest;
+import com.bookngo.catalogservice.dto.request.LocationRequest;
+import com.bookngo.catalogservice.dto.response.LocationResponse;
+import com.bookngo.catalogservice.exception.BusinessConflictsException;
+import com.bookngo.catalogservice.exception.InformationNotFoundException;
+import com.bookngo.catalogservice.model.Location;
+import com.bookngo.catalogservice.repository.LocationRepository;
+import com.bookngo.catalogservice.security.AuthenticatedUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -26,37 +23,35 @@ public class LocationService {
 
     private final LocationRepository locationRepository;
 
-    private final UsersRepository usersRepository;
+    private final CurrentUserService currentUserService;
 
     private final GeocodingService geocodingService;
 
     private static final Logger logger = LoggerFactory.getLogger(LocationService.class);
 
-    public LocationService(LocationRepository locationRepository, UsersRepository usersRepository, GeocodingService geocodingService) {
+    public LocationService(LocationRepository locationRepository, CurrentUserService userService, GeocodingService geocodingService) {
         this.locationRepository = locationRepository;
-        this.usersRepository = usersRepository;
+        this.currentUserService = userService;
         this.geocodingService = geocodingService;
     }
 
     public LocationResponse create(LocationRequest request) {
-        logger.info("Creating location");
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user= usersRepository.findUserByEmail(email);
-        String address=request.getAddress()+ ", "+ request.getCity();
-        GeocodingResult coords = geocodingService.geocodeAddress(address);
-        Location location= new Location();
+        AuthenticatedUser user = currentUserService.getCurrentUser();
+        GeocodingResult coords = geocodingService.geocodeAddress(request.getAddress() + ", " + request.getCity());
+
+        Location location = new Location();
         location.setName(request.getName());
         location.setAddress(request.getAddress());
         location.setCity(request.getCity());
-        location.setProvider(user);
+        location.setProviderId(user.id());
         location.setLatitude(coords.latitude());
         location.setLongitude(coords.longitude());
         location.setGooglePlaceId(coords.placeId());
         location.setActive(true);
 
-        Location savedLocation = locationRepository.save(location);
-        logger.info("Location created successfully with ID: {}", savedLocation.getId());
-        return toResponse(savedLocation);
+        Location saved = locationRepository.save(location);
+        logger.info("Location created successfully with ID: {}", saved.getId());
+        return toResponse(saved);
     }
 
     public LocationResponse getById(Long id) {
@@ -73,18 +68,11 @@ public class LocationService {
     }
 
     public LocationResponse update(Long id, LocationRequest request){
-        logger.info("Updating location with ID: {}", id);
-        Location location = locationRepository.findById(id).orElseThrow(() ->
-                new InformationNotFoundException("Location with the id:" + id + " does not exist, please try again with another id"));
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user= usersRepository.findUserByEmail(email);
-        if (!location.getProvider().getId().equals(user.getId())){
-            throw new AccessDeniedException("You are not authorized to modify this location");
-        }
+        Location location = find(id);
+        assertOwner(location, currentUserService.getCurrentUser());
 
-        // Descriptive name edits must not overwrite a provider's authoritative pin.
-        if (!Objects.equals(location.getAddress(), request.getAddress()) ||
-                !Objects.equals(location.getCity(), request.getCity())) {
+        if (!Objects.equals(location.getAddress(), request.getAddress())
+                || !Objects.equals(location.getCity(), request.getCity())) {
             GeocodingResult coords = geocodingService.geocodeAddress(request.getAddress() + ", " + request.getCity());
             location.setLatitude(coords.latitude());
             location.setLongitude(coords.longitude());
@@ -93,28 +81,21 @@ public class LocationService {
         location.setName(request.getName());
         location.setAddress(request.getAddress());
         location.setCity(request.getCity());
+        return toResponse(locationRepository.save(location));
 
-        Location updatedLocation = locationRepository.save(location);
-        logger.info("Location with ID {} updated successfully", id);
-
-        return toResponse(updatedLocation);
     }
 
 
     /** Saves an owner's manual pin without geocoding or changing the descriptive location. */
     @Transactional
     public LocationResponse updatePin(Long id, LocationPinUpdateRequest request) {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = usersRepository.findUserByEmail(email);
-        // Keep the service safe even when called outside the secured controller.
-        if (user == null || user.getRole() != UserRole.PROVIDER) {
+        AuthenticatedUser user = currentUserService.getCurrentUser();
+        if (!"PROVIDER".equals(user.role())) {
             throw new AccessDeniedException("Only providers may edit location pins.");
         }
-        Location location = locationRepository.findById(id).orElseThrow(() ->
-                new InformationNotFoundException("Location with ID: " + id + " does not exist."));
-        if (!location.getProvider().getId().equals(user.getId())) {
-            throw new AccessDeniedException("You are not authorized to modify this location.");
-        }
+        Location location = find(id);
+        assertOwner(location, user);
+
         Double latitude = request.getLatitude();
         Double longitude = request.getLongitude();
         if (latitude == null || longitude == null || !Double.isFinite(latitude) || !Double.isFinite(longitude)
@@ -123,42 +104,38 @@ public class LocationService {
         }
         location.setLatitude(latitude);
         location.setLongitude(longitude);
-        // An entrance selected by a person is not a verified match for the former Google place.
         location.setGooglePlaceId(null);
         return toResponse(locationRepository.save(location));
     }
 
     @Transactional
     public String delete(Long id) throws AccessDeniedException {
-        Location location = locationRepository.findById(id)
-                .orElseThrow(() -> new InformationNotFoundException("Location with ID: " + id + " does not exist."));
-
-        String email = SecurityContextHolder.getContext()
-                .getAuthentication().getName();
-
-        User user = usersRepository.findUserByEmail(email);
-
-        if (!location.getProvider().getId().equals(user.getId())) {
-            throw new AccessDeniedException("You are not authorized to modify this location.");
-        }
-
+        Location location = find(id);
+        assertOwner(location, currentUserService.getCurrentUser());
         if (Boolean.FALSE.equals(location.getActive())) {
             throw new BusinessConflictsException("Location is already inactive.");
         }
         location.setActive(false);
         locationRepository.save(location);
-        logger.info("Location with ID {} deactivated successfully", id);
         return "Location with ID: " + id + " has been deactivated.";
     }
 
-
-    private LocationResponse toResponse(Location location) {
-        return new LocationResponse(
-                location.getId(), location.getName(), location.getAddress(),
-                location.getCity(), location.getLatitude(), location.getLongitude(),
-                location.getGooglePlaceId(), location.getActive(), location.getProvider().getId()
-        );
+    private Location find(Long id) {
+        return locationRepository.findById(id).orElseThrow(() ->
+                new InformationNotFoundException("Location with the id:" + id + " does not exist, please try again with another id"));
     }
+
+    private void assertOwner(Location location, AuthenticatedUser user) {
+        if (!location.getProviderId().equals(user.id())) {
+            throw new AccessDeniedException("You are not authorized to modify this location.");
+        }
+    }
+
+    private LocationResponse toResponse(Location l) {
+        return new LocationResponse(l.getId(), l.getName(), l.getAddress(), l.getCity(),
+                l.getLatitude(), l.getLongitude(), l.getGooglePlaceId(), l.getActive(), l.getProviderId());
+    }
+
 
 
 }

@@ -1,4 +1,4 @@
-package com.project.bookngo.model;
+package com.bookngo.catalogservice.model;
 
 import jakarta.persistence.*;
 import lombok.Data;

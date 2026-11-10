@@ -1,4 +1,4 @@
-package com.project.bookngo.model.request;
+package com.bookngo.catalogservice.dto.request;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;

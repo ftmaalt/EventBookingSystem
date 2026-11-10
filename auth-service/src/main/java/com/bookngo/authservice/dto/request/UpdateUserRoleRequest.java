@@ -1,6 +1,6 @@
 package com.bookngo.authservice.dto.request;
 
-import com.bookngo.authservice.model.enums.UserRole;
+import com.bookngo.catalogservice.model.model.enums.UserRole;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;

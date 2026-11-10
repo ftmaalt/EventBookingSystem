@@ -1,9 +1,9 @@
-package com.project.bookngo.controller;
+package com.bookngo.catalogservice.controller;
 
-import com.project.bookngo.model.request.LocationRequest;
-import com.project.bookngo.model.request.LocationPinUpdateRequest;
-import com.project.bookngo.model.response.LocationResponse;
-import com.project.bookngo.service.LocationService;
+import com.bookngo.catalogservice.dto.request.LocationPinUpdateRequest;
+import com.bookngo.catalogservice.dto.request.LocationRequest;
+import com.bookngo.catalogservice.dto.response.LocationResponse;
+import com.bookngo.catalogservice.service.LocationService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

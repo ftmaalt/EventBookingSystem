@@ -1,15 +1,16 @@
 package com.bookngo.catalogservice.service;
 
-import com.project.bookngo.exception.BusinessConflictsException;
-import com.project.bookngo.exception.InformationNotFoundException;
-import com.project.bookngo.model.Category;
-import com.project.bookngo.model.request.CategoryRequest;
-import com.project.bookngo.model.response.CategoryResponse;
-import com.project.bookngo.repository.CategoryRepository;
+import com.bookngo.catalogservice.exception.BusinessConflictsException;
+import com.bookngo.catalogservice.exception.InformationNotFoundException;
+import com.bookngo.catalogservice.model.Category;
+import com.bookngo.catalogservice.dto.request.CategoryRequest;
+import com.bookngo.catalogservice.dto.response.CategoryResponse;
+import com.bookngo.catalogservice.repository.CategoryRepository;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
+
 
 import java.util.List;
 

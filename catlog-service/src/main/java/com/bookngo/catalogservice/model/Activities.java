@@ -1,6 +1,7 @@
-package com.project.bookngo.model;
+package com.bookngo.catalogservice.model;
 
-import com.project.bookngo.model.enums.ActivityStatus;
+
+import com.bookngo.catalogservice.model.enums.ActivityStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -59,6 +60,8 @@ public class Activities {
 
 //    --- Relationship Mapping ---
 
+    @Column(name = "provider_id", nullable = false)
+    private Long providerId;
 
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
@@ -69,18 +72,7 @@ public class Activities {
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "provider_id", nullable = false)
-    private User provider;
-
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "location_id", nullable = false)
     private Location location;
-
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    @OneToMany(mappedBy = "activity")
-    private List<Sessions> sessionsList;
 
 }

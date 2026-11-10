@@ -1,6 +1,6 @@
 package com.bookngo.authservice.repository;
 
-import com.bookngo.authservice.model.ProviderApplication;
+import com.bookngo.catalogservice.model.model.ProviderApplication;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

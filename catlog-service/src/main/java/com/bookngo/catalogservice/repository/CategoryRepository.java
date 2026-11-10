@@ -1,6 +1,6 @@
 package com.bookngo.catalogservice.repository;
 
-import com.project.bookngo.model.Category;
+import com.bookngo.catalogservice.model.Category;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

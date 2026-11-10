@@ -1,7 +1,7 @@
 package com.bookngo.catalogservice.repository;
 
-import com.project.bookngo.model.Activities;
-import com.project.bookngo.model.enums.ActivityStatus;
+import com.bookngo.catalogservice.model.Activities;
+import com.bookngo.catalogservice.model.enums.ActivityStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,7 +19,7 @@ public interface ActivitiesRepository extends JpaRepository<Activities,Long> {
     Optional<Activities> findByIdAndStatus(Long id, ActivityStatus status);
     @Query("""
     SELECT a FROM Activities a
-    WHERE a.status = com.project.bookngo.model.enums.ActivityStatus.ACTIVE
+    WHERE a.status = com.bookngo.catalogservice.model.enums.ActivityStatus.ACTIVE
       AND a.category.active = true
       AND a.location.active = true
       AND (:categoryId IS NULL OR a.category.id = :categoryId)
