@@ -1,4 +1,4 @@
-package com.project.bookngo.service;
+package com.bookngo.catalogservice.service;
 
 import com.project.bookngo.exception.InformationNotFoundException;
 import com.project.bookngo.model.Activities;

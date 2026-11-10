@@ -1,4 +1,4 @@
-package com.project.bookngo.repository;
+package com.bookngo.catalogservice.repository;
 
 import com.project.bookngo.model.Activities;
 import com.project.bookngo.model.enums.ActivityStatus;

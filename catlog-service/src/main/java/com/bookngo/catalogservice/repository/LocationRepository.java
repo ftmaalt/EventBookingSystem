@@ -1,4 +1,4 @@
-package com.project.bookngo.repository;
+package com.bookngo.catalogservice.repository;
 
 import com.project.bookngo.model.Location;
 import org.springframework.data.jpa.repository.JpaRepository;

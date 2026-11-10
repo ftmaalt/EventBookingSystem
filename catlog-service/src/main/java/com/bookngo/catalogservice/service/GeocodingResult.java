@@ -1,4 +1,4 @@
-package com.project.bookngo.service;
+package com.bookngo.catalogservice.service;
 /**
  * Represents a resolved geographic location returned
  * by the Google Geocoding API.
