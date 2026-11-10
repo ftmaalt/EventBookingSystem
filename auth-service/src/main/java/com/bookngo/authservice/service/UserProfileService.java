@@ -1,10 +1,10 @@
 package com.bookngo.authservice.service;
 
 
-import com.project.bookngo.model.User;
-import com.project.bookngo.model.request.UserProfileRequest;
-import com.project.bookngo.model.response.UserProfileResponse;
-import com.project.bookngo.repository.UsersRepository;
+import com.bookngo.authservice.dto.request.UserProfileRequest;
+import com.bookngo.authservice.dto.response.UserProfileResponse;
+import com.bookngo.authservice.model.User;
+import com.bookngo.authservice.repository.UsersRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -17,7 +17,7 @@ public class UserProfileService {
 
     private final UsersRepository usersRepository;
 
-    private final FileStorageService fileStorageService;
+//    private final FileStorageService fileStorageService;
 
     private final AuditLogService auditLogService;
 
@@ -25,9 +25,9 @@ public class UserProfileService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserProfileService.class);
 
-    public UserProfileService(UsersRepository usersRepository, FileStorageService fileStorageService, AuditLogService auditLogService, CurrentUserService currentUserService) {
+    public UserProfileService(UsersRepository usersRepository, AuditLogService auditLogService, CurrentUserService currentUserService) {
         this.usersRepository = usersRepository;
-        this.fileStorageService = fileStorageService;
+//        this.fileStorageService = fileStorageService;
         this.auditLogService = auditLogService;
         this.currentUserService = currentUserService;
     }
@@ -52,8 +52,8 @@ public class UserProfileService {
     public UserProfileResponse uploadProfilePicture(MultipartFile file) {
         logger.info("Uploading profile picture for current user");
         User user = currentUserService.getCurrentUser();
-        String path = fileStorageService.storeProfilePicture(file);
-        user.setProfilePicturePath(path);
+//        String path = fileStorageService.storeProfilePicture(file);
+//        user.setProfilePicturePath(path);
         User saved = usersRepository.save(user);
         logger.info("Profile picture uploaded and profile updated successfully");
         return toResponse(saved);

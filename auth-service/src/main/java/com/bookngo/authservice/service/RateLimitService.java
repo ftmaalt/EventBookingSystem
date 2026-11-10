@@ -1,8 +1,9 @@
 package com.bookngo.authservice.service;
 
-import com.project.bookngo.config.RateLimitConfig;
-import com.project.bookngo.exception.RateLimitExceededException;
-import com.project.bookngo.utilities.RequestTracker;
+
+import com.bookngo.authservice.config.RateLimitConfig;
+import com.bookngo.authservice.exception.RateLimitExceededException;
+import com.bookngo.authservice.utilities.RequestTracker;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;

@@ -1,4 +1,4 @@
-package com.project.bookngo.utilities;
+package com.bookngo.authservice.utilities;
 
 import java.util.LinkedList;
 import java.util.Queue;

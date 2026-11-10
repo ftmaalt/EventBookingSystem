@@ -2,6 +2,7 @@ package com.bookngo.authservice.controller;
 
 
 import com.bookngo.authservice.dto.request.ProviderApplicationRequest;
+import com.bookngo.authservice.dto.request.ReviewApplicationRequest;
 import com.bookngo.authservice.dto.response.ProviderApplicationResponse;
 import com.bookngo.authservice.service.ProviderApplicationService;
 import jakarta.validation.Valid;

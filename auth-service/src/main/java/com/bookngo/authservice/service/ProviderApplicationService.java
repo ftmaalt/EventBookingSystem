@@ -1,19 +1,20 @@
 package com.bookngo.authservice.service;
 
-import com.project.bookngo.exception.BusinessConflictsException;
-import com.project.bookngo.exception.InformationExistsException;
-import com.project.bookngo.exception.InformationNotFoundException;
-import com.project.bookngo.model.ProviderApplication;
-import com.project.bookngo.model.ProviderProfile;
-import com.project.bookngo.model.User;
-import com.project.bookngo.model.enums.ApplicationStatus;
-import com.project.bookngo.model.enums.UserRole;
-import com.project.bookngo.model.request.ProviderApplicationRequest;
-import com.project.bookngo.model.request.ReviewApplicationRequest;
-import com.project.bookngo.model.response.ProviderApplicationResponse;
-import com.project.bookngo.repository.ProviderApplicationRepository;
-import com.project.bookngo.repository.ProviderProfileRepository;
-import com.project.bookngo.repository.UsersRepository;
+
+import com.bookngo.authservice.dto.request.ProviderApplicationRequest;
+import com.bookngo.authservice.dto.request.ReviewApplicationRequest;
+import com.bookngo.authservice.dto.response.ProviderApplicationResponse;
+import com.bookngo.authservice.exception.BusinessConflictsException;
+import com.bookngo.authservice.exception.InformationExistsException;
+import com.bookngo.authservice.exception.InformationNotFoundException;
+import com.bookngo.authservice.model.ProviderApplication;
+import com.bookngo.authservice.model.ProviderProfile;
+import com.bookngo.authservice.model.User;
+import com.bookngo.authservice.model.enums.ApplicationStatus;
+import com.bookngo.authservice.model.enums.UserRole;
+import com.bookngo.authservice.repository.ProviderApplicationRepository;
+import com.bookngo.authservice.repository.ProviderProfileRepository;
+import com.bookngo.authservice.repository.UsersRepository;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,20 +31,20 @@ public class ProviderApplicationService {
 
     private final UsersRepository usersRepository;
 
-    private final EmailService emailService;
-
-    private final NotificationService notificationService;
+//    private final EmailService emailService;
+//
+//    private final NotificationService notificationService;
 
     private final CurrentUserService currentUserService;
 
     private static final Logger logger = LoggerFactory.getLogger(ProviderApplicationService.class);
 
-    public ProviderApplicationService(ProviderApplicationRepository applicationRepository, ProviderProfileRepository profileRepository, UsersRepository usersRepository, EmailService emailService, NotificationService notificationService, CurrentUserService currentUserService) {
+    public ProviderApplicationService(ProviderApplicationRepository applicationRepository, ProviderProfileRepository profileRepository, UsersRepository usersRepository, CurrentUserService currentUserService) {
         this.applicationRepository = applicationRepository;
         this.profileRepository = profileRepository;
         this.usersRepository = usersRepository;
-        this.emailService = emailService;
-        this.notificationService = notificationService;
+//        this.emailService = emailService;
+//        this.notificationService = notificationService;
         this.currentUserService = currentUserService;
     }
 
@@ -76,13 +77,13 @@ public class ProviderApplicationService {
 
         for (User admin : admins) {
 
-            notificationService.create(
-                    admin,
-                    "provider-application-pending",
-                    "New provider application from "
-                            + saved.getBusinessName()
-                            + " is waiting for review."
-            );
+//            notificationService.create(
+//                    admin,
+//                    "provider-application-pending",
+//                    "New provider application from "
+//                            + saved.getBusinessName()
+//                            + " is waiting for review."
+//            );
 
             logger.info(
                     "In-app provider application notification created for admin: {}",
@@ -93,19 +94,19 @@ public class ProviderApplicationService {
                     admin.getEmail() != null &&
                             !admin.getEmail().isBlank()
             ) {
-                try {
-                    emailService.sendNewApplicationNotification(
-                            admin.getEmail(),
-                            saved
-                    );
-                } catch (Exception e) {
-                    logger.error(
-                            "Failed to email admin {} about provider application {}",
-                            admin.getEmail(),
-                            saved.getApplication_id(),
-                            e
-                    );
-                }
+//                try {
+//                    emailService.sendNewApplicationNotification(
+//                            admin.getEmail(),
+//                            saved
+//                    );
+//                } catch (Exception e) {
+//                    logger.error(
+//                            "Failed to email admin {} about provider application {}",
+//                            admin.getEmail(),
+//                            saved.getApplication_id(),
+//                            e
+//                    );
+//                }
             }
         }
 
@@ -152,11 +153,11 @@ public class ProviderApplicationService {
         profileRepository.save(profile);
         logger.info("Provider application with ID {} approved successfully", id);
 
-        notificationService.create(
-                applicant,
-                "provider-application-approved",
-                "Your provider application for " + application.getBusinessName() + " was approved."
-        );
+//        notificationService.create(
+//                applicant,
+//                "provider-application-approved",
+//                "Your provider application for " + application.getBusinessName() + " was approved."
+//        );
 
         return toResponse(application);
     }
@@ -179,7 +180,7 @@ public class ProviderApplicationService {
             notificationMessage += " Note: " + application.getReviewNote();
         }
 
-        notificationService.create(applicant, "provider-application-rejected", notificationMessage);
+//        notificationService.create(applicant, "provider-application-rejected", notificationMessage);
 
         return toResponse(application);
     }

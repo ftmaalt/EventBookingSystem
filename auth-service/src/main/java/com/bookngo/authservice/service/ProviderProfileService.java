@@ -1,12 +1,13 @@
 package com.bookngo.authservice.service;
 
-import com.project.bookngo.exception.InformationNotFoundException;
-import com.project.bookngo.model.ProviderProfile;
-import com.project.bookngo.model.User;
-import com.project.bookngo.model.request.ProviderProfileRequest;
-import com.project.bookngo.model.response.ProviderProfileResponse;
-import com.project.bookngo.repository.ProviderProfileRepository;
-import com.project.bookngo.repository.UsersRepository;
+
+import com.bookngo.authservice.dto.request.ProviderProfileRequest;
+import com.bookngo.authservice.dto.response.ProviderProfileResponse;
+import com.bookngo.authservice.exception.InformationNotFoundException;
+import com.bookngo.authservice.model.ProviderProfile;
+import com.bookngo.authservice.model.User;
+import com.bookngo.authservice.repository.ProviderProfileRepository;
+import com.bookngo.authservice.repository.UsersRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
