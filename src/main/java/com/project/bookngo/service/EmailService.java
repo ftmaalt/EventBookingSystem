@@ -1,4 +1,4 @@
-package com.project.bookngo.service;
+package com.bookngo.authservice.service;
 
 import com.project.bookngo.model.Bookings;
 import com.project.bookngo.model.ProviderApplication;
