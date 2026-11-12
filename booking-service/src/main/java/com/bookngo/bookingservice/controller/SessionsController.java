@@ -1,12 +1,9 @@
-package com.project.bookngo.controller;
+package com.bookngo.bookingservice.controller;
 
-import com.project.bookngo.model.request.SessionRequest;
-import com.project.bookngo.model.response.SessionResponse;
-import com.project.bookngo.service.SessionsService;
+import com.bookngo.bookingservice.dto.request.SessionRequest;
+import com.bookngo.bookingservice.dto.response.SessionResponse;
+import com.bookngo.bookingservice.service.SessionsService;
 import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,55 +15,43 @@ import java.util.List;
 @RequestMapping("/api/sessions")
 public class SessionsController {
 
-    @Autowired
-    private SessionsService sessionsService;
+    private final SessionsService sessionsService;
 
-    private static final Logger logger = LoggerFactory.getLogger(SessionsController.class);
-
+    public SessionsController(SessionsService sessionsService) {
+        this.sessionsService = sessionsService;
+    }
 
     @PostMapping
     @PreAuthorize("hasRole('PROVIDER')")
     public ResponseEntity<SessionResponse> createSession(@Valid @RequestBody SessionRequest request) {
-        logger.info("Calling createSession ===>");
-        SessionResponse createdSession = sessionsService.createSession(request);
-        return new ResponseEntity<>(createdSession, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(sessionsService.createSession(request));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<SessionResponse> getSessionById(@PathVariable Long id) {
-        logger.info("Calling getSessionById ===>");
-        SessionResponse session = sessionsService.getById(id);
-        return ResponseEntity.ok(session);
+        return ResponseEntity.ok(sessionsService.getById(id));
     }
 
     @GetMapping("/activity/{activityId}")
     public ResponseEntity<List<SessionResponse>> getAllSessionsByActivityId(@PathVariable Long activityId) {
-        logger.info("Calling getAllSessionsByActivityId ===>");
-        List<SessionResponse> sessions = sessionsService.getAllByActivityId(activityId);
-        return ResponseEntity.ok(sessions);
+        return ResponseEntity.ok(sessionsService.getAllByActivityId(activityId));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('PROVIDER')")
     public ResponseEntity<SessionResponse> updateSession(@PathVariable Long id, @Valid @RequestBody SessionRequest request) {
-        logger.info("Calling updateSession ===>");
-        SessionResponse updatedSession = sessionsService.updateSession(id, request);
-        return ResponseEntity.ok(updatedSession);
+        return ResponseEntity.ok(sessionsService.updateSession(id, request));
     }
 
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('PROVIDER')")
     public ResponseEntity<SessionResponse> updateSessionStatus(@PathVariable Long id) {
-        logger.info("Calling updateSessionStatus ===>");
-        SessionResponse updatedSession = sessionsService.updateSessionStatus(id);
-        return ResponseEntity.ok(updatedSession);
+        return ResponseEntity.ok(sessionsService.updateSessionStatus(id));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('PROVIDER')")
     public ResponseEntity<String> cancelSession(@PathVariable Long id) {
-        logger.info("Calling cancelSession ===>");
-        String message = sessionsService.cancelSession(id);
-        return ResponseEntity.ok(message);
+        return ResponseEntity.ok(sessionsService.cancelSession(id));
     }
 }

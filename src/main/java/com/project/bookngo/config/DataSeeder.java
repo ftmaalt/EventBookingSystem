@@ -1,8 +1,5 @@
 package com.project.bookngo.config;
 
-import com.project.bookngo.model.*;
-import com.project.bookngo.model.enums.*;
-import com.project.bookngo.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

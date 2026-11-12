@@ -1,4 +1,4 @@
-package com.project.bookngo.model.enums;
+package com.bookngo.bookingservice.model.enums;
 
 public enum PaymentStatus {
     PENDING_PAYMENT,

@@ -2,10 +2,7 @@
 package com.project.bookngo.concurrency;
 
 import com.project.bookngo.exception.BusinessConflictsException;
-import com.project.bookngo.model.*;
-import com.project.bookngo.model.enums.*;
 import com.project.bookngo.model.request.BookingRequest;
-import com.project.bookngo.repository.*;
 import com.project.bookngo.security.JwtUtils;
 import com.project.bookngo.security.MyUserDetails;
 import com.project.bookngo.service.*;

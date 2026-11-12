@@ -1,7 +1,7 @@
-package com.project.bookngo.controller;
+package com.bookngo.bookingservice.controller;
 
-import com.project.bookngo.model.response.WaitlistedSessionResponse;
-import com.project.bookngo.service.WaitingService;
+import com.bookngo.bookingservice.dto.response.WaitlistedSessionResponse;
+import com.bookngo.bookingservice.service.WaitingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/waitlist")
 @RequiredArgsConstructor
 public class MyWaitlistController {
+
     private final WaitingService waitingService;
 
     @GetMapping("/me")

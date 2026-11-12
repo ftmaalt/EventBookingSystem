@@ -1,8 +1,10 @@
-package com.project.bookngo.model;
+package com.bookngo.bookingservice.model;
 
-import com.project.bookngo.model.enums.WaitListStatus;
+import com.bookngo.bookingservice.model.enums.WaitListStatus;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -25,15 +27,15 @@ public class WaitlistEntry {
     @Column(nullable = false)
     private LocalDateTime joinedAt;
 
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
 
-//    --- Relationship Mapping ---
+    @Column(name = "user_email", nullable = false, length = 150)
+    private String userEmail;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "session_id", nullable = false)
     private Sessions session;
-
 }

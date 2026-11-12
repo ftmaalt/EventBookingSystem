@@ -1,7 +1,6 @@
-package com.project.bookngo.repository;
+package com.bookngo.bookingservice.repository;
 
-import com.project.bookngo.model.Sessions;
-import com.project.bookngo.model.enums.SessionStatus;
+import com.bookngo.bookingservice.model.Sessions;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -12,12 +11,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface SessionsRepository extends JpaRepository<Sessions, Long> {
-    List<Sessions> findByActivityTitle(String title);
-    List<Sessions> findByActivityId(Long activity_id);
-    List<Sessions> findByActivityIdAndStatusNot(Long activityId, SessionStatus status);
-// to prevent double booking:
+    List<Sessions> findByActivityId(Long activityId);
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from Sessions s where s.id = :id")
     Optional<Sessions> findByIdForUpdate(@Param("id") Long id);
-
 }

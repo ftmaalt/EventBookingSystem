@@ -1,4 +1,4 @@
-package com.project.bookngo.model.request;
+package com.bookngo.bookingservice.dto.request;
 
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;

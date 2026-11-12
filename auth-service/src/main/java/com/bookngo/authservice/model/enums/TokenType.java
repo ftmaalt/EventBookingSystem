@@ -1,4 +1,4 @@
-package com.bookngo.catalogservice.model.model.enums;
+package com.bookngo.authservice.model.enums;
 
 public enum TokenType {
     EMAIL_VERIFICATION,

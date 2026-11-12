@@ -1,20 +1,19 @@
-package com.project.bookngo.model;
+package com.bookngo.bookingservice.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.project.bookngo.model.enums.SessionStatus;
-
+import com.bookngo.bookingservice.model.enums.SessionStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @Entity
 @Table(name = "sessions")
 public class Sessions {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -43,18 +42,18 @@ public class Sessions {
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column
     private LocalDateTime updatedAt;
 
-//    --- Relationship Mapping ---
+    // Owned by catalog-service. Copied when the session is created, so booking never needs a remote call.
+    @Column(name = "activity_id", nullable = false)
+    private Long activityId;
 
-    @JsonIgnore
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "activity_id", nullable = false)
-    private Activities activity;
+    @Column(name = "activity_title", nullable = false, length = 150)
+    private String activityTitle;
 
-    @OneToMany(mappedBy = "session")
-    private List<Bookings> bookings;
+    @Column(name = "provider_id", nullable = false)
+    private Long providerId;
 
-
+    @Column(name = "price_per_person", nullable = false, precision = 10, scale = 3)
+    private BigDecimal pricePerPerson;
 }
