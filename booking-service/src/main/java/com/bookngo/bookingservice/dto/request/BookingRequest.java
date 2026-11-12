@@ -1,6 +1,6 @@
-package com.project.bookngo.model.request;
+package com.bookngo.bookingservice.dto.request;
 
-import com.project.bookngo.model.enums.BookingType;
+import com.bookngo.bookingservice.model.enums.BookingType;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;

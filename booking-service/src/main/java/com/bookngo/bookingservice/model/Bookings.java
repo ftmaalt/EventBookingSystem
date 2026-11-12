@@ -1,16 +1,16 @@
-package com.project.bookngo.model;
+package com.bookngo.bookingservice.model;
 
-import com.project.bookngo.model.enums.BookingStatus;
-import com.project.bookngo.model.enums.BookingType;
-import com.project.bookngo.model.enums.PaymentStatus;
+import com.bookngo.bookingservice.model.enums.BookingStatus;
+import com.bookngo.bookingservice.model.enums.BookingType;
+import com.bookngo.bookingservice.model.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.Setter;import org.hibernate.annotations.CreationTimestamp;
+import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Getter
 @Setter
@@ -65,16 +65,14 @@ public class Bookings {
     @Column(length = 150)
     private String updatedBy;
 
-//    --- Relationship Mapping ---
+    // Owned by auth-service: plain id + email snapshot, no JPA relation.
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @Column(name = "user_email", nullable = false, length = 150)
+    private String userEmail;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "session_id", nullable = false)
     private Sessions session;
-
-    @OneToMany(mappedBy = "booking")
-    private List<Violations> violations;
 }

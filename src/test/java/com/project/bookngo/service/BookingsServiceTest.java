@@ -7,9 +7,7 @@ import com.project.bookngo.model.Activities;
 import com.project.bookngo.model.Bookings;
 import com.project.bookngo.model.Sessions;
 import com.project.bookngo.model.User;
-import com.project.bookngo.model.enums.*;
 import com.project.bookngo.model.request.BookingRequest;
-import com.project.bookngo.model.response.BookingResponse;
 import com.project.bookngo.repository.BookingsRepository;
 import com.project.bookngo.repository.SessionsRepository;
 
