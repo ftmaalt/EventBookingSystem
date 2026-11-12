@@ -1,8 +1,8 @@
-package com.bookngo.authservice.model;
+package com.bookngo.catalogservice.model.model;
 
 
-import com.bookngo.authservice.model.enums.UserRole;
-import com.bookngo.authservice.model.enums.UserStatus;
+import com.bookngo.catalogservice.model.model.enums.UserRole;
+import com.bookngo.catalogservice.model.model.enums.UserStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

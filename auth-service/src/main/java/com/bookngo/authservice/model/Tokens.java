@@ -1,6 +1,6 @@
-package com.bookngo.authservice.model;
+package com.bookngo.catalogservice.model.model;
 
-import com.bookngo.authservice.model.enums.TokenType;
+import com.bookngo.catalogservice.model.model.enums.TokenType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;

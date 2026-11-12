@@ -1,6 +1,6 @@
-package com.bookngo.authservice.model;
+package com.bookngo.catalogservice.model.model;
 
-import com.bookngo.authservice.model.enums.ApplicationStatus;
+import com.bookngo.catalogservice.model.model.enums.ApplicationStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
