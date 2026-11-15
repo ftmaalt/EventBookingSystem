@@ -1,6 +1,7 @@
 package com.bookngo.authservice.security;
 
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,16 +22,17 @@ public class JwtUtils {
     private static final Logger logger = LoggerFactory.getLogger(JwtUtils.class);
 
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret));
     }
 
     public String generateJwtToken(MyUserDetails myUserDetails){
+        Date now = new Date();
         return Jwts.builder()
                 .subject(myUserDetails.getUsername())
                 .claim("uid", myUserDetails.getUser().getId())
                 .claim("role", myUserDetails.getUser().getRole().name())
-                .issuedAt(new Date())
-                .expiration(new Date(new Date().getTime() + jwtExpirationMs))
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + jwtExpirationMs))
                 .signWith(getSigningKey())
                 .compact();
     }
@@ -48,7 +50,6 @@ public class JwtUtils {
         try{
             Jwts.parser().verifyWith(getSigningKey()).build().parseClaimsJws(authToken);
             return true;
-
         } catch (Exception e){
             logger.error("Invalid JWT token: {}", e.getMessage());
         }

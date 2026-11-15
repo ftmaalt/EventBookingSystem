@@ -1,78 +1,58 @@
-package com.bookngo.authservice.controller;
 
+package com.bookngo.authservice.controller;
 
 import com.bookngo.authservice.dto.request.*;
 import com.bookngo.authservice.dto.response.GenericMessageResponse;
 import com.bookngo.authservice.dto.response.LoginResponse;
 import com.bookngo.authservice.service.AuthService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class AuthController {
-
-    @Autowired
-    private AuthService authService;
-
-//    @Autowired
-//    private RateLimitService rateLimitService;
-
+    private final AuthService authService;
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
-
     @PostMapping("/register")
-    public ResponseEntity<GenericMessageResponse> register(@Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
-        logger.info("Calling register==>");
-        String ipAddress = httpRequest.getRemoteAddr();
-
-//        rateLimitService.checkRateLimit(ipAddress, request.getEmail());
-
-        GenericMessageResponse registerResponse=authService.register(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(registerResponse);
+    public ResponseEntity<GenericMessageResponse> register(@Valid @RequestBody RegisterRequest request) {
+        logger.info("Registration request received");
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
     }
 
     @GetMapping("/verify")
     public ResponseEntity<GenericMessageResponse> verifyEmail(@RequestParam String token) {
-        logger.info("Calling verifyEmail==>");
-        GenericMessageResponse registerResponse= authService.verifyEmail(token);
-        return ResponseEntity.status(HttpStatus.OK).body(registerResponse);
+        logger.info("Email verification request received");
+        return ResponseEntity.ok(authService.verifyEmail(token));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
-        logger.info("Calling login==>");
-        String ipAddress = httpRequest.getRemoteAddr();
-//        rateLimitService.checkRateLimit(ipAddress, request.getEmail());
-        LoginResponse loginResponse = authService.login(request);
-        return ResponseEntity.status(HttpStatus.OK).body(loginResponse);
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        logger.info("Login request received");
+        return ResponseEntity.ok(authService.login(request));
     }
 
     @PostMapping("/forgotPassword")
-    public ResponseEntity<GenericMessageResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest forgotPasswordRequest, HttpServletRequest httpRequest) {
-        logger.info("Calling forgotPassword==>");
-        String ipAddress = httpRequest.getRemoteAddr();
-//        rateLimitService.checkRateLimit(ipAddress, forgotPasswordRequest.getEmail());
-        GenericMessageResponse forgotPasswordResponse= authService.forgotPassword(forgotPasswordRequest);
-        return ResponseEntity.status(HttpStatus.OK).body(forgotPasswordResponse);
+    public ResponseEntity<GenericMessageResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        logger.info("Forgot password request received");
+        return ResponseEntity.ok(authService.forgotPassword(request));
     }
+
     @PostMapping("/resetPassword")
-    public ResponseEntity<GenericMessageResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest passwordRequest){
-        logger.info("Calling resetPassword==>");
-        GenericMessageResponse passwordResponse= authService.resetPassword(passwordRequest);
-        return ResponseEntity.status(HttpStatus.OK).body(passwordResponse);
+    public ResponseEntity<GenericMessageResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        logger.info("Password reset request received");
+        return ResponseEntity.ok(authService.resetPassword(request));
     }
 
     @PutMapping("/changePassword")
     public ResponseEntity<GenericMessageResponse> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
-        logger.info("Calling changePassword==>");
-        GenericMessageResponse passwordResponse= authService.changePassword(request);
-        return ResponseEntity.status(HttpStatus.OK).body(passwordResponse);
+        logger.info("Change password request received");
+        return ResponseEntity.ok(authService.changePassword(request));
     }
 }

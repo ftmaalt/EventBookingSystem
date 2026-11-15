@@ -3,13 +3,14 @@ package com.bookngo.authservice.service;
 import com.bookngo.authservice.exception.InformationExistsException;
 import com.bookngo.authservice.exception.InvalidCredentials;
 import com.bookngo.authservice.exception.VerificationRequiredException;
-import com.bookngo.catalogservice.model.model.User;
-import com.bookngo.catalogservice.model.model.enums.TokenType;
-import com.bookngo.catalogservice.model.model.enums.UserRole;
-import com.bookngo.catalogservice.model.model.enums.UserStatus;
+
 import com.bookngo.authservice.dto.request.*;
 import com.bookngo.authservice.dto.response.GenericMessageResponse;
 import com.bookngo.authservice.dto.response.LoginResponse;
+import com.bookngo.authservice.model.User;
+import com.bookngo.authservice.model.enums.TokenType;
+import com.bookngo.authservice.model.enums.UserRole;
+import com.bookngo.authservice.model.enums.UserStatus;
 import com.bookngo.authservice.repository.UsersRepository;
 import com.bookngo.authservice.security.JwtUtils;
 import com.bookngo.authservice.security.MyUserDetails;
@@ -22,23 +23,25 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthService {
-
     private final UsersRepository usersRepository;
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
     private final JwtUtils jwtUtils;
+    private final CurrentUserService currentUserService;
 
     private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
 
-    public AuthService(UsersRepository usersRepository, PasswordEncoder passwordEncoder, TokenService tokenService, JwtUtils jwtUtils) {
+    public AuthService(UsersRepository usersRepository, PasswordEncoder passwordEncoder, TokenService tokenService, JwtUtils jwtUtils, CurrentUserService currentUserService) {
         this.usersRepository = usersRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenService = tokenService;
         this.jwtUtils = jwtUtils;
+        this.currentUserService = currentUserService;
     }
 
 
     // Registration
+    @Transactional
     public GenericMessageResponse register(RegisterRequest request) {
         logger.info("User registration request received");
         if (usersRepository.existsByEmail(request.getEmail())) {
@@ -56,18 +59,19 @@ public class AuthService {
         user.setMustChangePassword(false);
 
         usersRepository.save(user);
-
-        String emailVerificationToken = tokenService.generateToken(user, TokenType.EMAIL_VERIFICATION);
-
-
+        tokenService.generateToken(user, TokenType.EMAIL_VERIFICATION);
         logger.info("User registered successfully with email: {}", user.getEmail());
         return new GenericMessageResponse("Registration successful. Please Verify your account via email to be able to use the app.");
     }
 
 //    Email Verification
+    @Transactional
     public GenericMessageResponse verifyEmail(String token) {
         logger.info("Email verification request received");
         User user = tokenService.validateToken(token, TokenType.EMAIL_VERIFICATION);
+        if (user.getStatus() != UserStatus.PENDING_VERIFICATION) {
+            throw new IllegalArgumentException("This account cannot be verified.");
+        }
         user.setStatus(UserStatus.ACTIVE);
         usersRepository.save(user);
         logger.info("Email verified successfully for user ID: {}", user.getId());
@@ -102,21 +106,22 @@ public class AuthService {
             throw new InvalidCredentials("This account has been deactivated. Please contact support.");
         }
 
-        MyUserDetails userDetails= new MyUserDetails(loginAttemptUser);
-       final String token= jwtUtils.generateJwtToken(userDetails);
+        String token = jwtUtils.generateJwtToken(new MyUserDetails(loginAttemptUser));
         logger.info("Successful login for user ID: {}", loginAttemptUser.getId());
-        return new LoginResponse(token, loginAttemptUser.getRole().toString());
+        return new LoginResponse(token, loginAttemptUser.getRole().name());
     }
 
 //    Forgot Password
-    public GenericMessageResponse forgotPassword(ForgotPasswordRequest forgotPasswordRequest) {
+    @Transactional
+    public GenericMessageResponse forgotPassword(ForgotPasswordRequest request) {
         logger.info("Forgot password request received");
-        usersRepository.findUserByEmail(forgotPasswordRequest.getEmail())
-                .ifPresent(user -> {
-                    String resetToken = tokenService.generateToken(user, TokenType.PASSWORD_RESET);
-                });
-
-        return new GenericMessageResponse("An message was sent to the email with the password reset link.");
+        usersRepository.findUserByEmail(request.getEmail()).ifPresent(user -> {
+            if (user.getStatus() == UserStatus.ACTIVE) {
+                tokenService.generateToken(user, TokenType.PASSWORD_RESET);
+                // TODO: Send the password-reset link using your email service.
+            }
+        });
+        return new GenericMessageResponse("If an eligible account exists, password reset instructions will be sent to its email address.");
     }
 //    Reset Password
     @Transactional
@@ -133,19 +138,16 @@ public class AuthService {
     @Transactional
     public GenericMessageResponse changePassword(ChangePasswordRequest request) {
         logger.info("Password change request received");
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = usersRepository.findUserByEmail(email)
-                .orElseThrow(() -> new InvalidCredentials("Unable to identify the authenticated user."));
+        User user =  currentUserService.getCurrentUser();
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
-            throw new InvalidCredentials("The Password you entered is not correct. Please try again.");
-        } else {
-            if (request.getCurrentPassword().equals(request.getNewPassword())) {
-                throw new IllegalArgumentException("Your new Password shouldn't match your current password.");
-            }
+            throw new InvalidCredentials("The password you entered is incorrect.");
+        }
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPasswordHash())) {
+            throw new IllegalArgumentException("Your new password must be different from your current password.");
+        }
             user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
             usersRepository.save(user);
             return new GenericMessageResponse("Password Changed Successfully.");
         }
     }
 
-}

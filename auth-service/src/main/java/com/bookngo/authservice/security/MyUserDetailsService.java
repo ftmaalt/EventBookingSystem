@@ -1,6 +1,6 @@
 package com.bookngo.authservice.security;
 
-import com.bookngo.catalogservice.model.model.User;
+import com.bookngo.authservice.model.User;
 import com.bookngo.authservice.repository.UsersRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,11 +14,8 @@ public class MyUserDetailsService  implements UserDetailsService {
     private UsersRepository usersRepository;
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user= usersRepository.findUserByEmail(email).orElseThrow();
-        if (user==null){
-            throw new UsernameNotFoundException("No user with email: "+ email+" exists. Please try again using another email");
-        }
-
+        User user= usersRepository.findUserByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("No user found with email: " + email));
         return new MyUserDetails(user);
     }
 }

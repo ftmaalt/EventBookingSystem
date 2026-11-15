@@ -1,8 +1,8 @@
 package com.bookngo.authservice.security;
 
 
-import com.bookngo.catalogservice.model.model.User;
-import com.bookngo.catalogservice.model.model.enums.UserStatus;
+import com.bookngo.authservice.model.User;
+import com.bookngo.authservice.model.enums.UserStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,7 +15,6 @@ import java.util.Collection;
 import java.util.List;
 
 @AllArgsConstructor
-@NoArgsConstructor
 public class MyUserDetails implements UserDetails {
     @Getter
     private User user;
@@ -46,7 +45,7 @@ public class MyUserDetails implements UserDetails {
     }
 
     @Override
-    public @Nullable String getPassword() {
+    public String getPassword() {
         return user.getPasswordHash();
     }
 
