@@ -1,16 +1,11 @@
 package com.bookngo.notificationservice.controller;
 
-import com.bookngo.notificationservice.event.model.User;
-import com.bookngo.notificationservice.event.model.response.GenericMessageResponse;
-import com.bookngo.notificationservice.event.model.response.NotificationResponse;
-import com.project.bookngo.repository.UsersRepository;
-import com.project.bookngo.service.NotificationService;
-import com.project.bookngo.service.SSEService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.bookngo.notificationservice.dto.response.GenericMessageResponse;
+import com.bookngo.notificationservice.dto.response.NotificationResponse;
+import com.bookngo.notificationservice.service.CurrentUserService;
+import com.bookngo.notificationservice.service.NotificationService;
+import com.bookngo.notificationservice.service.SSEService;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -20,20 +15,15 @@ import java.util.List;
 @RequestMapping("/api/notifications")
 public class NotificationController {
 
-    @Autowired
-    private SSEService sseService;
+    private final NotificationService notificationService;
+    private final SSEService sseService;
+    private final CurrentUserService currentUserService;
 
-    @Autowired
-    private NotificationService notificationService;
-
-    @Autowired
-    private UsersRepository usersRepository;
-
-    private static final Logger logger = LoggerFactory.getLogger(NotificationController.class);
-
-    private User getCurrentUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return usersRepository.findUserByEmail(email);
+    public NotificationController(NotificationService notificationService, SSEService sseService,
+                                  CurrentUserService currentUserService) {
+        this.notificationService = notificationService;
+        this.sseService = sseService;
+        this.currentUserService = currentUserService;
     }
 
     @GetMapping
@@ -67,8 +57,6 @@ public class NotificationController {
 
     @GetMapping(value = "/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter subscribe() {
-        User user = getCurrentUser();
-        logger.info("SSE subscription requested through controller for user ID: {}", user.getId());
-        return sseService.subscribe(user.getId());
+        return sseService.subscribe(currentUserService.getCurrentUser().id());
     }
 }

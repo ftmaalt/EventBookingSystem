@@ -1,6 +1,6 @@
 package com.bookngo.notificationservice.repository;
 
-import com.bookngo.notificationservice.event.model.Notification;
+import com.bookngo.notificationservice.model.Notification;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
