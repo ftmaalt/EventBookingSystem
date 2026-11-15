@@ -34,9 +34,8 @@ public class UserController {
         return ResponseEntity.ok(userProfileService.updateMyProfile(request));
     }
 
-    @PostMapping(value = "/me/profile-picture", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/profile/picture", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UserProfileResponse> uploadProfilePicture(@RequestParam("file") MultipartFile file) {
-        logger.info("Calling uploadProfilePicture ===>");
         return ResponseEntity.ok(userProfileService.uploadProfilePicture(file));
     }
 }

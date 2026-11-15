@@ -3,15 +3,15 @@ package com.bookngo.authservice.service;
 
 import com.bookngo.authservice.dto.request.ProviderApplicationRequest;
 import com.bookngo.authservice.dto.request.ReviewApplicationRequest;
-import com.bookngo.authservice.dto.response.ProviderApplicationResponse;
 import com.bookngo.authservice.exception.BusinessConflictsException;
 import com.bookngo.authservice.exception.InformationExistsException;
 import com.bookngo.authservice.exception.InformationNotFoundException;
-import com.bookngo.catalogservice.model.model.ProviderApplication;
-import com.bookngo.catalogservice.model.model.ProviderProfile;
-import com.bookngo.catalogservice.model.model.User;
-import com.bookngo.catalogservice.model.model.enums.ApplicationStatus;
-import com.bookngo.catalogservice.model.model.enums.UserRole;
+
+import com.bookngo.authservice.model.ProviderApplication;
+import com.bookngo.authservice.model.ProviderProfile;
+import com.bookngo.authservice.model.User;
+import com.bookngo.authservice.model.enums.ApplicationStatus;
+import com.bookngo.authservice.model.enums.UserRole;
 import com.bookngo.authservice.repository.ProviderApplicationRepository;
 import com.bookngo.authservice.repository.ProviderProfileRepository;
 import com.bookngo.authservice.repository.UsersRepository;

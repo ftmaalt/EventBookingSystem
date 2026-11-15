@@ -35,10 +35,9 @@ public class SecurityConfig {
         http
                 .cors(cors -> {})
                 .csrf(csrf -> csrf.disable())
-                .sessionManagement(session->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth .requestMatchers(
-                                "/api/auth/verify",
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/verify",
                                 "/api/auth/login",
                                 "/api/auth/register",
                                 "/api/auth/forgotPassword",
@@ -52,13 +51,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest()
                         .authenticated())
-
-                        .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint(
-                                (request, response, authException) -> {
-                                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication required.");
-                                }
-                        ));
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, exception) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication required."))
+                        .accessDeniedHandler((request, response, exception) -> response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access denied.")));
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
