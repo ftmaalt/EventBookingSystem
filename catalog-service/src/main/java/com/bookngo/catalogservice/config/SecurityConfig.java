@@ -38,9 +38,12 @@ public class SecurityConfig {
                         // browsing the catalog is public
                         .requestMatchers(HttpMethod.GET, "/api/activities/**", "/api/categories/**", "/api/locations/**").permitAll()
                         .anyRequest().authenticated())
-                .exceptionHandling(ex -> ex.authenticationEntryPoint(
-                        (request, response, e) ->
-                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication required.")));
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, exception) ->
+                                response.sendError(
+                                        HttpServletResponse.SC_UNAUTHORIZED, "Authentication required."))
+                        .accessDeniedHandler((request, response, exception) ->
+                                response.sendError(HttpServletResponse.SC_FORBIDDEN, "You do not have permission to access this resource.")));
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
