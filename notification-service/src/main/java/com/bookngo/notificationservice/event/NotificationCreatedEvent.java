@@ -1,6 +1,6 @@
-package com.project.bookngo.service.event;
+package com.bookngo.notificationservice.event;
 
-import com.project.bookngo.model.response.NotificationResponse;
+import com.bookngo.notificationservice.event.model.response.NotificationResponse;
 
 public record NotificationCreatedEvent(
         Long userId,

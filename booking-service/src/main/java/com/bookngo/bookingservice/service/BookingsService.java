@@ -23,9 +23,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class BookingsService {
@@ -54,23 +57,26 @@ public class BookingsService {
     }
 
     /** Creates a booking. The session row is locked first so concurrent requests are handled one at a time. */
-    @Transactional
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public BookingResponse createBooking(BookingRequest request) {
         AuthenticatedUser user = currentUserService.getCurrentUser();
         Sessions session = sessionsRepository.findByIdForUpdate(request.getSessionId()).orElseThrow(() ->
                 new InformationNotFoundException("Session with ID: " + request.getSessionId() + " not found."));
 
-        if (bookingsRepository.findByUserIdAndSessionIdAndStatus(user.id(), session.getId(), BookingStatus.CONFIRMED).isPresent()) {
-            throw new BusinessConflictsException("You already have a booking for this session.");
+        if (bookingsRepository.existsByUserIdAndSession_IdAndStatusIn(user.id(), session.getId(),
+                List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT))) {
+            throw new BusinessConflictsException("You already have an active booking for this session.");
         }
-        if (session.getStatus() == SessionStatus.CANCELLED || session.getStatus() == SessionStatus.COMPLETED) {
-            throw new InvalidTimeSpecificationException("This session is no longer available for booking.");
+        if (session.getStatus() == SessionStatus.CANCELLED || session.getStatus() == SessionStatus.COMPLETED || session.getStatus() == SessionStatus.IN_PROGRESS
+                || session.getStatus() == SessionStatus.FULL) {
+            throw new InvalidTimeSpecificationException(
+                    "This session is no longer available for booking.");
         }
-        if (session.getStartTime().isBefore(LocalDateTime.now())) {
+        if (!session.getStartTime().isAfter(LocalDateTime.now())) {
             throw new InvalidTimeSpecificationException("Cannot book a session that has already started.");
         }
-        if (session.getSpotsLeft() < request.getParticipants()) {
-            throw new BusinessConflictsException("Not enough spots left. Only " + session.getSpotsLeft() + " remaining.");
+        if (request.getParticipants() == null || request.getParticipants() < 1) {
+            throw new InvalidTimeSpecificationException("The number of participants must be at least one.");
         }
         if (waitingListRepository.existsBySessionIdAndStatus(session.getId(), WaitListStatus.WAITING)) {
             throw new BusinessConflictsException("This session has an active waitlist. Available seats must be allocated to waiting customers first.");
@@ -95,7 +101,6 @@ public class BookingsService {
         booking.setSubtotal(subtotal);
         booking.setTotalPrice(subtotal);
         booking.setStatus(BookingStatus.CONFIRMED);
-        booking.setPaymentStatus(PaymentStatus.PENDING_PAYMENT);
         Bookings saved = bookingsRepository.save(booking);
 
         eventPublisher.publishEvent(new BookingNotificationEvent(
@@ -104,7 +109,7 @@ public class BookingsService {
         logger.info("Booking {} created for user {} on session {}", saved.getBookingId(), user.id(), session.getId());
         return toResponse(saved);
     }
-
+    @Transactional(readOnly = true)
     public BookingResponse getById(Long id) {
         Bookings booking = bookingsRepository.findById(id).orElseThrow(() ->
                 new InformationNotFoundException("Booking with the id:" + id + " does not exist."));
@@ -152,14 +157,14 @@ public class BookingsService {
         logger.info("AUDIT BOOKING_CANCELLED bookingId={} by={}", booking.getBookingId(), currentUser.email());
         return "Booking with id:" + id + " has been cancelled successfully.";
     }
-
+    @Transactional(readOnly = true)
     public Page<BookingResponse> getMyBookings(BookingStatus status, Pageable pageable) {
         AuthenticatedUser user = currentUserService.getCurrentUser();
         return bookingsRepository.findMyBookings(user.id(), status, pageable).map(this::toResponse);
     }
 
     private void checkOwnershipOrAdmin(Bookings booking, AuthenticatedUser user) {
-        boolean isOwner = booking.getBookingId().equals(user.id());
+        boolean isOwner = booking.getUserId().equals(user.id());
         boolean isAdmin = "ADMIN".equals(user.role());
         if (!isOwner && !isAdmin) {
             logger.warn("Unauthorized access attempt for booking {} by user {}", booking.getBookingId(), user.id());
@@ -168,7 +173,14 @@ public class BookingsService {
     }
 
     private BookingResponse toResponse(Bookings b) {
-        return new BookingResponse(b.getBookingId(), b.getSession().getId(), b.getParticipants(), b.getBookingType(),
-                b.getSubtotal(), b.getTotalPrice(), b.getStatus(), b.getPaymentStatus(), b.getCreatedAt());
+        return new BookingResponse(
+                b.getBookingId(),
+                b.getSession().getId(),
+                b.getParticipants(),
+                b.getBookingType(),
+                b.getSubtotal(),
+                b.getTotalPrice(),
+                b.getStatus(),
+                b.getCreatedAt());
     }
 }

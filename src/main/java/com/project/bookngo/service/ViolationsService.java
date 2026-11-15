@@ -1,10 +1,8 @@
 package com.project.bookngo.service;
 
 import com.project.bookngo.exception.InformationNotFoundException;
-import com.project.bookngo.model.*;
-import com.project.bookngo.model.enums.*;
-import com.project.bookngo.model.request.ReportViolationRequest;
-import com.project.bookngo.model.response.GenericMessageResponse;
+import com.bookngo.notificationservice.event.model.request.ReportViolationRequest;
+import com.bookngo.notificationservice.event.model.response.GenericMessageResponse;
 import com.project.bookngo.repository.*;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;

@@ -1,6 +1,6 @@
 package com.project.bookngo.repository;
 
-import com.project.bookngo.model.Penalties;
+import com.bookngo.notificationservice.event.model.Penalties;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

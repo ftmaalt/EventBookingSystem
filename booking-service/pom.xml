@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.bookngo</groupId>
-    <artifactId>catlog-service</artifactId>
+    <artifactId>booking-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>catlog-service</name>
-    <description>catlog-service</description>
+    <name>booking-service</name>
+    <description>booking-service</description>
     <url/>
     <licenses>
         <license/>

@@ -2,8 +2,9 @@ package com.bookngo.bookingservice.model;
 
 import com.bookngo.bookingservice.model.enums.BookingStatus;
 import com.bookngo.bookingservice.model.enums.BookingType;
-import com.bookngo.bookingservice.model.enums.PaymentStatus;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
@@ -22,7 +23,8 @@ public class Bookings {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long bookingId;
 
-    @Column(nullable = false)
+    @NotNull
+    @Min(1)
     private Integer participants;
 
     @Enumerated(EnumType.STRING)
@@ -41,10 +43,6 @@ public class Bookings {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private BookingStatus status;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private PaymentStatus paymentStatus;
 
     @Column(length = 255)
     private String cancellationReason;

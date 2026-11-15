@@ -12,6 +12,9 @@ public record BookingNotificationEvent(
 ) {
     public BookingNotificationEvent {
         Objects.requireNonNull(bookingId, "bookingId is required");
+        Objects.requireNonNull(userId, "userId is required");
+        Objects.requireNonNull(userEmail, "userEmail is required");
+        Objects.requireNonNull(sessionId, "sessionId is required");
         Objects.requireNonNull(type, "Notification type is required");
     }
 }

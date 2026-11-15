@@ -13,10 +13,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface BookingsRepository extends JpaRepository<Bookings, Long> {
-
-    List<Bookings> findBySessionId(Long sessionId);
-    Optional<Bookings> findByUserIdAndSessionIdAndStatus(Long userId, Long sessionId, BookingStatus status);
-    boolean existsByUserIdAndSessionIdAndStatusIn(Long userId, Long sessionId, Collection<BookingStatus> statuses);
+    List<Bookings> findBySession_Id(Long sessionId);
+    Optional<Bookings> findByUserIdAndSession_IdAndStatus(Long userId, Long sessionId, BookingStatus status);
+    boolean existsByUserIdAndSession_IdAndStatusIn(Long userId, Long sessionId, Collection<BookingStatus> statuses);
     @Query("SELECT b FROM Bookings b WHERE b.userId = :userId AND (:status IS NULL OR b.status = :status)")
     Page<Bookings> findMyBookings(@Param("userId") Long userId, @Param("status") BookingStatus status, Pageable pageable);
 }

@@ -1,6 +1,6 @@
 package com.project.bookngo.controller;
 
-import com.project.bookngo.model.AuditLog;
+import com.bookngo.notificationservice.event.model.AuditLog;
 import com.project.bookngo.service.AuditLogService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

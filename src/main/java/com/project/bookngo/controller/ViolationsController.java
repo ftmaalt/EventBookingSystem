@@ -1,7 +1,7 @@
 package com.project.bookngo.controller;
 
-import com.project.bookngo.model.request.ReportViolationRequest;
-import com.project.bookngo.model.response.GenericMessageResponse;
+import com.bookngo.notificationservice.event.model.request.ReportViolationRequest;
+import com.bookngo.notificationservice.event.model.response.GenericMessageResponse;
 import com.project.bookngo.service.ViolationsService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;

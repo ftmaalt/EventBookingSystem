@@ -3,13 +3,16 @@ package com.bookngo.bookingservice.model;
 import com.bookngo.bookingservice.model.enums.SessionStatus;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "sessions")
 public class Sessions {

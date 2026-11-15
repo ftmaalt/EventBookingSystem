@@ -53,8 +53,10 @@ public class WaitingService {
         Sessions session = sessionsRepository.findByIdForUpdate(sessionId).orElseThrow(() ->
                 new InformationNotFoundException("No session with ID: " + sessionId));
 
-        if (session.getStatus() == SessionStatus.CANCELLED || session.getStatus() == SessionStatus.COMPLETED) {
-            throw new BusinessConflictsException("The waitlist is unavailable for this session.");
+        if (session.getStatus() == SessionStatus.CANCELLED || session.getStatus() == SessionStatus.COMPLETED || session.getStatus() == SessionStatus.IN_PROGRESS) {
+            throw new BusinessConflictsException(
+                    "The waitlist is unavailable for this session."
+            );
         }
         if (!session.getStartTime().isAfter(LocalDateTime.now())) {
             throw new BusinessConflictsException("You cannot join the waitlist for a session that has already started.");
@@ -65,7 +67,7 @@ public class WaitingService {
         if (!"USER".equals(user.role())) {
             throw new AccessDeniedException("Only customers can join the waitlist.");
         }
-        if (bookingsRepository.existsByUserIdAndSessionIdAndStatusIn(user.id(), sessionId,
+        if (bookingsRepository.existsByUserIdAndSession_IdAndStatusIn(user.id(), sessionId,
                 List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT))) {
             throw new BusinessConflictsException("You already have an active booking for this session.");
         }
@@ -136,7 +138,7 @@ public class WaitingService {
             if (session.getSpotsLeft() <= 0) {
                 break;
             }
-            if (bookingsRepository.existsByUserIdAndSessionIdAndStatusIn(entry.getUserId(), session.getId(),
+            if (bookingsRepository.existsByUserIdAndSession_IdAndStatusIn(entry.getUserId(), session.getId(),
                     List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT))) {
                 logger.warn("Expiring waitlist entry {}: user {} already has an active booking.", entry.getEntryId(), entry.getUserId());
                 entry.setStatus(WaitListStatus.EXPIRED);
@@ -152,7 +154,6 @@ public class WaitingService {
             booking.setParticipants(1);
             booking.setStatus(BookingStatus.CONFIRMED);
             booking.setBookingType(BookingType.INDIVIDUAL);
-            booking.setPaymentStatus(PaymentStatus.PENDING_PAYMENT);
             booking.setSubtotal(subtotal);
             booking.setDiscountPercent(BigDecimal.ZERO);
             booking.setTotalPrice(subtotal);

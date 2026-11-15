@@ -2,12 +2,12 @@ package com.project.bookngo.service;
 
 import com.project.bookngo.exception.BusinessConflictsException;
 import com.project.bookngo.exception.InformationNotFoundException;
-import com.project.bookngo.model.Penalties;
-import com.project.bookngo.model.User;
-import com.project.bookngo.model.enums.PenaltyStatus;
-import com.project.bookngo.model.enums.UserRole;
-import com.project.bookngo.model.enums.UserStatus;
-import com.project.bookngo.model.response.GenericMessageResponse;
+import com.bookngo.notificationservice.event.model.Penalties;
+import com.bookngo.notificationservice.event.model.User;
+import com.bookngo.notificationservice.event.model.enums.PenaltyStatus;
+import com.bookngo.notificationservice.event.model.enums.UserRole;
+import com.bookngo.notificationservice.event.model.enums.UserStatus;
+import com.bookngo.notificationservice.event.model.response.GenericMessageResponse;
 import com.project.bookngo.repository.PenaltiesRepository;
 import com.project.bookngo.repository.UsersRepository;
 import org.springframework.security.access.AccessDeniedException;

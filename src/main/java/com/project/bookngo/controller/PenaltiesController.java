@@ -1,6 +1,6 @@
 package com.project.bookngo.controller;
 
-import com.project.bookngo.model.response.GenericMessageResponse;
+import com.bookngo.notificationservice.event.model.response.GenericMessageResponse;
 import com.project.bookngo.service.PenaltiesService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

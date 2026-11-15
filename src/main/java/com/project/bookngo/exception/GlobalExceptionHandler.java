@@ -1,7 +1,7 @@
 
 package com.project.bookngo.exception;
 
-import com.project.bookngo.model.response.ApiErrorResponse;
+import com.bookngo.notificationservice.event.model.response.ApiErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

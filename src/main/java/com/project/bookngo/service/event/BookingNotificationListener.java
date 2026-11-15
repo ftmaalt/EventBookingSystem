@@ -1,7 +1,7 @@
 package com.project.bookngo.service.event;
 
-import com.project.bookngo.model.Bookings;
-import com.project.bookngo.model.enums.BookingStatus;
+import com.bookngo.notificationservice.event.model.Bookings;
+import com.bookngo.notificationservice.event.model.enums.BookingStatus;
 import com.project.bookngo.repository.BookingsRepository;
 import com.project.bookngo.service.EmailService;
 

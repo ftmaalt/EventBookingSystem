@@ -1,4 +1,4 @@
-package com.project.bookngo.service.event;
+package com.bookngo.notificationservice.event;
 
 import com.project.bookngo.service.SSEService;
 import lombok.RequiredArgsConstructor;

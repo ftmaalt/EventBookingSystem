@@ -2,6 +2,7 @@ package com.bookngo.bookingservice.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -17,7 +18,7 @@ public class JwtUtils {
     private String jwtSecret;
 
     private SecretKey key() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret));
     }
 
     public Optional<AuthenticatedUser> parse(String token) {
@@ -26,10 +27,11 @@ public class JwtUtils {
                     .parseSignedClaims(token).getPayload();
             Number uid = claims.get("uid", Number.class);
             String role = claims.get("role", String.class);
-            if (uid == null || role == null) {
+            String email = claims.getSubject();
+            if (uid == null || uid.longValue() <= 0 || role == null || role.isBlank() || email == null || email.isBlank()) {
                 return Optional.empty();
             }
-            return Optional.of(new AuthenticatedUser(uid.longValue(), claims.getSubject(), role));
+            return Optional.of(new AuthenticatedUser(uid.longValue(), email, role));
         } catch (Exception e) {
             return Optional.empty();
         }

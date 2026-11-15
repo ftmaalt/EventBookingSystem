@@ -2,10 +2,10 @@
 package com.project.bookngo.concurrency;
 
 import com.project.bookngo.exception.BusinessConflictsException;
-import com.project.bookngo.model.request.BookingRequest;
+import com.bookngo.notificationservice.event.model.request.BookingRequest;
 import com.project.bookngo.security.JwtUtils;
 import com.project.bookngo.security.MyUserDetails;
-import com.project.bookngo.service.*;
+
 import java.util.HashSet;
 import java.util.Set;
 import com.project.bookngo.service.event.BookingNotificationEvent;

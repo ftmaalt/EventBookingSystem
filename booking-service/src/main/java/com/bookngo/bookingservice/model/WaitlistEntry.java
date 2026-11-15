@@ -2,14 +2,13 @@ package com.bookngo.bookingservice.model;
 
 import com.bookngo.bookingservice.model.enums.WaitListStatus;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "waitlist")
 public class WaitlistEntry {

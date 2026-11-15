@@ -1,8 +1,8 @@
-package com.project.bookngo.controller;
+package com.bookngo.notificationservice.controller;
 
-import com.project.bookngo.model.User;
-import com.project.bookngo.model.response.GenericMessageResponse;
-import com.project.bookngo.model.response.NotificationResponse;
+import com.bookngo.notificationservice.event.model.User;
+import com.bookngo.notificationservice.event.model.response.GenericMessageResponse;
+import com.bookngo.notificationservice.event.model.response.NotificationResponse;
 import com.project.bookngo.repository.UsersRepository;
 import com.project.bookngo.service.NotificationService;
 import com.project.bookngo.service.SSEService;
