@@ -2,6 +2,7 @@ package com.bookngo.catalogservice.service;
 
 import com.bookngo.catalogservice.dto.request.ActivityRequest;
 import com.bookngo.catalogservice.dto.response.ActivityResponse;
+import com.bookngo.catalogservice.exception.BusinessConflictsException;
 import com.bookngo.catalogservice.exception.InformationNotFoundException;
 import com.bookngo.catalogservice.model.Activities;
 import com.bookngo.catalogservice.model.Category;
@@ -17,8 +18,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class ActivitiesService {
@@ -35,12 +38,13 @@ public class ActivitiesService {
         this.locationRepository = locationRepository;
         this.currentUserService = currentUserService;
     }
-
+    @Transactional
     public ActivityResponse createActivity(ActivityRequest request) {
         logger.info("Creating activity with title: {}", request.getTitle());
         AuthenticatedUser provider = currentUserService.getCurrentUser();
         Category category = findCategory(request.getCategoryId());
         Location location = findLocation(request.getLocationId());
+        assertLocationOwner(location, provider);
 
         Activities activity = new Activities();
         apply(activity, request, category, location);
@@ -53,38 +57,55 @@ public class ActivitiesService {
         logger.info("Activity created successfully with ID: {}", saved.getId());
         return toResponse(saved);
     }
-
+    @Transactional
     public ActivityResponse getById(Long id) {
-        return toResponse(findActivity(id));
+        Activities activity = activitiesRepository.findByIdAndStatus(id, ActivityStatus.ACTIVE)
+                .orElseThrow(() -> new InformationNotFoundException(
+                        "Active activity with ID " + id + " does not exist."));
+        if (!Boolean.TRUE.equals(activity.getCategory().getActive())
+                || !Boolean.TRUE.equals(activity.getLocation().getActive())) {
+            throw new InformationNotFoundException("Activity is not available.");
+        }
+        return toResponse(activity);
     }
 
     public List<ActivityResponse> getAllActivities() {
         return activitiesRepository.findAll().stream().map(this::toResponse).toList();
     }
 
+    @Transactional
     public ActivityResponse updateActivity(Long id, ActivityRequest request) {
         Activities activity = findActivity(id);
         AuthenticatedUser provider = currentUserService.getCurrentUser();
         assertOwner(activity, provider);
 
-        apply(activity, request, findCategory(request.getCategoryId()), findLocation(request.getLocationId()));
+        Category category = findCategory(request.getCategoryId());
+        Location location = findLocation(request.getLocationId());
+        assertLocationOwner(location, provider);
+
+        apply(activity, request, category, location);
         activity.setUpdatedBy(provider.email());
         return toResponse(activitiesRepository.save(activity));
     }
 
+    @Transactional
     public String deleteActivity(Long id) {
         Activities activity = findActivity(id);
         AuthenticatedUser provider = currentUserService.getCurrentUser();
         assertOwner(activity, provider);
-
+        if (activity.getStatus() == ActivityStatus.INACTIVE) {
+            throw new BusinessConflictsException("Activity is already inactive.");
+        }
         activity.setUpdatedBy(provider.email());
         activity.setStatus(ActivityStatus.INACTIVE);
         activitiesRepository.save(activity);
         return "Activity with id:" + id + " has been deleted successfully.";
     }
 
+    @Transactional(readOnly = true)
     public Page<ActivityResponse> search(Long categoryId, Long locationId, Pageable pageable) {
-        return activitiesRepository.search(categoryId, locationId, pageable).map(this::toResponse);
+        return activitiesRepository.search(categoryId, locationId, pageable)
+                .map(this::toResponse);
     }
 
     private void apply(Activities activities, ActivityRequest request, Category category, Location location) {
@@ -97,8 +118,13 @@ public class ActivitiesService {
     }
 
     private void assertOwner(Activities activity, AuthenticatedUser user) {
-        if (!activity.getProviderId().equals(user.id())) {
+        if (!Objects.equals(activity.getProviderId(), user.id())) {
             throw new AccessDeniedException("You are not authorized to modify this activity.");
+        }
+    }
+    private void assertLocationOwner(Location location, AuthenticatedUser user) {
+        if (!Objects.equals(location.getProviderId(), user.id())) {
+            throw new AccessDeniedException("You are not authorized to use this location.");
         }
     }
 
@@ -108,13 +134,25 @@ public class ActivitiesService {
     }
 
     private Category findCategory(Long id) {
-        return categoryRepository.findById(id).orElseThrow(() ->
-                new InformationNotFoundException("Category with the id:" + id + " does not exist."));
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new InformationNotFoundException(
+                        "Category with ID " + id + " does not exist."));
+        if (!Boolean.TRUE.equals(category.getActive())) {
+            throw new BusinessConflictsException("Cannot use an inactive category.");
+        }
+
+        return category;
     }
 
     private Location findLocation(Long id) {
-        return locationRepository.findById(id).orElseThrow(() ->
-                new InformationNotFoundException("Location with the id:" + id + " does not exist."));
+        Location location = locationRepository.findById(id)
+                .orElseThrow(() -> new InformationNotFoundException(
+                        "Location with ID " + id + " does not exist."));
+
+        if (!Boolean.TRUE.equals(location.getActive())) {
+            throw new BusinessConflictsException("Cannot use an inactive location.");
+        }
+        return location;
     }
 
     private ActivityResponse toResponse(Activities a) {
@@ -124,4 +162,5 @@ public class ActivitiesService {
                 a.getLocation() != null ? a.getLocation().getId() : null,
                 a.getProviderId(), a.getStatus(), a.getCreatedAt(), a.getUpdatedAt());
     }
+
 }
