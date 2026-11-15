@@ -69,9 +69,6 @@ public class ActivitiesService {
         return toResponse(activity);
     }
 
-    public List<ActivityResponse> getAllActivities() {
-        return activitiesRepository.findAll().stream().map(this::toResponse).toList();
-    }
 
     @Transactional
     public ActivityResponse updateActivity(Long id, ActivityRequest request) {

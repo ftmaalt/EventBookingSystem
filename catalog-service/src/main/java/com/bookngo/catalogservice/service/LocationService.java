@@ -34,7 +34,7 @@ public class LocationService {
         this.currentUserService = userService;
         this.geocodingService = geocodingService;
     }
-
+    @Transactional
     public LocationResponse create(LocationRequest request) {
         AuthenticatedUser user = currentUserService.getCurrentUser();
         GeocodingResult coords = geocodingService.geocodeAddress(request.getAddress() + ", " + request.getCity());
@@ -53,7 +53,7 @@ public class LocationService {
         logger.info("Location created successfully with ID: {}", saved.getId());
         return toResponse(saved);
     }
-
+    @Transactional(readOnly = true)
     public LocationResponse getById(Long id) {
         logger.info("Fetching location with ID: {}", id);
         Location spot= locationRepository.findById(id).orElseThrow(()->
@@ -61,15 +61,17 @@ public class LocationService {
         );
         return toResponse(spot);
     }
-
+    @Transactional(readOnly = true)
     public List<LocationResponse> getAll() {
         logger.info("Fetching all locations");
         return locationRepository.findAll().stream().map(this::toResponse).toList();
     }
-
+    @Transactional
     public LocationResponse update(Long id, LocationRequest request){
         Location location = find(id);
+        AuthenticatedUser user = currentUserService.getCurrentUser();
         assertOwner(location, currentUserService.getCurrentUser());
+        assertActive(location);
 
         if (!Objects.equals(location.getAddress(), request.getAddress())
                 || !Objects.equals(location.getCity(), request.getCity())) {
@@ -81,6 +83,7 @@ public class LocationService {
         location.setName(request.getName());
         location.setAddress(request.getAddress());
         location.setCity(request.getCity());
+        logger.info("Location with ID {} updated successfully", id);
         return toResponse(locationRepository.save(location));
 
     }
@@ -95,6 +98,7 @@ public class LocationService {
         }
         Location location = find(id);
         assertOwner(location, user);
+        assertActive(location);
 
         Double latitude = request.getLatitude();
         Double longitude = request.getLongitude();
@@ -112,9 +116,8 @@ public class LocationService {
     public String delete(Long id) throws AccessDeniedException {
         Location location = find(id);
         assertOwner(location, currentUserService.getCurrentUser());
-        if (Boolean.FALSE.equals(location.getActive())) {
-            throw new BusinessConflictsException("Location is already inactive.");
-        }
+        assertActive(location);
+
         location.setActive(false);
         locationRepository.save(location);
         return "Location with ID: " + id + " has been deactivated.";
@@ -128,6 +131,12 @@ public class LocationService {
     private void assertOwner(Location location, AuthenticatedUser user) {
         if (!location.getProviderId().equals(user.id())) {
             throw new AccessDeniedException("You are not authorized to modify this location.");
+        }
+    }
+    private void assertActive(Location location) {
+        if (!Boolean.TRUE.equals(location.getActive())) {
+            throw new BusinessConflictsException(
+                    "This location is inactive and cannot be modified.");
         }
     }
 
