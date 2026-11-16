@@ -62,4 +62,4 @@ dist-ssr
 ### Secrets ###
 .env
 **/.env
-!.env.example
+!.env
