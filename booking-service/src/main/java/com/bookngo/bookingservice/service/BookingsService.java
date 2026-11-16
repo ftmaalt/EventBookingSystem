@@ -2,8 +2,8 @@ package com.bookngo.bookingservice.service;
 
 import com.bookngo.bookingservice.dto.request.BookingRequest;
 import com.bookngo.bookingservice.dto.response.BookingResponse;
-import com.bookngo.bookingservice.event.BookingNotificationEvent;
-import com.bookngo.bookingservice.event.BookingNotificationType;
+import com.bookngo.bookingservice.event.BookingEvent;
+import com.bookngo.bookingservice.event.BookingEventType;
 import com.bookngo.bookingservice.exception.BusinessConflictsException;
 import com.bookngo.bookingservice.exception.InformationNotFoundException;
 import com.bookngo.bookingservice.exception.InvalidTimeSpecificationException;
@@ -23,8 +23,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -57,7 +55,7 @@ public class BookingsService {
     }
 
     /** Creates a booking. The session row is locked first so concurrent requests are handled one at a time. */
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional
     public BookingResponse createBooking(BookingRequest request) {
         AuthenticatedUser user = currentUserService.getCurrentUser();
         Sessions session = sessionsRepository.findByIdForUpdate(request.getSessionId()).orElseThrow(() ->
@@ -103,9 +101,7 @@ public class BookingsService {
         booking.setStatus(BookingStatus.CONFIRMED);
         Bookings saved = bookingsRepository.save(booking);
 
-        eventPublisher.publishEvent(new BookingNotificationEvent(
-                saved.getBookingId(), saved.getUserId(), saved.getUserEmail(), session.getId(),
-                BookingNotificationType.BOOKING_CONFIRMED));
+        eventPublisher.publishEvent(BookingEvent.of(saved, BookingEventType.BOOKING_CONFIRMED));
         logger.info("Booking {} created for user {} on session {}", saved.getBookingId(), user.id(), session.getId());
         return toResponse(saved);
     }
@@ -123,7 +119,7 @@ public class BookingsService {
                 new InformationNotFoundException("Booking with the id:" + id + " does not exist."));
         AuthenticatedUser currentUser = currentUserService.getCurrentUser();
 
-        // Lock the session, then re-read the booking so we see any change committed while we waited.
+        // locks the session, then re-read the booking so we see any change committed while we waited.
         Sessions session = sessionsRepository.findByIdForUpdate(booking.getSession().getId()).orElseThrow(() ->
                 new InformationNotFoundException("Session not found."));
         entityManager.refresh(booking);
@@ -143,9 +139,7 @@ public class BookingsService {
         booking.setUpdatedBy(currentUser.email());
         bookingsRepository.save(booking);
 
-        eventPublisher.publishEvent(new BookingNotificationEvent(
-                booking.getBookingId(), booking.getUserId(), booking.getUserEmail(), session.getId(),
-                BookingNotificationType.BOOKING_CANCELLED));
+        eventPublisher.publishEvent(BookingEvent.of(booking, BookingEventType.BOOKING_CANCELLED));
 
         session.setSpotsLeft(session.getSpotsLeft() + booking.getParticipants());
         if (session.getStatus() == SessionStatus.FULL) {

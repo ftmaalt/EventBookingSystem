@@ -2,8 +2,8 @@ package com.bookngo.bookingservice.service;
 
 import com.bookngo.bookingservice.dto.response.WaitListResponse;
 import com.bookngo.bookingservice.dto.response.WaitlistedSessionResponse;
-import com.bookngo.bookingservice.event.BookingNotificationEvent;
-import com.bookngo.bookingservice.event.BookingNotificationType;
+import com.bookngo.bookingservice.event.BookingEvent;
+import com.bookngo.bookingservice.event.BookingEventType;
 import com.bookngo.bookingservice.exception.BusinessConflictsException;
 import com.bookngo.bookingservice.exception.InformationNotFoundException;
 import com.bookngo.bookingservice.model.Bookings;
@@ -168,9 +168,7 @@ public class WaitingService {
             entry.setStatus(WaitListStatus.BOOKED);
             waitlistRepository.save(entry);
 
-            eventPublisher.publishEvent(new BookingNotificationEvent(
-                    saved.getBookingId(), saved.getUserId(), saved.getUserEmail(), session.getId(),
-                    BookingNotificationType.WAITLIST_ALLOCATED));
+            eventPublisher.publishEvent(BookingEvent.of(saved, BookingEventType.WAITLIST_ALLOCATED));
         }
     }
 }
