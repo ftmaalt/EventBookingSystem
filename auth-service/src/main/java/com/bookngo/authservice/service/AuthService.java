@@ -5,6 +5,8 @@ import com.bookngo.authservice.exception.InvalidCredentials;
 import com.bookngo.authservice.exception.VerificationRequiredException;
 
 import com.bookngo.authservice.dto.request.*;
+import com.bookngo.authservice.event.AccountEvent;
+import com.bookngo.authservice.event.AccountEventType;
 import com.bookngo.authservice.dto.response.GenericMessageResponse;
 import com.bookngo.authservice.dto.response.LoginResponse;
 import com.bookngo.authservice.model.User;
@@ -16,7 +18,7 @@ import com.bookngo.authservice.security.JwtUtils;
 import com.bookngo.authservice.security.MyUserDetails;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,15 +30,17 @@ public class AuthService {
     private final TokenService tokenService;
     private final JwtUtils jwtUtils;
     private final CurrentUserService currentUserService;
+    private final ApplicationEventPublisher eventPublisher;
 
     private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
 
-    public AuthService(UsersRepository usersRepository, PasswordEncoder passwordEncoder, TokenService tokenService, JwtUtils jwtUtils, CurrentUserService currentUserService) {
+    public AuthService(UsersRepository usersRepository, PasswordEncoder passwordEncoder, TokenService tokenService, JwtUtils jwtUtils, CurrentUserService currentUserService, ApplicationEventPublisher eventPublisher) {
         this.usersRepository = usersRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenService = tokenService;
         this.jwtUtils = jwtUtils;
         this.currentUserService = currentUserService;
+        this.eventPublisher = eventPublisher;
     }
 
 
@@ -59,7 +63,9 @@ public class AuthService {
         user.setMustChangePassword(false);
 
         usersRepository.save(user);
-        tokenService.generateToken(user, TokenType.EMAIL_VERIFICATION);
+        String verificationToken = tokenService.generateToken(user, TokenType.EMAIL_VERIFICATION);
+        // published to Kafka after commit; notification-service sends the verification e-mail
+        eventPublisher.publishEvent(AccountEvent.withToken(AccountEventType.USER_REGISTERED, user, verificationToken));
         logger.info("User registered successfully with email: {}", user.getEmail());
         return new GenericMessageResponse("Registration successful. Please Verify your account via email to be able to use the app.");
     }
@@ -117,8 +123,8 @@ public class AuthService {
         logger.info("Forgot password request received");
         usersRepository.findUserByEmail(request.getEmail()).ifPresent(user -> {
             if (user.getStatus() == UserStatus.ACTIVE) {
-                tokenService.generateToken(user, TokenType.PASSWORD_RESET);
-                // TODO: Send the password-reset link using your email service.
+                String resetToken = tokenService.generateToken(user, TokenType.PASSWORD_RESET);
+                eventPublisher.publishEvent(AccountEvent.withToken(AccountEventType.PASSWORD_RESET_REQUESTED, user, resetToken));
             }
         });
         return new GenericMessageResponse("If an eligible account exists, password reset instructions will be sent to its email address.");

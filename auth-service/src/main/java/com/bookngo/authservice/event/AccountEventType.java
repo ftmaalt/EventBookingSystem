@@ -1,0 +1,9 @@
+package com.bookngo.authservice.event;
+
+public enum AccountEventType {
+    USER_REGISTERED,
+    PASSWORD_RESET_REQUESTED,
+    PROVIDER_APPLICATION_SUBMITTED,
+    PROVIDER_APPLICATION_APPROVED,
+    PROVIDER_APPLICATION_REJECTED
+}

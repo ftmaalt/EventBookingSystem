@@ -1,11 +1,12 @@
 package com.bookngo.authservice.service;
 
-
 import com.bookngo.authservice.dto.request.ProviderApplicationRequest;
 import com.bookngo.authservice.dto.request.ReviewApplicationRequest;
 import com.bookngo.authservice.exception.BusinessConflictsException;
 import com.bookngo.authservice.exception.InformationExistsException;
 import com.bookngo.authservice.exception.InformationNotFoundException;
+import com.bookngo.authservice.event.AccountEvent;
+import com.bookngo.authservice.event.AccountEventType;
 
 import com.bookngo.authservice.model.ProviderApplication;
 import com.bookngo.authservice.model.ProviderProfile;
@@ -15,7 +16,9 @@ import com.bookngo.authservice.model.enums.UserRole;
 import com.bookngo.authservice.repository.ProviderApplicationRepository;
 import com.bookngo.authservice.repository.ProviderProfileRepository;
 import com.bookngo.authservice.repository.UsersRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,24 +34,22 @@ public class ProviderApplicationService {
 
     private final UsersRepository usersRepository;
 
-//    private final EmailService emailService;
-//
-//    private final NotificationService notificationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     private final CurrentUserService currentUserService;
 
     private static final Logger logger = LoggerFactory.getLogger(ProviderApplicationService.class);
 
-    public ProviderApplicationService(ProviderApplicationRepository applicationRepository, ProviderProfileRepository profileRepository, UsersRepository usersRepository, CurrentUserService currentUserService) {
+    public ProviderApplicationService(ProviderApplicationRepository applicationRepository, ProviderProfileRepository profileRepository, UsersRepository usersRepository, CurrentUserService currentUserService, ApplicationEventPublisher eventPublisher) {
         this.applicationRepository = applicationRepository;
         this.profileRepository = profileRepository;
         this.usersRepository = usersRepository;
-//        this.emailService = emailService;
-//        this.notificationService = notificationService;
+        this.eventPublisher = eventPublisher;
         this.currentUserService = currentUserService;
     }
 
 
+    @Transactional
     public ProviderApplicationResponse submitApplication(ProviderApplicationRequest applicationRequest){
         logger.info("Submitting provider application");
         User user= currentUserService.getCurrentUser();
@@ -72,42 +73,9 @@ public class ProviderApplicationService {
         ProviderApplication saved = applicationRepository.save(application);
         logger.info("Provider application created successfully with ID: {}", saved.getApplication_id());
 
-        List<User> admins =
-                usersRepository.findByRole(UserRole.ADMIN);
-
-        for (User admin : admins) {
-
-//            notificationService.create(
-//                    admin,
-//                    "provider-application-pending",
-//                    "New provider application from "
-//                            + saved.getBusinessName()
-//                            + " is waiting for review."
-//            );
-
-            logger.info(
-                    "In-app provider application notification created for admin: {}",
-                    admin.getEmail()
-            );
-
-            if (
-                    admin.getEmail() != null &&
-                            !admin.getEmail().isBlank()
-            ) {
-//                try {
-//                    emailService.sendNewApplicationNotification(
-//                            admin.getEmail(),
-//                            saved
-//                    );
-//                } catch (Exception e) {
-//                    logger.error(
-//                            "Failed to email admin {} about provider application {}",
-//                            admin.getEmail(),
-//                            saved.getApplication_id(),
-//                            e
-//                    );
-//                }
-            }
+        // notification-service creates the in-app notification and e-mails each admin
+        for (User admin : usersRepository.findByRole(UserRole.ADMIN)) {
+            eventPublisher.publishEvent(AccountEvent.forApplication(AccountEventType.PROVIDER_APPLICATION_SUBMITTED, admin, saved));
         }
 
         return toResponse(saved);
@@ -128,6 +96,7 @@ public class ProviderApplicationService {
         return toResponse(application);
     }
 
+    @Transactional
     public ProviderApplicationResponse approveApplication(Long id, ReviewApplicationRequest request) {
         logger.info("Approving provider application with ID: {}", id);
         ProviderApplication application= applicationRepository.findById(id).orElseThrow(() -> new InformationNotFoundException("Application with id:" + id + " does not exist."));
@@ -153,14 +122,11 @@ public class ProviderApplicationService {
         profileRepository.save(profile);
         logger.info("Provider application with ID {} approved successfully", id);
 
-//        notificationService.create(
-//                applicant,
-//                "provider-application-approved",
-//                "Your provider application for " + application.getBusinessName() + " was approved."
-//        );
+        eventPublisher.publishEvent(AccountEvent.forApplication(AccountEventType.PROVIDER_APPLICATION_APPROVED, applicant, application));
 
         return toResponse(application);
     }
+    @Transactional
     public ProviderApplicationResponse rejectApplication(Long id, ReviewApplicationRequest request) {
         logger.info("Rejecting provider application with ID: {}", id);
         ProviderApplication application= applicationRepository.findById(id).orElseThrow(() -> new InformationNotFoundException("Application with id:" + id + " does not exist."));
@@ -175,12 +141,7 @@ public class ProviderApplicationService {
         logger.info("Provider application with ID {} rejected successfully", id);
 
         User applicant = application.getCreatedUser();
-        String notificationMessage = "Your provider application for " + application.getBusinessName() + " was rejected.";
-        if (application.getReviewNote() != null && !application.getReviewNote().isBlank()) {
-            notificationMessage += " Note: " + application.getReviewNote();
-        }
-
-//        notificationService.create(applicant, "provider-application-rejected", notificationMessage);
+        eventPublisher.publishEvent(AccountEvent.forApplication(AccountEventType.PROVIDER_APPLICATION_REJECTED, applicant, application));
 
         return toResponse(application);
     }
