@@ -23,6 +23,12 @@ final class MessageTemplates {
             case BOOKING_REMINDER -> "Reminder: " + title + " starts in " + or(r.timeFrame(), "a short while") + ".";
             case SESSION_CANCELLED -> "The session for " + title + " has been cancelled. Reason: "
                     + or(r.reason(), "unforeseen circumstances") + ".";
+            case NEW_PROVIDER_APPLICATION -> "New provider application from " + or(r.businessName(), "a provider")
+                    + " is waiting for review.";
+            case PROVIDER_APPLICATION_APPROVED -> "Your provider application for " + or(r.businessName(), "your business")
+                    + " was approved.";
+            case PROVIDER_APPLICATION_REJECTED -> "Your provider application for " + or(r.businessName(), "your business")
+                    + " was rejected." + (r.reason() == null || r.reason().isBlank() ? "" : " Note: " + r.reason());
             default -> throw new IllegalArgumentException(r.type() + " is not an in-app notification.");
         };
     }
@@ -62,6 +68,12 @@ final class MessageTemplates {
                             + "City               : " + or(r.city(), "N/A") + "\n"
                             + "Proposed Activities: " + or(r.proposedActivities(), "N/A")
                             + "\n\nPlease log in to review it.\n\nRegards,\nBookNGo System");
+            case PROVIDER_APPLICATION_APPROVED -> new EmailContent("Your BookNGo provider application was approved",
+                    "Hello,\n\nYour provider application for " + or(r.businessName(), "your business")
+                            + " was approved. You can now log in and create activities." + SIGN_OFF);
+            case PROVIDER_APPLICATION_REJECTED -> new EmailContent("Your BookNGo provider application was rejected",
+                    "Hello,\n\nYour provider application for " + or(r.businessName(), "your business")
+                            + " was rejected.\n\nNote: " + or(r.reason(), "No note was given.") + SIGN_OFF);
         };
     }
 

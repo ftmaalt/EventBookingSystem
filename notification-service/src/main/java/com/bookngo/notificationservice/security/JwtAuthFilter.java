@@ -1,6 +1,5 @@
 package com.bookngo.notificationservice.security;
 
-import com.bookngo.bookingservice.security.JwtUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

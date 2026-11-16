@@ -8,7 +8,9 @@ public enum NotificationType {
     SESSION_CANCELLED("session-cancelled", true),
     EMAIL_VERIFICATION("email-verification", false),
     PASSWORD_RESET("password-reset", false),
-    NEW_PROVIDER_APPLICATION("new-provider-application", false);
+    NEW_PROVIDER_APPLICATION("new-provider-application", true),
+    PROVIDER_APPLICATION_APPROVED("provider-application-approved", true),
+    PROVIDER_APPLICATION_REJECTED("provider-application-rejected", true);
 
     private final String code;
     private final boolean inApp;
