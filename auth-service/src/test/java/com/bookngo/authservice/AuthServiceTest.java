@@ -1,22 +1,22 @@
-package com.project.bookngo.service;
+package com.bookngo.authservice;
 
-import com.project.bookngo.exception.InformationExistsException;
-import com.project.bookngo.exception.InvalidCredentials;
-import com.project.bookngo.exception.VerificationRequiredException;
-import com.bookngo.notificationservice.event.model.User;
-import com.bookngo.notificationservice.event.model.enums.UserRole;
-import com.bookngo.notificationservice.event.model.enums.UserStatus;
-import com.bookngo.notificationservice.event.model.request.LoginRequest;
-import com.bookngo.notificationservice.event.model.request.RegisterRequest;
-import com.bookngo.notificationservice.event.model.response.GenericMessageResponse;
-import com.project.bookngo.repository.TokensRepository;
-import com.project.bookngo.repository.UsersRepository;
+import com.bookngo.authservice.exception.InformationExistsException;
+import com.bookngo.authservice.exception.InvalidCredentials;
+import com.bookngo.authservice.exception.VerificationRequiredException;
+import com.bookngo.authservice.model.User;
+import com.bookngo.authservice.model.enums.UserRole;
+import com.bookngo.authservice.model.enums.UserStatus;
+import com.bookngo.authservice.dto.request.LoginRequest;
+import com.bookngo.authservice.dto.request.RegisterRequest;
+import com.bookngo.authservice.dto.response.GenericMessageResponse;
+import com.bookngo.authservice.repository.TokensRepository;
+import com.bookngo.authservice.repository.UsersRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
+import com.bookngo.authservice.service.AuthService;
 import org.junit.jupiter.api.AfterEach;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +24,6 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
-@ActiveProfiles("test")
 class AuthServiceTest {
 
     @Autowired
@@ -57,7 +56,7 @@ class AuthServiceTest {
 
         assertNotNull(response);
 
-        User user = usersRepository.findUserByEmail(email);
+        User user = usersRepository.findUserByEmail(email).orElse(null);
 
         assertNotNull(user);
         assertEquals(email, user.getEmail());
@@ -101,7 +100,7 @@ class AuthServiceTest {
 
         authService.register(request);
 
-        User user = usersRepository.findUserByEmail(email);
+        User user = usersRepository.findUserByEmail(email).orElse(null);
 
         assertNotNull(user);
         assertNotEquals(rawPassword, user.getPasswordHash());
@@ -164,7 +163,7 @@ class AuthServiceTest {
     @AfterEach
     void cleanUp() {
         for (String email : testEmails) {
-            User user = usersRepository.findUserByEmail(email);
+            User user = usersRepository.findUserByEmail(email).orElse(null);
 
             if (user != null) {
                 tokensRepository.deleteAllByUser_Id(user.getId());

@@ -1,27 +1,38 @@
+package com.bookngo.bookingservice.concurrency;
 
-package com.project.bookngo.concurrency;
-
-import com.project.bookngo.exception.BusinessConflictsException;
-import com.bookngo.notificationservice.event.model.request.BookingRequest;
-import com.project.bookngo.security.JwtUtils;
-import com.project.bookngo.security.MyUserDetails;
-
-import java.util.HashSet;
-import java.util.Set;
-import com.project.bookngo.service.event.BookingNotificationEvent;
-import com.project.bookngo.service.event.BookingNotificationType;
+import com.bookngo.bookingservice.dto.request.BookingRequest;
+import com.bookngo.bookingservice.event.BookingEvent;
+import com.bookngo.bookingservice.event.BookingEventType;
+import com.bookngo.bookingservice.exception.BusinessConflictsException;
+import com.bookngo.bookingservice.model.Bookings;
+import com.bookngo.bookingservice.model.Sessions;
+import com.bookngo.bookingservice.model.WaitlistEntry;
+import com.bookngo.bookingservice.model.enums.BookingStatus;
+import com.bookngo.bookingservice.model.enums.BookingType;
+import com.bookngo.bookingservice.model.enums.SessionStatus;
+import com.bookngo.bookingservice.model.enums.WaitListStatus;
+import com.bookngo.bookingservice.repository.BookingsRepository;
+import com.bookngo.bookingservice.repository.SessionsRepository;
+import com.bookngo.bookingservice.repository.WaitingListRepository;
+import com.bookngo.bookingservice.security.AuthenticatedUser;
+import com.bookngo.bookingservice.service.BookingsService;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -33,25 +44,26 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+
 /**
- * Integration tests for concurrency, race-condition prevention,
- * transaction-safe waitlist allocation, concurrent REST requests, and
- * asynchronous booking notifications using a real PostgreSQL test database.
- *
- * The tests coordinate simultaneous operations with ExecutorService and
- * CountDownLatch; they verify the resulting database state rather than
- * relying only on returned service responses.
+ * Project 3 concurrency guarantees, run against a real PostgreSQL database:
+ * pessimistic locking of the session row, FIFO waitlist allocation, and
+ * booking events published to Kafka only after the transaction commits.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("test")
 class BookingConcurrencyIntegrationTest {
+
+    private static final long LATCH_TIMEOUT_SECONDS = 10;
+    private static final long RESULT_TIMEOUT_SECONDS = 20;
+    private static final AtomicLong USER_IDS = new AtomicLong(System.currentTimeMillis() % 1_000_000_000L * 10);
 
     @Autowired
     private BookingsService bookingsService;
@@ -66,119 +78,67 @@ class BookingConcurrencyIntegrationTest {
     private SessionsRepository sessionsRepository;
 
     @Autowired
-    private UsersRepository usersRepository;
-
-    @Autowired
-    private CategoryRepository categoryRepository;
-
-    @Autowired
-    private LocationRepository locationRepository;
-
-    @Autowired
-    private ActivitiesRepository activitiesRepository;
-
-    @Autowired
-    private TokensRepository tokensRepository;
-
-    @Autowired
-    private JwtUtils jwtUtils;
-
-    @Autowired
     private ApplicationEventPublisher eventPublisher;
 
     @Autowired
     private PlatformTransactionManager transactionManager;
 
     @MockitoBean
-    private EmailService emailService;
+    private KafkaTemplate<String, Object> kafkaTemplate;
 
-    @MockitoBean
-    private NotificationService notificationService;
+    @Value("${app.kafka.topics.booking-events}")
+    private String bookingTopic;
 
-    @MockitoBean
-    private ReminderService reminderService;
-
-    private Long sessionId;
-    private String firstEmail;
-    private String secondEmail;
-    private final Set<String> testUserEmails = new HashSet<>();
-    private Long activityId;
-    private Long locationId;
-    private Long categoryId;
-
-    private static final long LATCH_TIMEOUT_SECONDS = 10;
-    private static final long RESULT_TIMEOUT_SECONDS = 20;
+    @Value("${app.jwt.secret}")
+    private String jwtSecret;
 
     @LocalServerPort
     private int port;
 
+    private Long sessionId;
+    private AuthenticatedUser customerA;
+    private AuthenticatedUser customerB;
 
     @BeforeEach
     void setUp() {
-        String unique = UUID.randomUUID().toString().substring(0, 8);
+        when(kafkaTemplate.send(anyString(), anyString(), any())).thenReturn(new CompletableFuture<>());
 
-        User provider = createUser("Provider", "provider-" + unique + "@test.com", UserRole.PROVIDER);
-
-        User customerA = createUser("Customer A", "a-" + unique + "@test.com", UserRole.USER);
-
-        User customerB = createUser("Customer B", "b-" + unique + "@test.com", UserRole.USER);
-
-        firstEmail = customerA.getEmail();
-        secondEmail = customerB.getEmail();
-
-        Category category = new Category();
-        category.setCategoryName("Concurrency-" + unique);
-        category.setDescription("Concurrency test category");
-        category.setActive(true);
-        category = categoryRepository.save(category);
-        categoryId = category.getId();
-
-        Location location = new Location();
-        location.setName("Test Location");
-        location.setAddress("Test Road");
-        location.setCity("Manama");
-        location.setLatitude(26.2235);
-        location.setLongitude(50.5876);
-        location.setActive(true);
-        location.setProvider(provider);
-        location = locationRepository.save(location);
-        locationId = location.getId();
-
-        Activities activity = new Activities();
-        activity.setTitle("Concurrency Test Activity");
-        activity.setDescription("Test activity for booking concurrency");
-        activity.setPricePerPerson(new BigDecimal("10.000"));
-        activity.setDurationMinutes(60);
-        activity.setStatus(ActivityStatus.ACTIVE);
-        activity.setProvider(provider);
-        activity.setCategory(category);
-        activity.setLocation(location);
-        activity = activitiesRepository.save(activity);
-        activityId = activity.getId();
+        customerA = newUser("a");
+        customerB = newUser("b");
 
         Sessions session = new Sessions();
-        session.setActivity(activity);
+        session.setActivityId(1L);
+        session.setActivityTitle("Concurrency Test Activity");
+        session.setProviderId(1L);
+        session.setPricePerPerson(new BigDecimal("10.000"));
         session.setStartTime(LocalDateTime.now().plusDays(7));
         session.setEndTime(LocalDateTime.now().plusDays(7).plusHours(1));
         session.setCapacity(1);
         session.setSpotsLeft(1);
         session.setStatus(SessionStatus.SCHEDULED);
-
         sessionId = sessionsRepository.saveAndFlush(session).getId();
     }
 
-    private User createUser(String name, String email, UserRole role) {
-        User user = new User();
-        user.setFullName(name);
-        user.setEmail(email);
-        user.setPasswordHash("integration-test-only");
-        user.setRole(role);
-        user.setStatus(UserStatus.ACTIVE);
-        user.setMustChangePassword(false);
-        user.setStrikeCount((short) 0);
-        user.setConsecutiveViolations((short) 0);
-        testUserEmails.add(email);
-        return usersRepository.save(user);
+    private AuthenticatedUser newUser(String name) {
+        long id = USER_IDS.incrementAndGet();
+        return new AuthenticatedUser(id, name + "-" + id + "@test.com", "USER");
+    }
+
+    private void authenticate(AuthenticatedUser user) {
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                user, null, List.of(new SimpleGrantedAuthority("ROLE_" + user.role()))));
+    }
+
+    private Sessions session() {
+        return sessionsRepository.findById(sessionId).orElseThrow();
+    }
+
+    private void markSessionFull(int capacity) {
+        Sessions session = session();
+        session.setCapacity(capacity);
+        session.setSpotsLeft(0);
+        session.setStatus(SessionStatus.FULL);
+        sessionsRepository.saveAndFlush(session);
     }
 
     private BookingRequest createRequest() {
@@ -189,104 +149,95 @@ class BookingConcurrencyIntegrationTest {
         return request;
     }
 
-    private boolean attemptBooking(String email, CountDownLatch ready, CountDownLatch start) throws Exception {
-        var auth = new UsernamePasswordAuthenticationToken(email, null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
-        SecurityContextHolder.getContext().setAuthentication(auth);
+    private Bookings createConfirmedBooking(AuthenticatedUser user) {
+        Bookings booking = new Bookings();
+        booking.setUserId(user.id());
+        booking.setUserEmail(user.email());
+        booking.setSession(session());
+        booking.setParticipants(1);
+        booking.setBookingType(BookingType.INDIVIDUAL);
+        booking.setStatus(BookingStatus.CONFIRMED);
+        booking.setSubtotal(new BigDecimal("10.000"));
+        booking.setDiscountPercent(BigDecimal.ZERO);
+        booking.setTotalPrice(new BigDecimal("10.000"));
+        booking.setCreatedBy(user.email());
+        booking.setUpdatedBy(user.email());
+        return bookingsRepository.saveAndFlush(booking);
+    }
 
+    private WaitlistEntry createWaitingEntry(AuthenticatedUser user) {
+        WaitlistEntry entry = new WaitlistEntry();
+        entry.setUserId(user.id());
+        entry.setUserEmail(user.email());
+        entry.setSession(session());
+        entry.setStatus(WaitListStatus.WAITING);
+        return waitingListRepository.saveAndFlush(entry);
+    }
+
+    private boolean attemptBooking(AuthenticatedUser user, CountDownLatch ready, CountDownLatch start) throws Exception {
+        authenticate(user);
         try {
             ready.countDown();
-
             if (!start.await(LATCH_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
                 throw new IllegalStateException("Start signal timed out");
             }
             bookingsService.createBooking(createRequest());
             return true;
-
         } catch (BusinessConflictsException | ObjectOptimisticLockingFailureException ex) {
             return false;
-
         } finally {
             SecurityContextHolder.clearContext();
         }
     }
 
-
-    private Bookings createConfirmedBooking(User user, Sessions session) {
-        Bookings booking = new Bookings();
-
-        booking.setUser(user);
-        booking.setSession(session);
-        booking.setParticipants(1);
-        booking.setBookingType(BookingType.INDIVIDUAL);
-        booking.setStatus(BookingStatus.CONFIRMED);
-        booking.setPaymentStatus(PaymentStatus.PENDING_PAYMENT);
-
-        booking.setSubtotal(new BigDecimal("10.000"));
-        booking.setDiscountPercent(BigDecimal.ZERO);
-        booking.setTotalPrice(new BigDecimal("10.000"));
-
-        booking.setCreatedBy(user.getEmail());
-        booking.setUpdatedBy(user.getEmail());
-
-        return bookingsRepository.saveAndFlush(booking);
-    }
-
-    private WaitlistEntry createWaitingEntry(User user, Sessions session) {
-        WaitlistEntry entry = new WaitlistEntry();
-
-        entry.setUser(user);
-        entry.setSession(session);
-        entry.setStatus(WaitListStatus.WAITING);
-
-        return waitingListRepository.saveAndFlush(entry);
-    }
-
-    private String attemptCancellation(String email, Long bookingId, CountDownLatch ready, CountDownLatch start) throws Exception {
-
-        var auth = new UsernamePasswordAuthenticationToken(email, null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
-        SecurityContextHolder.getContext().setAuthentication(auth);
-
+    private String attemptCancellation(AuthenticatedUser user, Long bookingId, CountDownLatch ready, CountDownLatch start) throws Exception {
+        authenticate(user);
         try {
             ready.countDown();
-
             if (!start.await(LATCH_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
                 throw new IllegalStateException("Start signal timed out");
             }
-
             return bookingsService.cancelBooking(bookingId);
-
         } finally {
             SecurityContextHolder.clearContext();
         }
     }
 
-    private boolean attemptDuplicateCancellation(String email, Long bookingId, CountDownLatch ready, CountDownLatch start) throws Exception {
+    private boolean attemptDuplicateCancellation(AuthenticatedUser user, Long bookingId, CountDownLatch ready, CountDownLatch start) throws Exception {
         try {
-            attemptCancellation(email, bookingId, ready, start);
+            attemptCancellation(user, bookingId, ready, start);
             return true;
-
         } catch (BusinessConflictsException ex) {
             return false;
         }
     }
 
-    private HttpResponse<String> sendHttpBooking(
-            HttpClient client,
-            String token,
-            CountDownLatch ready,
-            CountDownLatch start
-    ) throws Exception {
+    private void cancelAs(AuthenticatedUser user, Long bookingId) {
+        authenticate(user);
+        try {
+            bookingsService.cancelBooking(bookingId);
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
 
+    private String tokenFor(AuthenticatedUser user) {
+        return Jwts.builder()
+                .subject(user.email())
+                .claim("uid", user.id())
+                .claim("role", user.role())
+                .expiration(new Date(System.currentTimeMillis() + 3_600_000))
+                .signWith(Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret)))
+                .compact();
+    }
+
+    private HttpResponse<String> sendHttpBooking(HttpClient client, String token, CountDownLatch ready, CountDownLatch start) throws Exception {
         String body = """
-                {"sessionId": %d,"participants": 1,"bookingType": "INDIVIDUAL"
-                    }""".formatted(sessionId);
-
+                {"sessionId": %d, "participants": 1, "bookingType": "INDIVIDUAL"}""".formatted(sessionId);
         ready.countDown();
-
         if (!start.await(LATCH_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
             throw new IllegalStateException("Start signal timed out");
         }
-
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:" + port + "/api/bookings"))
                 .header("Authorization", "Bearer " + token)
@@ -294,610 +245,313 @@ class BookingConcurrencyIntegrationTest {
                 .timeout(Duration.ofSeconds(15))
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build();
-
         return client.send(request, HttpResponse.BodyHandlers.ofString());
     }
 
+    private List<BookingEvent> publishedEvents() {
+        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+        verify(kafkaTemplate, atLeast(0)).send(eq(bookingTopic), anyString(), captor.capture());
+        return captor.getAllValues().stream().map(BookingEvent.class::cast).toList();
+    }
+
+    private long eventCount(BookingEventType type, Long userId) {
+        return publishedEvents().stream().filter(e -> e.eventType() == type && e.userId().equals(userId)).count();
+    }
+
+    private static void shutdown(ExecutorService executor, CountDownLatch start) throws InterruptedException {
+        start.countDown();
+        executor.shutdownNow();
+        executor.awaitTermination(5, TimeUnit.SECONDS);
+    }
 
     /**
-     * Requirement: Prevent race conditions and overbooking with thread-safe operations.
-     * Given one available seat and two customers, when two ExecutorService threads
-     * attempt to book simultaneously, then exactly one succeeds and PostgreSQL
-     * contains one confirmed booking with zero seats remaining.
-     * Demonstrates pessimistic database locking and CountDownLatch coordination.
+     * Two threads book the last seat at the same time: exactly one succeeds,
+     * and the database holds one confirmed booking with no seats left.
      */
     @Test
     void onlyOneUserCanBookTheLastSeat() throws Exception {
-
         ExecutorService executor = Executors.newFixedThreadPool(2);
-
         CountDownLatch ready = new CountDownLatch(2);
         CountDownLatch start = new CountDownLatch(1);
-
         try {
-            Future<Boolean> first = executor.submit(
-                    () -> attemptBooking(firstEmail, ready, start));
-
-            Future<Boolean> second = executor.submit(
-                    () -> attemptBooking(secondEmail, ready, start));
-
+            Future<Boolean> first = executor.submit(() -> attemptBooking(customerA, ready, start));
+            Future<Boolean> second = executor.submit(() -> attemptBooking(customerB, ready, start));
             assertTrue(ready.await(LATCH_TIMEOUT_SECONDS, TimeUnit.SECONDS));
             start.countDown();
 
-            boolean firstSucceeded = first.get(RESULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            boolean secondSucceeded = second.get(RESULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            assertNotEquals(first.get(RESULT_TIMEOUT_SECONDS, TimeUnit.SECONDS),
+                    second.get(RESULT_TIMEOUT_SECONDS, TimeUnit.SECONDS));
 
-            assertNotEquals(firstSucceeded, secondSucceeded);
-
-            Sessions savedSession = sessionsRepository.findById(sessionId).orElseThrow();
-
+            Sessions savedSession = session();
             assertEquals(0, savedSession.getSpotsLeft());
             assertEquals(SessionStatus.FULL, savedSession.getStatus());
 
-            List<Bookings> savedBookings = bookingsRepository.findBySessionId(sessionId);
-
+            List<Bookings> savedBookings = bookingsRepository.findBySession_Id(sessionId);
             assertEquals(1, savedBookings.size());
-            assertEquals(1, savedBookings.get(0).getParticipants());
-            assertEquals(
-                    BookingStatus.CONFIRMED,
-                    savedBookings.get(0).getStatus());
-
+            assertEquals(BookingStatus.CONFIRMED, savedBookings.get(0).getStatus());
+            assertEquals(1, publishedEvents().size());
         } finally {
-            start.countDown();
-            executor.shutdownNow();
-            executor.awaitTermination(5, TimeUnit.SECONDS);
+            shutdown(executor, start);
         }
     }
 
     /**
-     * Requirement: Handle multiple concurrent cancellations and waitlist allocation safely.
-     * Given two occupied seats and two FIFO waitlist entries, when both customers
-     * cancel in parallel, then each waiting customer receives one confirmed booking.
-     * Verifies that no seats are lost, duplicated, or overallocated.
+     * Two customers cancel in parallel while two customers wait: each waiting
+     * customer receives one seat, in FIFO order, with no seat lost or duplicated.
      */
     @Test
     void simultaneousCancellationsAllocateWaitlist() throws Exception {
-        Sessions session = sessionsRepository.findById(sessionId)
-                .orElseThrow();
+        markSessionFull(2);
+        Bookings bookingA = createConfirmedBooking(customerA);
+        Bookings bookingB = createConfirmedBooking(customerB);
 
-        session.setCapacity(2);
-        session.setSpotsLeft(0);
-        session.setStatus(SessionStatus.FULL);
-        sessionsRepository.saveAndFlush(session);
-
-        User customerA = usersRepository.findUserByEmail(firstEmail);
-        User customerB = usersRepository.findUserByEmail(secondEmail);
-
-        Bookings bookingA = createConfirmedBooking(customerA, session);
-        Bookings bookingB = createConfirmedBooking(customerB, session);
-
-        String suffix = UUID.randomUUID().toString().substring(0, 8);
-
-        User sara = createUser(
-                "Sara", "sara-" + suffix + "@test.com", UserRole.USER
-        );
-
-        User ali = createUser(
-                "Ali", "ali-" + suffix + "@test.com", UserRole.USER
-        );
-
-        WaitlistEntry saraEntry = createWaitingEntry(sara, session);
-        WaitlistEntry aliEntry = createWaitingEntry(ali, session);
-
-        assertTrue(saraEntry.getEntryId() < aliEntry.getEntryId(), "Sara must join the waitlist before ali");
+        AuthenticatedUser sara = newUser("sara");
+        AuthenticatedUser ali = newUser("ali");
+        WaitlistEntry saraEntry = createWaitingEntry(sara);
+        WaitlistEntry aliEntry = createWaitingEntry(ali);
+        assertTrue(saraEntry.getEntryId() < aliEntry.getEntryId(), "Sara must join the waitlist before Ali");
 
         ExecutorService executor = Executors.newFixedThreadPool(2);
-
         CountDownLatch ready = new CountDownLatch(2);
         CountDownLatch start = new CountDownLatch(1);
-
         try {
-            Future<String> first = executor.submit(
-                    () -> attemptCancellation(firstEmail, bookingA.getBookingId(), ready, start));
-
-            Future<String> second = executor.submit(
-                    () -> attemptCancellation(secondEmail, bookingB.getBookingId(), ready, start));
+            Future<String> first = executor.submit(() -> attemptCancellation(customerA, bookingA.getBookingId(), ready, start));
+            Future<String> second = executor.submit(() -> attemptCancellation(customerB, bookingB.getBookingId(), ready, start));
             assertTrue(ready.await(LATCH_TIMEOUT_SECONDS, TimeUnit.SECONDS));
             start.countDown();
-
             first.get(RESULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             second.get(RESULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
+            assertAll("Original bookings",
+                    () -> assertEquals(BookingStatus.CANCELLED, bookingsRepository.findById(bookingA.getBookingId()).orElseThrow().getStatus()),
+                    () -> assertEquals(BookingStatus.CANCELLED, bookingsRepository.findById(bookingB.getBookingId()).orElseThrow().getStatus()));
 
-            Bookings cancelledA = bookingsRepository.findById(bookingA.getBookingId()).orElseThrow();
-            Bookings cancelledB = bookingsRepository.findById(bookingB.getBookingId()).orElseThrow();
-
-            assertAll("Original Bookings", () -> assertEquals(BookingStatus.CANCELLED, cancelledA.getStatus()),
-                    () -> assertEquals(BookingStatus.CANCELLED, cancelledB.getStatus()));
-
-            WaitlistEntry updatedSara = waitingListRepository.findById(saraEntry.getEntryId()).orElseThrow();
-            WaitlistEntry updatedAli = waitingListRepository.findById(aliEntry.getEntryId()).orElseThrow();
-
-            assertAll("Waitlist Entries",
-                    () -> assertEquals(WaitListStatus.BOOKED, updatedSara.getStatus()),
-                    () -> assertEquals(WaitListStatus.BOOKED, updatedAli.getStatus()));
+            assertAll("Waitlist entries",
+                    () -> assertEquals(WaitListStatus.BOOKED, waitingListRepository.findById(saraEntry.getEntryId()).orElseThrow().getStatus()),
+                    () -> assertEquals(WaitListStatus.BOOKED, waitingListRepository.findById(aliEntry.getEntryId()).orElseThrow().getStatus()));
 
             assertAll("Automatic waitlist bookings",
-                    () -> assertTrue(bookingsRepository.findByUserIdAndSessionIdAndStatus(sara.getId(),
-                                    sessionId,
-                                    BookingStatus.CONFIRMED).isPresent(),
-                            "Sara should have a confirmed booking"),
+                    () -> assertTrue(bookingsRepository.findByUserIdAndSession_IdAndStatus(sara.id(), sessionId, BookingStatus.CONFIRMED).isPresent()),
+                    () -> assertTrue(bookingsRepository.findByUserIdAndSession_IdAndStatus(ali.id(), sessionId, BookingStatus.CONFIRMED).isPresent()));
 
-                    () -> assertTrue(bookingsRepository.findByUserIdAndSessionIdAndStatus(ali.getId(),
-                                    sessionId, BookingStatus.CONFIRMED).isPresent(),
-                            "Ali should have a confirmed booking"
-                    ));
-            List<Bookings> savedBookings = bookingsRepository.findBySessionId(sessionId);
-
-            long confirmedCount = savedBookings.stream().filter(b -> b.getStatus() == BookingStatus.CONFIRMED).count();
-
-            long cancelledCount = savedBookings.stream().filter(b -> b.getStatus() == BookingStatus.CANCELLED).count();
-
+            List<Bookings> savedBookings = bookingsRepository.findBySession_Id(sessionId);
             assertAll("Booking consistency",
                     () -> assertEquals(4, savedBookings.size()),
-                    () -> assertEquals(2L, confirmedCount),
-                    () -> assertEquals(2L, cancelledCount));
+                    () -> assertEquals(2L, savedBookings.stream().filter(b -> b.getStatus() == BookingStatus.CONFIRMED).count()),
+                    () -> assertEquals(2L, savedBookings.stream().filter(b -> b.getStatus() == BookingStatus.CANCELLED).count()));
 
-            Sessions savedSession = sessionsRepository.findById(sessionId)
-                    .orElseThrow();
-
+            Sessions savedSession = session();
             assertAll("Session capacity",
                     () -> assertEquals(2, savedSession.getCapacity()),
                     () -> assertEquals(0, savedSession.getSpotsLeft()),
                     () -> assertEquals(SessionStatus.FULL, savedSession.getStatus()));
         } finally {
-            start.countDown();
-            executor.shutdownNow();
-            executor.awaitTermination(5, TimeUnit.SECONDS);
+            shutdown(executor, start);
         }
     }
+
     /**
-     * Requirement: Prevent double cancellation from corrupting shared session capacity.
-     * Given one confirmed booking, when two threads cancel that same booking
-     * simultaneously, then only one request succeeds and exactly one seat is restored.
-     * Demonstrates safe concurrent state transitions and database consistency.
+     * A cancellation on a full session gives the seat to the first waiting
+     * customer only; the second keeps waiting.
      */
     @Test
     void cancellationAllocatesSeatToFirstWaitlistedUser() {
-        Sessions session = sessionsRepository.findById(sessionId).orElseThrow();
-        User customerA = usersRepository.findUserByEmail(firstEmail);
-
-        Bookings bookingA = createConfirmedBooking(customerA, session);
-        session.setSpotsLeft(0);
-        session.setStatus(SessionStatus.FULL);
-        sessionsRepository.saveAndFlush(session);
-
-        String suffix = UUID.randomUUID().toString().substring(0, 8);
-
-        User sara = createUser(
-                "Sara", "sara-" + suffix + "@test.com", UserRole.USER
-        );
-
-        User ali = createUser(
-                "Ali", "ali-" + suffix + "@test.com", UserRole.USER
-        );
-
-        WaitlistEntry saraEntry = createWaitingEntry(sara, session);
-
-        WaitlistEntry aliEntry = createWaitingEntry(ali, session);
-
+        markSessionFull(1);
+        Bookings bookingA = createConfirmedBooking(customerA);
+        AuthenticatedUser sara = newUser("sara");
+        AuthenticatedUser ali = newUser("ali");
+        WaitlistEntry saraEntry = createWaitingEntry(sara);
+        WaitlistEntry aliEntry = createWaitingEntry(ali);
         assertTrue(saraEntry.getEntryId() < aliEntry.getEntryId());
 
-        var auth = new UsernamePasswordAuthenticationToken(
-                firstEmail,
-                null,
-                List.of(new SimpleGrantedAuthority("ROLE_USER"))
-        );
+        cancelAs(customerA, bookingA.getBookingId());
 
-        SecurityContextHolder.getContext().setAuthentication(auth);
+        assertEquals(WaitListStatus.BOOKED, waitingListRepository.findById(saraEntry.getEntryId()).orElseThrow().getStatus());
+        assertEquals(WaitListStatus.WAITING, waitingListRepository.findById(aliEntry.getEntryId()).orElseThrow().getStatus());
+        assertTrue(bookingsRepository.findByUserIdAndSession_IdAndStatus(sara.id(), sessionId, BookingStatus.CONFIRMED).isPresent());
+        assertTrue(bookingsRepository.findByUserIdAndSession_IdAndStatus(ali.id(), sessionId, BookingStatus.CONFIRMED).isEmpty());
 
-        try {
-            bookingsService.cancelBooking(bookingA.getBookingId());
-        } finally {
-            SecurityContextHolder.clearContext();
-        }
-
-        WaitlistEntry updatedSara = waitingListRepository.findById(saraEntry.getEntryId()).orElseThrow();
-        WaitlistEntry updatedAli = waitingListRepository.findById(aliEntry.getEntryId()).orElseThrow();
-
-        assertEquals(WaitListStatus.BOOKED, updatedSara.getStatus());
-
-        assertEquals(WaitListStatus.WAITING, updatedAli.getStatus());
-
-        assertTrue(bookingsRepository.findByUserIdAndSessionIdAndStatus(sara.getId(), sessionId, BookingStatus.CONFIRMED).isPresent());
-        assertTrue(bookingsRepository.findByUserIdAndSessionIdAndStatus(ali.getId(), sessionId, BookingStatus.CONFIRMED).isEmpty());
-
-        Sessions savedSession = sessionsRepository.findById(sessionId).orElseThrow();
-
+        Sessions savedSession = session();
         assertEquals(0, savedSession.getSpotsLeft());
         assertEquals(SessionStatus.FULL, savedSession.getStatus());
-
-        Bookings cancelledBooking = bookingsRepository.findById(bookingA.getBookingId()).orElseThrow();
-
-        assertEquals(BookingStatus.CANCELLED, cancelledBooking.getStatus());
-
-
+        assertEquals(BookingStatus.CANCELLED, bookingsRepository.findById(bookingA.getBookingId()).orElseThrow().getStatus());
     }
+
     /**
-     * Requirement: Prevent double cancellation from corrupting shared session capacity.
-     * Given one confirmed booking, when two threads cancel that same booking
-     * simultaneously, then only one request succeeds and exactly one seat is restored.
-     * Demonstrates safe concurrent state transitions and database consistency.
+     * Two threads cancel the same booking: only one succeeds and exactly one
+     * seat is restored.
      */
     @Test
-    void concurrentCancellationOfSameBookingRestoresSeatOnlyOnce()
-            throws Exception {
-        Sessions session = sessionsRepository.findById(sessionId).orElseThrow();
-        User customer = usersRepository.findUserByEmail(firstEmail);
-
-        Bookings booking = createConfirmedBooking(customer, session);
-        session.setSpotsLeft(0);
-        session.setStatus(SessionStatus.FULL);
-        sessionsRepository.saveAndFlush(session);
-
+    void concurrentCancellationOfSameBookingRestoresSeatOnlyOnce() throws Exception {
+        markSessionFull(1);
+        Bookings booking = createConfirmedBooking(customerA);
 
         ExecutorService executor = Executors.newFixedThreadPool(2);
-
         CountDownLatch ready = new CountDownLatch(2);
         CountDownLatch start = new CountDownLatch(1);
-
         try {
-            Future<Boolean> first = executor.submit(() -> attemptDuplicateCancellation(firstEmail, booking.getBookingId(), ready, start));
-            Future<Boolean> second = executor.submit(() -> attemptDuplicateCancellation(firstEmail, booking.getBookingId(), ready, start));
-
+            Future<Boolean> first = executor.submit(() -> attemptDuplicateCancellation(customerA, booking.getBookingId(), ready, start));
+            Future<Boolean> second = executor.submit(() -> attemptDuplicateCancellation(customerA, booking.getBookingId(), ready, start));
             assertTrue(ready.await(LATCH_TIMEOUT_SECONDS, TimeUnit.SECONDS));
             start.countDown();
 
-            boolean firstSucceeded = first.get(RESULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            assertNotEquals(first.get(RESULT_TIMEOUT_SECONDS, TimeUnit.SECONDS),
+                    second.get(RESULT_TIMEOUT_SECONDS, TimeUnit.SECONDS));
 
-            boolean secondSucceeded = second.get(RESULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-
-            assertNotEquals(firstSucceeded, secondSucceeded);
-            Bookings updatedBooking = bookingsRepository.findById(booking.getBookingId()).orElseThrow();
-
-            Sessions updatedSession = sessionsRepository.findById(sessionId).orElseThrow();
-
+            Sessions updatedSession = session();
             assertAll("Duplicate cancellation consistency",
-                    () -> assertEquals(BookingStatus.CANCELLED, updatedBooking.getStatus()),
+                    () -> assertEquals(BookingStatus.CANCELLED, bookingsRepository.findById(booking.getBookingId()).orElseThrow().getStatus()),
                     () -> assertEquals(1, updatedSession.getSpotsLeft()),
                     () -> assertEquals(1, updatedSession.getCapacity()),
                     () -> assertEquals(SessionStatus.SCHEDULED, updatedSession.getStatus()),
-                    () -> assertEquals(1, bookingsRepository.findBySessionId(sessionId).size())
-
-            );
+                    () -> assertEquals(1, bookingsRepository.findBySession_Id(sessionId).size()),
+                    () -> assertEquals(1L, eventCount(BookingEventType.BOOKING_CANCELLED, customerA.id())));
         } finally {
-            start.countDown();
-            executor.shutdownNow();
-            executor.awaitTermination(5, TimeUnit.SECONDS);
+            shutdown(executor, start);
         }
     }
+
     /**
-     * Requirement: Demonstrate real concurrent REST requests and conflict handling.
-     * Given two authenticated users and one remaining seat, when both send
-     * POST /api/bookings at the same time, then the API returns one HTTP 201
-     * and one HTTP 409 without creating a duplicate or overbooked reservation.
-     * Exercises the HTTP, JWT security, service, and PostgreSQL layers together.
+     * Two authenticated users POST /api/bookings for the last seat at the same
+     * time: the API answers one 201 and one 409, through the JWT filter,
+     * controller, service and PostgreSQL layers.
      */
     @Test
     void concurrentHttpBookingsAllowOnlyOneReservation() throws Exception {
-        User customerA = usersRepository.findUserByEmail(firstEmail);
-        User customerB = usersRepository.findUserByEmail(secondEmail);
-
-        String tokenA = jwtUtils.generateJwtToken(new MyUserDetails(customerA));
-        String tokenB = jwtUtils.generateJwtToken(new MyUserDetails(customerB));
-
+        String tokenA = tokenFor(customerA);
+        String tokenB = tokenFor(customerB);
         HttpClient client = HttpClient.newHttpClient();
 
         ExecutorService executor = Executors.newFixedThreadPool(2);
-
         CountDownLatch ready = new CountDownLatch(2);
         CountDownLatch start = new CountDownLatch(1);
-
         try {
-            Future<HttpResponse<String>> first = executor.submit(
-                    () -> sendHttpBooking(client, tokenA, ready, start)
-            );
-
-            Future<HttpResponse<String>> second = executor.submit(
-                    () -> sendHttpBooking(client, tokenB, ready, start)
-            );
-
+            Future<HttpResponse<String>> first = executor.submit(() -> sendHttpBooking(client, tokenA, ready, start));
+            Future<HttpResponse<String>> second = executor.submit(() -> sendHttpBooking(client, tokenB, ready, start));
             assertTrue(ready.await(LATCH_TIMEOUT_SECONDS, TimeUnit.SECONDS));
             start.countDown();
 
-            HttpResponse<String> responseA =
-                    first.get(RESULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            HttpResponse<String> responseA = first.get(RESULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            HttpResponse<String> responseB = second.get(RESULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
-            HttpResponse<String> responseB =
-                    second.get(RESULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-
-            System.out.println("Customer A: HTTP " + responseA.statusCode());
-            System.out.println("Customer B: HTTP " + responseB.statusCode());
-
-            List<Integer> statuses = List.of(
-                    responseA.statusCode(),
-                    responseB.statusCode()
-            ).stream().sorted().toList();
-
+            List<Integer> statuses = List.of(responseA.statusCode(), responseB.statusCode()).stream().sorted().toList();
             assertEquals(List.of(201, 409), statuses, "Responses: A=" + responseA.body() + " B=" + responseB.body());
 
-            List<Bookings> bookings =
-                    bookingsRepository.findBySessionId(sessionId);
-
-            long confirmedCount = bookings.stream().filter(b -> b.getStatus() == BookingStatus.CONFIRMED).count();
-
+            List<Bookings> bookings = bookingsRepository.findBySession_Id(sessionId);
             assertEquals(1, bookings.size());
-            assertEquals(1L, confirmedCount);
+            assertEquals(BookingStatus.CONFIRMED, bookings.get(0).getStatus());
 
-            Sessions savedSession = sessionsRepository
-                    .findById(sessionId)
-                    .orElseThrow();
-
+            Sessions savedSession = session();
             assertEquals(1, savedSession.getCapacity());
             assertEquals(0, savedSession.getSpotsLeft());
             assertEquals(SessionStatus.FULL, savedSession.getStatus());
-
         } finally {
-            start.countDown();
-            executor.shutdownNow();
-            executor.awaitTermination(5, TimeUnit.SECONDS);
+            shutdown(executor, start);
         }
     }
+
     /**
-     * Requirement: Keep asynchronous side effects consistent with database transactions.
-     * Given a booking notification event published inside a transaction, when
-     * that transaction rolls back, then the booking is not persisted and no
-     * confirmation email is sent. Verifies AFTER_COMMIT event handling.
+     * A booking event raised inside a transaction that rolls back is never
+     * published, and the booking is not persisted.
      */
     @Test
-    void rolledBackBookingDoesNotSendEmail() {
-        TransactionTemplate transaction = new TransactionTemplate(transactionManager);
-
-        Long bookingId = transaction.execute(status -> {
-            User customer = usersRepository.findUserByEmail(firstEmail);
-
-            Sessions session = sessionsRepository.findById(sessionId).orElseThrow();
-
-            Bookings booking = createConfirmedBooking(customer, session);
-
-            eventPublisher.publishEvent(new BookingNotificationEvent(
-                    booking.getBookingId(), BookingNotificationType.BOOKING_CONFIRMED));
-
+    void rolledBackBookingDoesNotPublishEvent() {
+        Long bookingId = new TransactionTemplate(transactionManager).execute(status -> {
+            Bookings booking = createConfirmedBooking(customerA);
+            eventPublisher.publishEvent(BookingEvent.of(booking, BookingEventType.BOOKING_CONFIRMED));
             status.setRollbackOnly();
             return booking.getBookingId();
         });
+
         assertNotNull(bookingId);
-
         assertTrue(bookingsRepository.findById(bookingId).isEmpty(), "Booking should not exist after rollback");
-
-        verify(emailService, after(1000).never()).sendBookingVerifiedEmail(eq(firstEmail), any(Bookings.class));
+        verify(kafkaTemplate, after(1000).never()).send(anyString(), anyString(), any());
     }
+
     /**
-     * Requirement: Process booking email notifications asynchronously after commit.
-     * Given a booking event published inside a transaction, when the transaction
-     * commits successfully, then exactly one confirmation email is dispatched.
-     * Verifies that no email is sent while the transaction is still open.
+     * A booking event is published to Kafka exactly once, and only after the
+     * transaction commits.
      */
     @Test
-    void committedBookingSendsEmailAfterCommit() {
-        TransactionTemplate transaction = new TransactionTemplate(transactionManager);
-
-        Long bookingId = transaction.execute(status -> {
-            User customer = usersRepository.findUserByEmail(firstEmail);
-
-            Sessions session = sessionsRepository.findById(sessionId).orElseThrow();
-
-            Bookings booking = createConfirmedBooking(customer, session);
-
-            eventPublisher.publishEvent(new BookingNotificationEvent(
-                    booking.getBookingId(), BookingNotificationType.BOOKING_CONFIRMED));
-
-            verifyNoInteractions(emailService);
-
+    void committedBookingPublishesEventAfterCommit() {
+        Long bookingId = new TransactionTemplate(transactionManager).execute(status -> {
+            Bookings booking = createConfirmedBooking(customerA);
+            eventPublisher.publishEvent(BookingEvent.of(booking, BookingEventType.BOOKING_CONFIRMED));
+            verify(kafkaTemplate, never()).send(anyString(), anyString(), any());
             return booking.getBookingId();
         });
 
         assertNotNull(bookingId);
-
         assertTrue(bookingsRepository.findById(bookingId).isPresent());
-
-        verify(emailService, after(5000).times(1)).sendBookingVerifiedEmail(eq(firstEmail), argThat(booking -> bookingId.equals(booking.getBookingId())));
+        verify(kafkaTemplate, timeout(5000).times(1)).send(eq(bookingTopic), eq(String.valueOf(bookingId)),
+                argThat(e -> e instanceof BookingEvent event && event.eventType() == BookingEventType.BOOKING_CONFIRMED));
     }
 
     /**
-     * Requirement: Notify customers of successful booking cancellations.
-     * Given a confirmed booking, when cancellation commits, then the booking
-     * becomes CANCELLED, its seat is restored, and the cancellation email is sent.
-     * Verifies that notification delivery follows a committed state change.
+     * Cancelling a booking restores its seat and publishes BOOKING_CANCELLED
+     * after the cancellation commits.
      */
     @Test
-    void cancelledBookingSendsEmailAfterCommit() {
-        Sessions session = sessionsRepository.findById(sessionId).orElseThrow();
+    void cancelledBookingPublishesEventAfterCommit() {
+        markSessionFull(1);
+        Bookings booking = createConfirmedBooking(customerA);
 
-        User customer = usersRepository.findUserByEmail(firstEmail);
+        cancelAs(customerA, booking.getBookingId());
 
-        Bookings booking = createConfirmedBooking(customer, session);
-
-        session.setSpotsLeft(0);
-        session.setStatus(SessionStatus.FULL);
-        sessionsRepository.saveAndFlush(session);
-
-        var auth = new UsernamePasswordAuthenticationToken(firstEmail, null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
-
-        SecurityContextHolder.getContext().setAuthentication(auth);
-
-        try{
-            bookingsService.cancelBooking(booking.getBookingId());
-        }finally {
-            SecurityContextHolder.clearContext();
-        }
-        Bookings updatedBooking = bookingsRepository.findById(booking.getBookingId()).orElseThrow();
-
-        Sessions updatedSession = sessionsRepository.findById(sessionId).orElseThrow();
-
+        Sessions updatedSession = session();
         assertAll("Cancellation consistency",
-                () -> assertEquals(BookingStatus.CANCELLED,
-                                    updatedBooking.getStatus()
-                        ),
+                () -> assertEquals(BookingStatus.CANCELLED, bookingsRepository.findById(booking.getBookingId()).orElseThrow().getStatus()),
                 () -> assertEquals(1, updatedSession.getSpotsLeft()),
-                () -> assertEquals(
-                        SessionStatus.SCHEDULED,
-                        updatedSession.getStatus()
-                )
-        );
+                () -> assertEquals(SessionStatus.SCHEDULED, updatedSession.getStatus()));
 
-        verify(emailService, timeout(5000).times(1)).sendSessionCancelledEmail(
-                eq(firstEmail),
-                argThat(b -> b.getBookingId().equals(booking.getBookingId())
-                && b.getStatus() == BookingStatus.CANCELLED));
+        verify(kafkaTemplate, timeout(5000).times(1)).send(eq(bookingTopic), eq(String.valueOf(booking.getBookingId())),
+                argThat(e -> e instanceof BookingEvent event && event.eventType() == BookingEventType.BOOKING_CANCELLED));
     }
+
     /**
-     * Requirement: Send correct asynchronous notifications after waitlist allocation.
-     * Given two FIFO waitlist entries and a cancelled full-session booking,
-     * when the first waiting customer receives the released seat, then that
-     * customer gets a confirmation email and the cancelling customer gets a
-     * cancellation email; the still-waiting customer receives no booking email.
+     * When a released seat goes to the first waiting customer, that customer gets
+     * WAITLIST_ALLOCATED, the cancelling customer gets BOOKING_CANCELLED, and the
+     * customer still waiting gets nothing.
      */
     @Test
-    void waitlistAllocationSendsEmailAfterCommit() {
-        Sessions session = sessionsRepository.findById(sessionId).orElseThrow();
-
-        User customer = usersRepository.findUserByEmail(firstEmail);
-
-        Bookings originalBooking = createConfirmedBooking(customer, session);
-
-        session.setSpotsLeft(0);
-        session.setStatus(SessionStatus.FULL);
-        sessionsRepository.saveAndFlush(session);
-
-        String suffix = UUID.randomUUID().toString().substring(0, 8);
-
-        User sara = createUser(
-                "Sara",
-                "sara-" + suffix + "@test.com",
-                UserRole.USER
-        );
-
-        User ali = createUser(
-                "Ali",
-                "ali-" + suffix + "@test.com",
-                UserRole.USER
-        );
-
-        WaitlistEntry saraEntry = createWaitingEntry(sara, session);
-
-        WaitlistEntry aliEntry = createWaitingEntry(ali, session);
-
+    void waitlistAllocationPublishesEventsAfterCommit() {
+        markSessionFull(1);
+        Bookings originalBooking = createConfirmedBooking(customerA);
+        AuthenticatedUser sara = newUser("sara");
+        AuthenticatedUser ali = newUser("ali");
+        WaitlistEntry saraEntry = createWaitingEntry(sara);
+        WaitlistEntry aliEntry = createWaitingEntry(ali);
         assertTrue(saraEntry.getEntryId() < aliEntry.getEntryId());
 
-        var auth = new UsernamePasswordAuthenticationToken(firstEmail, null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
+        cancelAs(customerA, originalBooking.getBookingId());
 
-        SecurityContextHolder.getContext().setAuthentication(auth);
+        assertEquals(WaitListStatus.BOOKED, waitingListRepository.findById(saraEntry.getEntryId()).orElseThrow().getStatus());
+        assertEquals(WaitListStatus.WAITING, waitingListRepository.findById(aliEntry.getEntryId()).orElseThrow().getStatus());
+        Bookings saraBooking = bookingsRepository.findByUserIdAndSession_IdAndStatus(sara.id(), sessionId, BookingStatus.CONFIRMED).orElseThrow();
 
-        try {
-            bookingsService.cancelBooking(
-                    originalBooking.getBookingId()
-            );
-        } finally {
-            SecurityContextHolder.clearContext();
-        }
-
-        WaitlistEntry updatedSara = waitingListRepository.findById(saraEntry.getEntryId()).orElseThrow();
-
-        WaitlistEntry updatedAli = waitingListRepository.findById(aliEntry.getEntryId()).orElseThrow();
-
-        assertEquals(WaitListStatus.BOOKED, updatedSara.getStatus());
-        assertEquals(WaitListStatus.WAITING, updatedAli.getStatus());
-
-        Bookings saraBooking = bookingsRepository
-                .findByUserIdAndSessionIdAndStatus(
-                        sara.getId(),
-                        sessionId,
-                        BookingStatus.CONFIRMED)
-                .orElseThrow();
-
-        assertTrue(bookingsRepository.findByUserIdAndSessionIdAndStatus(
-                                ali.getId(),
-                                sessionId,
-                                BookingStatus.CONFIRMED).isEmpty()
-        );
-
-        Sessions updatedSession = sessionsRepository.findById(sessionId).orElseThrow();
-
+        Sessions updatedSession = session();
         assertEquals(0, updatedSession.getSpotsLeft());
         assertEquals(SessionStatus.FULL, updatedSession.getStatus());
 
-        verify(emailService, timeout(5000).times(1)).sendBookingVerifiedEmail(eq(sara.getEmail()), argThat(b -> saraBooking.getBookingId().equals(b.getBookingId())));
-
-        verify(emailService, timeout(5000).times(1)).sendSessionCancelledEmail(eq(firstEmail), any(Bookings.class));
-
-        verify(emailService, never()).sendBookingVerifiedEmail(eq(ali.getEmail()), any(Bookings.class));
+        verify(kafkaTemplate, timeout(5000).times(2)).send(eq(bookingTopic), anyString(), any());
+        assertEquals(1L, eventCount(BookingEventType.WAITLIST_ALLOCATED, sara.id()));
+        assertEquals(1L, eventCount(BookingEventType.BOOKING_CANCELLED, customerA.id()));
+        assertEquals(0L, publishedEvents().stream().filter(e -> e.userId().equals(ali.id())).count());
+        assertTrue(publishedEvents().stream().anyMatch(e -> e.bookingId().equals(saraBooking.getBookingId())));
     }
+
     @AfterEach
     void cleanUp() {
-        TransactionTemplate cleanupTransaction =
-                new TransactionTemplate(transactionManager);
-
-        cleanupTransaction.executeWithoutResult(status -> {
-
-            // 1. Delete waitlist entries and bookings for session
-            if (sessionId != null) {
-                List<WaitlistEntry> waitlistEntries = waitingListRepository.findAll()
-                        .stream()
-                        .filter(entry -> entry.getSession() != null
-                                && sessionId.equals(entry.getSession().getId()))
-                        .toList();
-
-                waitingListRepository.deleteAll(waitlistEntries);
-                waitingListRepository.flush();
-
-                List<Bookings> bookings = bookingsRepository.findBySessionId(sessionId);
-
-                bookingsRepository.deleteAll(bookings);
-                bookingsRepository.flush();
-
-                // 2. Delete session
-                sessionsRepository.findById(sessionId).ifPresent(session -> {
-                    sessionsRepository.delete(session);
-                    sessionsRepository.flush();
-                });
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            if (sessionId == null) {
+                return;
             }
-
-            // 3. Delete activity, location, and category
-            if (activityId != null) {
-                activitiesRepository.findById(activityId).ifPresent(activity -> {
-                    activitiesRepository.delete(activity);
-                    activitiesRepository.flush();
-                });
-            }
-
-            if (locationId != null) {
-                locationRepository.findById(locationId).ifPresent(location -> {
-                    locationRepository.delete(location);
-                    locationRepository.flush();
-                });
-            }
-
-            if (categoryId != null) {
-                categoryRepository.findById(categoryId).ifPresent(category -> {
-                    categoryRepository.delete(category);
-                    categoryRepository.flush();
-                });
-            }
-            // 4. Delete test users and their tokens
-            for (String email : testUserEmails) {
-                User user = usersRepository.findUserByEmail(email);
-
-                if (user != null) {
-                    tokensRepository.deleteAllByUser_Id(user.getId());
-                    usersRepository.delete(user);
-                }
-            }
-            testUserEmails.clear();
-            sessionId = null;
-            activityId = null;
-            locationId = null;
-            categoryId = null;
+            waitingListRepository.deleteAll(waitingListRepository.findAll().stream()
+                    .filter(entry -> entry.getSession() != null && sessionId.equals(entry.getSession().getId()))
+                    .toList());
+            bookingsRepository.deleteAll(bookingsRepository.findBySession_Id(sessionId));
+            sessionsRepository.findById(sessionId).ifPresent(sessionsRepository::delete);
         });
+        sessionId = null;
     }
 }

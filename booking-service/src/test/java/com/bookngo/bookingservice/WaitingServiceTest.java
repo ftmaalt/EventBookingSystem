@@ -1,8 +1,19 @@
+package com.bookngo.bookingservice;
 
-package com.project.bookngo.service;
-
-import com.project.bookngo.service.event.BookingNotificationEvent;
-import com.project.bookngo.service.event.BookingNotificationType;
+import com.bookngo.bookingservice.event.BookingEvent;
+import com.bookngo.bookingservice.event.BookingEventType;
+import com.bookngo.bookingservice.model.Bookings;
+import com.bookngo.bookingservice.model.Sessions;
+import com.bookngo.bookingservice.model.WaitlistEntry;
+import com.bookngo.bookingservice.model.enums.BookingStatus;
+import com.bookngo.bookingservice.model.enums.BookingType;
+import com.bookngo.bookingservice.model.enums.SessionStatus;
+import com.bookngo.bookingservice.model.enums.WaitListStatus;
+import com.bookngo.bookingservice.repository.BookingsRepository;
+import com.bookngo.bookingservice.repository.SessionsRepository;
+import com.bookngo.bookingservice.repository.WaitingListRepository;
+import com.bookngo.bookingservice.service.CurrentUserService;
+import com.bookngo.bookingservice.service.WaitingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,127 +53,97 @@ class WaitingServiceTest {
     private WaitingService waitingService;
 
     private Sessions session;
-    private User firstUser;
-    private User secondUser;
     private WaitlistEntry firstEntry;
     private WaitlistEntry secondEntry;
 
     @BeforeEach
     void setUp() {
-
-        Activities activity = new Activities();
-        activity.setStatus(ActivityStatus.ACTIVE);
-        activity.setPricePerPerson(new BigDecimal("15.000"));
-
         session = new Sessions();
         session.setId(100L);
-        session.setActivity(activity);
+        session.setActivityId(10L);
+        session.setActivityTitle("Kayaking");
+        session.setPricePerPerson(new BigDecimal("15.000"));
         session.setCapacity(5);
         session.setSpotsLeft(1);
         session.setStatus(SessionStatus.SCHEDULED);
         session.setStartTime(LocalDateTime.now().plusDays(3));
 
-        firstUser = new User();
-        firstUser.setId(1L);
-        firstUser.setEmail("first@test.com");
-        firstUser.setRole(UserRole.USER);
-        firstUser.setStatus(UserStatus.ACTIVE);
-
-        secondUser = new User();
-        secondUser.setId(2L);
-        secondUser.setEmail("second@test.com");
-        secondUser.setRole(UserRole.USER);
-        secondUser.setStatus(UserStatus.ACTIVE);
-
-        firstEntry = new WaitlistEntry();
-        firstEntry.setEntryId(10L);
-        firstEntry.setUser(firstUser);
-        firstEntry.setSession(session);
-        firstEntry.setStatus(WaitListStatus.WAITING);
-
-        secondEntry = new WaitlistEntry();
-        secondEntry.setEntryId(11L);
-        secondEntry.setUser(secondUser);
-        secondEntry.setSession(session);
-        secondEntry.setStatus(WaitListStatus.WAITING);
+        firstEntry = entry(10L, 1L, "first@test.com");
+        secondEntry = entry(11L, 2L, "second@test.com");
     }
+
+    private WaitlistEntry entry(Long entryId, Long userId, String email) {
+        WaitlistEntry entry = new WaitlistEntry();
+        entry.setEntryId(entryId);
+        entry.setUserId(userId);
+        entry.setUserEmail(email);
+        entry.setSession(session);
+        entry.setStatus(WaitListStatus.WAITING);
+        return entry;
+    }
+
     private void mockBookingSave() {
-        when(bookingsRepository.save(any(Bookings.class)))
-                .thenAnswer(invocation -> {
-                    Bookings booking = invocation.getArgument(0);
-                    booking.setBookingId(500L);
-                    return booking;
-                });
+        when(bookingsRepository.save(any(Bookings.class))).thenAnswer(invocation -> {
+            Bookings booking = invocation.getArgument(0);
+            booking.setBookingId(500L);
+            return booking;
+        });
     }
 
     private void mockWaitingEntries() {
-        when(waitlistRepository
-                .findBySessionIdAndStatusOrderByEntryIdAsc(
-                        100L, WaitListStatus.WAITING
-                ))
+        when(waitlistRepository.findBySessionIdAndStatusOrderByEntryIdAsc(100L, WaitListStatus.WAITING))
                 .thenReturn(List.of(firstEntry, secondEntry));
     }
 
     @Test
     void shouldAllocateFirstWaitingCustomer() {
+        mockWaitingEntries();
+        mockBookingSave();
 
-        when(waitlistRepository
-                .findBySessionIdAndStatusOrderByEntryIdAsc(
-                        100L, WaitListStatus.WAITING
-                ))
-                .thenReturn(List.of(firstEntry, secondEntry));
-        when(bookingsRepository.save(any(Bookings.class)))
-                .thenAnswer(invocation -> {
-                    Bookings booking = invocation.getArgument(0);
-                    booking.setBookingId(500L);
-                    return booking;
-                });
         waitingService.allocateNextWaitlistedUser(session);
 
-        // First person gets the only available seat.
         assertEquals(WaitListStatus.BOOKED, firstEntry.getStatus());
         assertEquals(WaitListStatus.WAITING, secondEntry.getStatus());
-
         assertEquals(0, session.getSpotsLeft());
         assertEquals(SessionStatus.FULL, session.getStatus());
 
-        ArgumentCaptor<Bookings> captor =
-                ArgumentCaptor.forClass(Bookings.class);
-
-        verify(bookingsRepository, times(1))
-                .save(captor.capture());
-
+        ArgumentCaptor<Bookings> captor = ArgumentCaptor.forClass(Bookings.class);
+        verify(bookingsRepository, times(1)).save(captor.capture());
         Bookings savedBooking = captor.getValue();
-
-        assertEquals(firstUser.getId(), savedBooking.getUser().getId());
+        assertEquals(1L, savedBooking.getUserId());
+        assertEquals("first@test.com", savedBooking.getUserEmail());
         assertEquals(1, savedBooking.getParticipants());
-        assertEquals(BookingType.INDIVIDUAL,
-                savedBooking.getBookingType());
-        assertEquals(BookingStatus.CONFIRMED,
-                savedBooking.getStatus());
-        assertEquals(PaymentStatus.PENDING_PAYMENT,
-                savedBooking.getPaymentStatus());
-
-        assertEquals(
-                0,
-                new BigDecimal("15.000")
-                        .compareTo(savedBooking.getTotalPrice())
-        );
+        assertEquals(BookingType.INDIVIDUAL, savedBooking.getBookingType());
+        assertEquals(BookingStatus.CONFIRMED, savedBooking.getStatus());
+        assertEquals(0, new BigDecimal("15.000").compareTo(savedBooking.getTotalPrice()));
 
         verify(waitlistRepository).save(firstEntry);
         verify(waitlistRepository, never()).save(secondEntry);
 
-        verify(eventPublisher).publishEvent(
-                new BookingNotificationEvent(
-                        500L,
-                        BookingNotificationType.WAITLIST_ALLOCATED
-                )
-        );
+        ArgumentCaptor<BookingEvent> event = ArgumentCaptor.forClass(BookingEvent.class);
+        verify(eventPublisher).publishEvent(event.capture());
+        assertEquals(BookingEventType.WAITLIST_ALLOCATED, event.getValue().eventType());
+        assertEquals(500L, event.getValue().bookingId());
+        assertEquals(1L, event.getValue().userId());
+    }
+
+    @Test
+    void shouldAllocateSeveralCustomersWhenSeveralSeatsAreFree() {
+        session.setSpotsLeft(2);
+        mockWaitingEntries();
+        mockBookingSave();
+
+        waitingService.allocateNextWaitlistedUser(session);
+
+        assertEquals(WaitListStatus.BOOKED, firstEntry.getStatus());
+        assertEquals(WaitListStatus.BOOKED, secondEntry.getStatus());
+        assertEquals(0, session.getSpotsLeft());
+        verify(bookingsRepository, times(2)).save(any(Bookings.class));
+        verify(eventPublisher, times(2)).publishEvent(any(BookingEvent.class));
     }
 
     @Test
     void shouldNotAllocateWithoutAvailableSeats() {
-
         session.setSpotsLeft(0);
 
         waitingService.allocateNextWaitlistedUser(session);
@@ -172,88 +153,49 @@ class WaitingServiceTest {
     }
 
     @Test
-    void shouldSkipInactiveCustomer() {
-
-        firstUser.setStatus(UserStatus.DEACTIVATED);
-
-        when(waitlistRepository
-                .findBySessionIdAndStatusOrderByEntryIdAsc(
-                        100L, WaitListStatus.WAITING
-                ))
-                .thenReturn(List.of(firstEntry, secondEntry));
-        when(bookingsRepository.save(any(Bookings.class)))
-                .thenAnswer(invocation -> {
-                    Bookings booking = invocation.getArgument(0);
-                    booking.setBookingId(500L);
-                    return booking;
-                });
-        waitingService.allocateNextWaitlistedUser(session);
-
-        assertEquals(WaitListStatus.EXPIRED, firstEntry.getStatus());
-        assertEquals(WaitListStatus.BOOKED, secondEntry.getStatus());
-
-        ArgumentCaptor<Bookings> captor =
-                ArgumentCaptor.forClass(Bookings.class);
-
-        verify(bookingsRepository).save(captor.capture());
-        verify(waitlistRepository).save(firstEntry);
-
-        assertEquals(secondUser.getId(),
-                captor.getValue().getUser().getId());
-
-        assertEquals(0, session.getSpotsLeft());
-        verify(eventPublisher).publishEvent(
-                new BookingNotificationEvent(500L, BookingNotificationType.WAITLIST_ALLOCATED));
-    }
-
-    @Test
-    void shouldNotAllocateAfterSessionStarts() {
-        session.setStartTime(LocalDateTime.now().minusMinutes(1));
-        mockWaitingEntries();
-
-        waitingService.allocateNextWaitlistedUser(session);
-        assertEquals(WaitListStatus.EXPIRED, firstEntry.getStatus());
-        assertEquals(WaitListStatus.EXPIRED, secondEntry.getStatus());
-
-        verify(waitlistRepository).saveAll(List.of(firstEntry, secondEntry));
-
-        verifyNoInteractions(bookingsRepository);
-        verifyNoInteractions(eventPublisher);
-    }
-
-    @Test
     void shouldExpireCustomerWhoAlreadyHasAnActiveBooking() {
         mockWaitingEntries();
         mockBookingSave();
-
-        when(bookingsRepository.existsByUserIdAndSessionIdAndStatusIn(
-                firstUser.getId(),
-                session.getId(),
-                List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT)))
+        when(bookingsRepository.existsByUserIdAndSession_IdAndStatusIn(
+                1L, 100L, List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT)))
                 .thenReturn(true);
 
         waitingService.allocateNextWaitlistedUser(session);
 
         assertEquals(WaitListStatus.EXPIRED, firstEntry.getStatus());
         assertEquals(WaitListStatus.BOOKED, secondEntry.getStatus());
-
         verify(waitlistRepository).save(firstEntry);
         verify(waitlistRepository).save(secondEntry);
-        verify(bookingsRepository).save(any(Bookings.class));
 
+        ArgumentCaptor<Bookings> captor = ArgumentCaptor.forClass(Bookings.class);
+        verify(bookingsRepository).save(captor.capture());
+        assertEquals(2L, captor.getValue().getUserId());
         assertEquals(0, session.getSpotsLeft());
     }
 
     @Test
     void shouldExpireAllEntriesWhenSessionHasAlreadyStarted() {
         session.setStartTime(LocalDateTime.now().minusMinutes(1));
-
         mockWaitingEntries();
+
         waitingService.allocateNextWaitlistedUser(session);
 
         assertEquals(WaitListStatus.EXPIRED, firstEntry.getStatus());
         assertEquals(WaitListStatus.EXPIRED, secondEntry.getStatus());
+        verify(waitlistRepository).saveAll(List.of(firstEntry, secondEntry));
+        verifyNoInteractions(bookingsRepository);
+        verifyNoInteractions(eventPublisher);
+    }
 
+    @Test
+    void shouldExpireAllEntriesWhenSessionIsCancelled() {
+        session.setStatus(SessionStatus.CANCELLED);
+        mockWaitingEntries();
+
+        waitingService.allocateNextWaitlistedUser(session);
+
+        assertEquals(WaitListStatus.EXPIRED, firstEntry.getStatus());
+        assertEquals(WaitListStatus.EXPIRED, secondEntry.getStatus());
         verify(waitlistRepository).saveAll(List.of(firstEntry, secondEntry));
         verifyNoInteractions(bookingsRepository);
         verifyNoInteractions(eventPublisher);
