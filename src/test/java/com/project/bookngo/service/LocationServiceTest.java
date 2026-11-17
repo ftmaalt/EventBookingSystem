@@ -1,11 +1,11 @@
 
 package com.project.bookngo.service;
 
-import com.project.bookngo.model.Location;
-import com.project.bookngo.model.User;
-import com.project.bookngo.model.enums.UserRole;
-import com.project.bookngo.model.request.LocationRequest;
-import com.project.bookngo.model.response.LocationResponse;
+import com.bookngo.notificationservice.event.model.Location;
+import com.bookngo.notificationservice.event.model.User;
+import com.bookngo.notificationservice.event.model.enums.UserRole;
+import com.bookngo.notificationservice.event.model.request.LocationRequest;
+import com.bookngo.notificationservice.event.model.response.LocationResponse;
 import com.project.bookngo.repository.LocationRepository;
 import com.project.bookngo.repository.UsersRepository;
 

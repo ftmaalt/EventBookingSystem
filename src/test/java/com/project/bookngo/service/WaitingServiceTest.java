@@ -1,10 +1,6 @@
 
 package com.project.bookngo.service;
 
-import com.project.bookngo.model.*;
-import com.project.bookngo.model.enums.*;
-import com.project.bookngo.repository.*;
-
 import com.project.bookngo.service.event.BookingNotificationEvent;
 import com.project.bookngo.service.event.BookingNotificationType;
 import org.junit.jupiter.api.BeforeEach;

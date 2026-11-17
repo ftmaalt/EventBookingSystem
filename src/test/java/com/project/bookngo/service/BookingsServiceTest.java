@@ -3,13 +3,11 @@ package com.project.bookngo.service;
 import com.project.bookngo.exception.BusinessConflictsException;
 import com.project.bookngo.exception.InformationNotFoundException;
 import com.project.bookngo.exception.InvalidTimeSpecificationException;
-import com.project.bookngo.model.Activities;
-import com.project.bookngo.model.Bookings;
-import com.project.bookngo.model.Sessions;
-import com.project.bookngo.model.User;
-import com.project.bookngo.model.enums.*;
-import com.project.bookngo.model.request.BookingRequest;
-import com.project.bookngo.model.response.BookingResponse;
+import com.bookngo.notificationservice.event.model.Activities;
+import com.bookngo.notificationservice.event.model.Bookings;
+import com.bookngo.notificationservice.event.model.Sessions;
+import com.bookngo.notificationservice.event.model.User;
+import com.bookngo.notificationservice.event.model.request.BookingRequest;
 import com.project.bookngo.repository.BookingsRepository;
 import com.project.bookngo.repository.SessionsRepository;
 

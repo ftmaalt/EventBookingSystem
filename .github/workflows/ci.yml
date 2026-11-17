@@ -1,0 +1,48 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    # a throw-away Postgres for the tests (the Spring context tests need a database)
+    services:
+      postgres:
+        image: postgres:16.4
+        env:
+          POSTGRES_DB: bookngo
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    # values for CI only, not real secrets
+    env:
+      DB_URL: jdbc:postgresql://localhost:5432/bookngo
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: dGVzdC1qd3Qtc2VjcmV0LWZvci1jaS1vbmx5LTAxMjM0NTY3ODk=
+      INTERNAL_API_KEY: ci-internal-key
+      KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      - name: Build and test all services
+        run: mvn -B verify

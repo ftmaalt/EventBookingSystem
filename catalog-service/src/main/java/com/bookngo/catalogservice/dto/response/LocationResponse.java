@@ -1,0 +1,18 @@
+package com.bookngo.catalogservice.dto.response;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@AllArgsConstructor
+@Getter
+public class LocationResponse {
+    private Long id;
+    private String name;
+    private String address;
+    private String city;
+    private Double latitude;
+    private Double longitude;
+    private String googlePlaceId;
+    private Boolean active;
+    private Long providerId;
+}

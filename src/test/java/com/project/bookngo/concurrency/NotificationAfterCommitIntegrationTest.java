@@ -1,9 +1,9 @@
 package com.project.bookngo.concurrency;
 
-import com.project.bookngo.model.User;
-import com.project.bookngo.model.enums.UserRole;
-import com.project.bookngo.model.enums.UserStatus;
-import com.project.bookngo.model.response.NotificationResponse;
+import com.bookngo.notificationservice.event.model.User;
+import com.bookngo.notificationservice.event.model.enums.UserRole;
+import com.bookngo.notificationservice.event.model.enums.UserStatus;
+import com.bookngo.notificationservice.event.model.response.NotificationResponse;
 import com.project.bookngo.repository.NotificationRepository;
 import com.project.bookngo.repository.UsersRepository;
 import com.project.bookngo.service.NotificationService;
@@ -20,7 +20,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 /**
