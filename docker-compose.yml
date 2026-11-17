@@ -113,7 +113,6 @@ services:
       retries: 10
       start_period: 60s
     restart: unless-stopped
-
   booking-service:
     build:
       context: .
@@ -157,7 +156,29 @@ services:
       retries: 10
       start_period: 60s
     restart: unless-stopped
-
+  gateway:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      catalog-service:
+        condition: service_healthy
+      booking-service:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
+      compliance-service:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8080/health > /dev/null || exit 1" ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
   compliance-service:
     build:
       context: .
