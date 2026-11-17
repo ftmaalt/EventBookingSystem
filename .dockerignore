@@ -1,0 +1,11 @@
+.git
+.idea
+**/.idea
+**/target
+**/.env
+frontend
+docs
+**/node_modules
+**/*.iml
+**/HELP.md
+src
