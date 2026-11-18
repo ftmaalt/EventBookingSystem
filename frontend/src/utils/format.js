@@ -51,7 +51,6 @@ export function isTokenExpired(token) {
   return expiry !== null && expiry <= Date.now();
 }
 
-/** Human friendly label for enum values such as PENDING_PAYMENT. */
 export function labelize(value) {
   return value ? value.replaceAll("_", " ") : "";
 }

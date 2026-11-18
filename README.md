@@ -110,9 +110,6 @@ erDiagram
         string role
         string status
         string profile_picture_path
-        boolean must_change_password
-        smallint strike_count
-        smallint consecutive_violations
         datetime created_at
         datetime updated_at
     }
@@ -196,12 +193,8 @@ erDiagram
         int participants
         string booking_type
         decimal subtotal
-        decimal discount_percent
         decimal total_price
         string status
-        string payment_status
-        string cancellation_reason
-        string last_reminder_stage
         datetime created_at
         datetime updated_at
     }
@@ -475,7 +468,6 @@ Each booking stores:
 - Booking type.
 - Subtotal and total price.
 - Booking status.
-- Payment status.
 - Creation and modification timestamps.
 
 ### Booking Rules
@@ -489,8 +481,6 @@ Each booking stores:
 - Booking cancellations follow session timing and status restrictions.
 
 Booking operations were later extended in Project 3 to protect shared capacity from concurrent requests.
-
-**Payment status tracking is implemented; a complete external payment gateway is not part of this implementation.**
 
 ## 2.6 Provider Registration & Approval
 
@@ -544,7 +534,8 @@ The system supports:
 - Maintaining user strike counts.
 - Tracking consecutive violations.
 - Creating penalties when applicable.
-- Recording penalty status and payment information.
+- Recording penalty status (pending or paid).
+- Settling a penalty through a simulated payment (there is no payment gateway): the user or an admin marks it paid, which reactivates a deactivated account.
 - Allowing authorized users to review and manage violations.
 
 This functionality supports the platform's business policies and administrative oversight.
@@ -558,7 +549,6 @@ The original application includes notification and email capabilities.
 - Email verification.
 - Password recovery emails.
 - Booking-related email notifications.
-- Scheduled booking reminders.
 - Stored in-app notifications.
 - Server-Sent Events for real-time notification updates.
 
@@ -574,7 +564,7 @@ Other implemented functionality includes:
 - Pagination and sorting for supported endpoints.
 - API rate limiting.
 - File upload support for profile pictures.
-- Database seeding for development and demonstrations.
+- Default activity categories seeded by a Flyway migration.
 - Swagger/OpenAPI documentation.
 
 ## 2.11 React Frontend
@@ -1182,9 +1172,7 @@ CREATE DATABASE bookngo;
 
 Configure your local Spring Boot development properties with the appropriate database credentials.
 
-The repository uses the `dev` profile through `application.properties`.
-
-Sensitive development settings should be kept in a local, untracked `application-dev.properties` file.
+Each service reads its database, JWT and other settings from environment variables. For Docker Compose, put them in a root `.env` file, which is gitignored.
 
 Example configuration:
 
@@ -1229,13 +1217,42 @@ The backend runs at:
 
 http://localhost:8080
 
-### Development Seed Data
+### Seed Data
 
-`DataSeeder.java` provides development demonstration data when the `dev` profile is active.
+Demo data is created in two steps, so every service keeps ownership of its own tables.
 
-The seeder creates sample users, providers, categories, locations, activities, sessions, and bookings.
+1. **Accounts (auth-service).** When `SEED_ENABLED=true`, auth-service creates the demo accounts below on startup, with the password from `SEED_PASSWORD` (at least 8 characters, BCrypt-hashed like any other password). Startup fails if seeding is enabled without a password. The seeder does nothing when any user already exists, so it is safe to leave enabled across restarts.
+2. **Catalog and bookings (REST).** `scripts/seed-demo-data.mjs` (Node 18+, no dependencies) logs in as the demo accounts through the gateway and creates 3 locations, 6 activities in the seeded categories, future sessions, bookings, one FULL session and one waitlist entry. It skips activities whose titles already exist, so it can be run again.
 
-It skips the seed operation when users already exist in the database, preventing an ordinary restart from recreating the demo data.
+The only data created by a migration is the default activity categories (catalog-service `V2__seed_categories.sql`).
+
+| Account | Role | Notes |
+|---|---|---|
+| `admin@bookngo.demo` | `ADMIN` | Approved both provider applications |
+| `provider1@bookngo.demo` | `PROVIDER` | Amwaj Sea Kayaking |
+| `provider2@bookngo.demo` | `PROVIDER` | Manama Clay Studio |
+| `customer1@bookngo.demo` | `USER` | Holds a seat in the FULL session |
+| `customer2@bookngo.demo` | `USER` | Holds a seat in the FULL session |
+| `customer3@bookngo.demo` | `USER` | On the waitlist for the FULL session |
+
+All accounts share the password you choose in `SEED_PASSWORD`; it is never stored in the repository.
+
+**Locally (Docker Compose)**
+
+```bash
+SEED_ENABLED=true SEED_PASSWORD='choose-a-password' docker compose up -d
+SEED_PASSWORD='choose-a-password' node scripts/seed-demo-data.mjs
+```
+
+On Windows PowerShell, set the variables first, for example `$env:SEED_ENABLED="true"; $env:SEED_PASSWORD="choose-a-password"`.
+
+Creating locations geocodes their addresses, so catalog-service needs a valid `GOOGLE_MAPS_API_KEY` for the script to succeed.
+
+**On AWS**
+
+1. For the first deployment, set `SEED_ENABLED=true` and `SEED_PASSWORD` on the auth-service container, taking the password from AWS Secrets Manager or SSM Parameter Store rather than a file.
+2. Run the script from any machine that can reach the load balancer: `API_URL=https://<your-load-balancer> SEED_PASSWORD=... node scripts/seed-demo-data.mjs`.
+3. Set `SEED_ENABLED=false` again afterwards.
 
 ## 4. Configure the Frontend
 
@@ -1292,6 +1309,13 @@ npm run build
 ```
 
 These commands run the frontend tests and create the production build.
+
+---
+
+# Future Improvements
+
+- Scheduled booking reminders (for example 24 hours and 1 hour before a session), published as Kafka events and sent by notification-service.
+- A real payment gateway for bookings and penalties; penalty payment is currently simulated.
 
 ---
 

@@ -156,8 +156,7 @@ class WaitingServiceTest {
     void shouldExpireCustomerWhoAlreadyHasAnActiveBooking() {
         mockWaitingEntries();
         mockBookingSave();
-        when(bookingsRepository.existsByUserIdAndSession_IdAndStatusIn(
-                1L, 100L, List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT)))
+        when(bookingsRepository.existsByUserIdAndSession_IdAndStatus(1L, 100L, BookingStatus.CONFIRMED))
                 .thenReturn(true);
 
         waitingService.allocateNextWaitlistedUser(session);

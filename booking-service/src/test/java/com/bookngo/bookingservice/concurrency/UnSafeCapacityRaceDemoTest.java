@@ -48,15 +48,8 @@ class UnSafeCapacityRaceDemoTest {
             customerA.get(5, TimeUnit.SECONDS);
             customerB.get(5, TimeUnit.SECONDS);
 
-            System.out.println(
-                    "Confirmed bookings: " + confirmedBookings.get()
-            );
-            System.out.println(
-                    "Available seats: " + availableSeats.get()
-            );
-
-            assertEquals(2, confirmedBookings.get());
-            assertEquals(0, availableSeats.get());
+            assertEquals(2, confirmedBookings.get(), "both unsafe bookings were confirmed");
+            assertEquals(0, availableSeats.get(), "one seat was sold twice");
 
         } finally {
             release.countDown();

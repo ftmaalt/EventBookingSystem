@@ -158,7 +158,6 @@ class BookingConcurrencyIntegrationTest {
         booking.setBookingType(BookingType.INDIVIDUAL);
         booking.setStatus(BookingStatus.CONFIRMED);
         booking.setSubtotal(new BigDecimal("10.000"));
-        booking.setDiscountPercent(BigDecimal.ZERO);
         booking.setTotalPrice(new BigDecimal("10.000"));
         booking.setCreatedBy(user.email());
         booking.setUpdatedBy(user.email());

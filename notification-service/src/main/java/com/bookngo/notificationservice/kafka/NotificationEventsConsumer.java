@@ -53,7 +53,7 @@ public class NotificationEventsConsumer {
                 type, event.userId(), event.userEmail(), event.bookingId(), event.activityTitle(),
                 event.startTime() == null ? null : event.startTime().format(START_TIME),
                 event.participants(), event.bookingType(), event.totalPrice(),
-                null, null, null, null, null, null, null));
+                null, null, null, null, null, null));
     }
 
     @KafkaListener(id = "notification-account-events", idIsGroup = false, topics = "${app.kafka.topics.account-events}",
@@ -80,7 +80,7 @@ public class NotificationEventsConsumer {
         handler.handleOnce(event.eventId(), topic, new NotificationEventRequest(
                 type, event.recipientUserId(), event.recipientEmail(),
                 null, null, null, null, null, null,
-                event.reviewNote(), null, event.token(), event.businessName(), event.contactName(),
+                event.reviewNote(), event.token(), event.businessName(), event.contactName(),
                 event.city(), event.proposedActivities()));
     }
 }

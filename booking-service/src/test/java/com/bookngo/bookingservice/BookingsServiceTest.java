@@ -161,7 +161,7 @@ class BookingsServiceTest {
     @DisplayName("Should reject duplicate booking")
     void shouldNotAllowDoubleBooking() {
         mockBookingContext();
-        when(bookingsRepository.existsByUserIdAndSession_IdAndStatusIn(eq(1L), eq(100L), anyCollection()))
+        when(bookingsRepository.existsByUserIdAndSession_IdAndStatus(1L, 100L, BookingStatus.CONFIRMED))
                 .thenReturn(true);
 
         assertThrows(BusinessConflictsException.class, () -> bookingsService.createBooking(request));

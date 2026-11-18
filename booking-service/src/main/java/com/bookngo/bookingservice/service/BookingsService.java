@@ -26,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 public class BookingsService {
@@ -61,8 +60,7 @@ public class BookingsService {
         Sessions session = sessionsRepository.findByIdForUpdate(request.getSessionId()).orElseThrow(() ->
                 new InformationNotFoundException("Session with ID: " + request.getSessionId() + " not found."));
 
-        if (bookingsRepository.existsByUserIdAndSession_IdAndStatusIn(user.id(), session.getId(),
-                List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT))) {
+        if (bookingsRepository.existsByUserIdAndSession_IdAndStatus(user.id(), session.getId(), BookingStatus.CONFIRMED)) {
             throw new BusinessConflictsException("You already have an active booking for this session.");
         }
         if (session.getStatus() == SessionStatus.CANCELLED || session.getStatus() == SessionStatus.COMPLETED || session.getStatus() == SessionStatus.IN_PROGRESS) {
@@ -100,7 +98,6 @@ public class BookingsService {
         booking.setSession(session);
         booking.setParticipants(request.getParticipants());
         booking.setBookingType(request.getBookingType());
-        booking.setDiscountPercent(BigDecimal.ZERO);
         booking.setSubtotal(subtotal);
         booking.setTotalPrice(subtotal);
         booking.setStatus(BookingStatus.CONFIRMED);

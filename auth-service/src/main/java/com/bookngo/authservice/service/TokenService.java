@@ -34,8 +34,6 @@ public class TokenService {
         LocalDateTime expiresAt = switch (type) {
             case EMAIL_VERIFICATION -> LocalDateTime.now().plusHours(24);
             case PASSWORD_RESET -> LocalDateTime.now().plusMinutes(6);
-            case PENALTY_PAYMENT -> LocalDateTime.now().plusMinutes(10);
-            default -> throw new IllegalArgumentException("Unsupported token type: " + type);
         };
         String tokenString = UUID.randomUUID().toString();
 

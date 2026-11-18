@@ -51,15 +51,6 @@ public class User {
     @Column(name = "profile_picture_path", length = 255)
     private String profilePicturePath;
 
-    @Column(name = "must_change_password")
-    private Boolean mustChangePassword;
-
-    @Column(name = "strike_count")
-    private Short strikeCount;
-
-    @Column(name = "consecutive_violations")
-    private Short consecutiveViolations;
-
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

@@ -14,7 +14,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
@@ -36,7 +35,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(response);
     }
 
-    @ExceptionHandler({InvalidTimeSpecificationException.class, IllegalArgumentException.class})
+    @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiErrorResponse> handleBadRequest(RuntimeException ex, HttpServletRequest request) {
 
         return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
@@ -84,7 +83,6 @@ public class GlobalExceptionHandler {
                 request
         );
     }
-
 
     @ExceptionHandler(InformationNotFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleNotFound(InformationNotFoundException ex, HttpServletRequest request) {
@@ -138,7 +136,5 @@ public class GlobalExceptionHandler {
                 request
         );
     }
-
-
 
 }

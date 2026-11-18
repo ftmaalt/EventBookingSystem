@@ -20,7 +20,6 @@ public record NotificationEventRequest(
         String bookingType,
         BigDecimal totalPrice,
         String reason,
-        String timeFrame,
         String token,
         String businessName,
         String contactName,

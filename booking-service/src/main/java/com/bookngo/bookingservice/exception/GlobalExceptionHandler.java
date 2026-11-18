@@ -65,16 +65,6 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, "Request body must contain valid JSON with the expected field types.", request);
     }
 
-    @ExceptionHandler(InvalidCredentials.class)
-    public ResponseEntity<ApiErrorResponse> handleInvalidCredentials(InvalidCredentials ex, HttpServletRequest request) {
-
-        return buildErrorResponse(
-                HttpStatus.UNAUTHORIZED,
-                ex.getMessage(),
-                request
-        );
-    }
-
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiErrorResponse> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
 
@@ -84,7 +74,6 @@ public class GlobalExceptionHandler {
                 request
         );
     }
-
 
     @ExceptionHandler(InformationNotFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleNotFound(InformationNotFoundException ex, HttpServletRequest request) {
@@ -96,32 +85,12 @@ public class GlobalExceptionHandler {
         );
     }
 
-    @ExceptionHandler({BusinessConflictsException.class, InformationExistsException.class})
+    @ExceptionHandler(BusinessConflictsException.class)
     public ResponseEntity<ApiErrorResponse> handleConflict(RuntimeException ex, HttpServletRequest request) {
         logger.warn("Conflict while processing {} {}: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
 
         return buildErrorResponse(
                 HttpStatus.CONFLICT,
-                ex.getMessage(),
-                request
-        );
-    }
-
-    @ExceptionHandler(VerificationRequiredException.class)
-    public ResponseEntity<ApiErrorResponse> handleVerification(VerificationRequiredException ex, HttpServletRequest request) {
-
-        return buildErrorResponse(
-                HttpStatus.PRECONDITION_REQUIRED,
-                ex.getMessage(),
-                request
-        );
-    }
-
-    @ExceptionHandler(RateLimitExceededException.class)
-    public ResponseEntity<ApiErrorResponse> handleRateLimit(RateLimitExceededException ex, HttpServletRequest request) {
-
-        return buildErrorResponse(
-                HttpStatus.TOO_MANY_REQUESTS,
                 ex.getMessage(),
                 request
         );

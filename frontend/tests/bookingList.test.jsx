@@ -16,7 +16,7 @@ it("does not let an older filter response replace the latest bookings", async ()
   let finishOldRequest;
   bookingsApi.getAll.mockImplementation(({ status }) => status === "CONFIRMED"
     ? Promise.resolve({ data: { content: [{ id: 2, sessionId: 2, status: "CONFIRMED", participants: 1,
-      bookingType: "INDIVIDUAL", paymentStatus: "PAID", totalPrice: 10 }], totalPages: 1 } })
+      bookingType: "INDIVIDUAL", totalPrice: 10 }], totalPages: 1 } })
     : new Promise((resolve) => { finishOldRequest = resolve; }));
   sessionsApi.getById.mockResolvedValue({ data: { id: 2, activityId: 10 } });
   activitiesApi.getById.mockResolvedValue({ data: { activity_id: 10, title: "Latest activity" } });
