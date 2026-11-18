@@ -1,5 +1,9 @@
 package com.bookngo.catalogservice.service;
 
+import com.bookngo.catalogservice.config.CacheNames;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import com.bookngo.catalogservice.exception.BusinessConflictsException;
 import com.bookngo.catalogservice.exception.InformationNotFoundException;
 import com.bookngo.catalogservice.model.Category;
@@ -25,6 +29,7 @@ public class CategoryService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = CacheNames.CATEGORIES, allEntries = true)
     public CategoryResponse createCategory( CategoryRequest request){
         String categoryName = normalizeName(request.getCategory_name());
         logger.info("Creating category: {}", request.getCategory_name());
@@ -41,8 +46,10 @@ public class CategoryService {
             return toResponse(categoryObject);
     }
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheNames.CATEGORY_BY_ID)
     public CategoryResponse getCategoryById(Long category_id){
         logger.info("Fetching category with ID: {}", category_id);
+        logger.debug("Cache miss: {} key={}", CacheNames.CATEGORY_BY_ID, category_id);
         Category category= categoryRepository.findById(category_id).orElseThrow(()->
                 new InformationNotFoundException("Category with the id:"+ category_id +" does not exist, please try again with another category id")
         );
@@ -50,12 +57,18 @@ public class CategoryService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheNames.CATEGORIES)
     public List<CategoryResponse> getAllCategories(){
         logger.info("Fetching all categories");
+        logger.debug("Cache miss: {}", CacheNames.CATEGORIES);
         return categoryRepository.findAll().stream().map(this::toResponse).toList();
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.CATEGORY_BY_ID, key = "#category_id"),
+            @CacheEvict(cacheNames = CacheNames.CATEGORIES, allEntries = true)
+    })
     public CategoryResponse updateCategory(Long category_id, CategoryRequest request){
         logger.info("Updating category with ID: {}", category_id);
         Category category= categoryRepository.findById(category_id).orElseThrow(()->
@@ -79,6 +92,11 @@ public class CategoryService {
 
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.CATEGORY_BY_ID, key = "#category_id"),
+            @CacheEvict(cacheNames = CacheNames.CATEGORIES, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.ACTIVITY_BY_ID, allEntries = true)
+    })
     public String deleteCategory(Long category_id) {
         Category category = categoryRepository.findById(category_id)
                 .orElseThrow(() -> new InformationNotFoundException("Category with ID: " + category_id + " does not exist."));

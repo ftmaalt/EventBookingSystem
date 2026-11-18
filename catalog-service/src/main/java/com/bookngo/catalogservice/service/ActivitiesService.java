@@ -1,5 +1,6 @@
 package com.bookngo.catalogservice.service;
 
+import com.bookngo.catalogservice.config.CacheNames;
 import com.bookngo.catalogservice.dto.request.ActivityRequest;
 import com.bookngo.catalogservice.dto.response.ActivityResponse;
 import com.bookngo.catalogservice.exception.BusinessConflictsException;
@@ -14,6 +15,8 @@ import com.bookngo.catalogservice.repository.LocationRepository;
 import com.bookngo.catalogservice.security.AuthenticatedUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -57,7 +60,9 @@ public class ActivitiesService {
         return toResponse(saved);
     }
     @Transactional
+    @Cacheable(cacheNames = CacheNames.ACTIVITY_BY_ID)
     public ActivityResponse getById(Long id) {
+        logger.debug("Cache miss: {} key={}", CacheNames.ACTIVITY_BY_ID, id);
         Activities activity = activitiesRepository.findByIdAndStatus(id, ActivityStatus.ACTIVE)
                 .orElseThrow(() -> new InformationNotFoundException(
                         "Active activity with ID " + id + " does not exist."));
@@ -70,6 +75,7 @@ public class ActivitiesService {
 
 
     @Transactional
+    @CacheEvict(cacheNames = CacheNames.ACTIVITY_BY_ID, key = "#id")
     public ActivityResponse updateActivity(Long id, ActivityRequest request) {
         Activities activity = findActivity(id);
         AuthenticatedUser provider = currentUserService.getCurrentUser();
@@ -85,6 +91,7 @@ public class ActivitiesService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = CacheNames.ACTIVITY_BY_ID, key = "#id")
     public String deleteActivity(Long id) {
         Activities activity = findActivity(id);
         AuthenticatedUser provider = currentUserService.getCurrentUser();
