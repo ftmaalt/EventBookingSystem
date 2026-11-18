@@ -1,5 +1,5 @@
 
-package com.project.bookngo.concurrency;
+package com.bookngo.bookingservice.concurrency;
 
 import org.junit.jupiter.api.Test;
 

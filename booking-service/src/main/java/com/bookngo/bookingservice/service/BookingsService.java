@@ -65,16 +65,21 @@ public class BookingsService {
                 List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT))) {
             throw new BusinessConflictsException("You already have an active booking for this session.");
         }
-        if (session.getStatus() == SessionStatus.CANCELLED || session.getStatus() == SessionStatus.COMPLETED || session.getStatus() == SessionStatus.IN_PROGRESS
-                || session.getStatus() == SessionStatus.FULL) {
+        if (session.getStatus() == SessionStatus.CANCELLED || session.getStatus() == SessionStatus.COMPLETED || session.getStatus() == SessionStatus.IN_PROGRESS) {
             throw new InvalidTimeSpecificationException(
                     "This session is no longer available for booking.");
+        }
+        if (session.getStatus() == SessionStatus.FULL || session.getSpotsLeft() <= 0) {
+            throw new BusinessConflictsException("This session is fully booked.");
         }
         if (!session.getStartTime().isAfter(LocalDateTime.now())) {
             throw new InvalidTimeSpecificationException("Cannot book a session that has already started.");
         }
         if (request.getParticipants() == null || request.getParticipants() < 1) {
             throw new InvalidTimeSpecificationException("The number of participants must be at least one.");
+        }
+        if (request.getParticipants() > session.getSpotsLeft()) {
+            throw new BusinessConflictsException("Only " + session.getSpotsLeft() + " seat(s) left for this session.");
         }
         if (waitingListRepository.existsBySessionIdAndStatus(session.getId(), WaitListStatus.WAITING)) {
             throw new BusinessConflictsException("This session has an active waitlist. Available seats must be allocated to waiting customers first.");
