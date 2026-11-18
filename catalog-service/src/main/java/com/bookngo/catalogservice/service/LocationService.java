@@ -1,5 +1,9 @@
 package com.bookngo.catalogservice.service;
 
+import com.bookngo.catalogservice.config.CacheNames;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import com.bookngo.catalogservice.dto.request.LocationPinUpdateRequest;
 import com.bookngo.catalogservice.dto.request.LocationRequest;
 import com.bookngo.catalogservice.dto.response.LocationResponse;
@@ -35,6 +39,7 @@ public class LocationService {
         this.geocodingService = geocodingService;
     }
     @Transactional
+    @CacheEvict(cacheNames = CacheNames.LOCATIONS, allEntries = true)
     public LocationResponse create(LocationRequest request) {
         AuthenticatedUser user = currentUserService.getCurrentUser();
         GeocodingResult coords = geocodingService.geocodeAddress(request.getAddress() + ", " + request.getCity());
@@ -54,19 +59,27 @@ public class LocationService {
         return toResponse(saved);
     }
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheNames.LOCATION_BY_ID)
     public LocationResponse getById(Long id) {
         logger.info("Fetching location with ID: {}", id);
+        logger.debug("Cache miss: {} key={}", CacheNames.LOCATION_BY_ID, id);
         Location spot= locationRepository.findById(id).orElseThrow(()->
                 new InformationNotFoundException("Location with the id:"+ id +" does not exist, please try again with another id")
         );
         return toResponse(spot);
     }
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheNames.LOCATIONS)
     public List<LocationResponse> getAll() {
         logger.info("Fetching all locations");
+        logger.debug("Cache miss: {}", CacheNames.LOCATIONS);
         return locationRepository.findAll().stream().map(this::toResponse).toList();
     }
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.LOCATION_BY_ID, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.LOCATIONS, allEntries = true)
+    })
     public LocationResponse update(Long id, LocationRequest request){
         Location location = find(id);
         AuthenticatedUser user = currentUserService.getCurrentUser();
@@ -91,6 +104,10 @@ public class LocationService {
 
     /** Saves an owner's manual pin without geocoding or changing the descriptive location. */
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.LOCATION_BY_ID, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.LOCATIONS, allEntries = true)
+    })
     public LocationResponse updatePin(Long id, LocationPinUpdateRequest request) {
         AuthenticatedUser user = currentUserService.getCurrentUser();
         if (!"PROVIDER".equals(user.role())) {
@@ -113,6 +130,11 @@ public class LocationService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.LOCATION_BY_ID, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.LOCATIONS, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.ACTIVITY_BY_ID, allEntries = true)
+    })
     public String delete(Long id) throws AccessDeniedException {
         Location location = find(id);
         assertOwner(location, currentUserService.getCurrentUser());

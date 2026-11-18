@@ -1254,6 +1254,38 @@ Creating locations geocodes their addresses, so catalog-service needs a valid `G
 2. Run the script from any machine that can reach the load balancer: `API_URL=https://<your-load-balancer> SEED_PASSWORD=... node scripts/seed-demo-data.mjs`.
 3. Set `SEED_ENABLED=false` again afterwards.
 
+### Caching
+
+catalog-service is read-heavy, so it uses a **cache-aside** cache (Spring Cache with Caffeine, in memory). A read checks the cache first; on a miss the service loads from PostgreSQL, builds the response DTO and stores it. Only DTOs are cached, never JPA entities. API responses and status codes are unchanged; errors (for example 404) are never cached.
+
+| Cache | Read it serves |
+|---|---|
+| `categories` | `GET /api/categories` |
+| `categoryById` | `GET /api/categories/{id}` |
+| `activityById` | `GET /api/activities/{id}` |
+| `locations` | `GET /api/locations` |
+| `locationById` | `GET /api/locations/{id}` |
+
+Not cached on purpose: `GET /api/activities` (paginated, filtered search with unbounded key variety) and every write or caller-specific path.
+
+**Invalidation.** Each write evicts its entries in the same service method, after the transaction commits, and only when the write succeeds:
+
+- Category create: `categories`. Update: that `categoryById` entry and `categories`. Deactivate: the same plus all of `activityById`, because the category's activities stop being visible.
+- Activity update or delete: that `activityById` entry. Create needs no eviction because no list of activities is cached.
+- Location create: `locations`. Update and pin change: that `locationById` entry and `locations`. Deactivate: the same plus all of `activityById`.
+
+**Settings.** Every cache has a maximum size and an expire-after-write TTL, set by environment variables:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `CACHE_TTL_SECONDS` | `300` | TTL for all caches |
+| `CACHE_MAX_SIZE` | `500` | Maximum entries per cache |
+| `CACHE_<NAME>_TTL_SECONDS`, `CACHE_<NAME>_MAX_SIZE` | the values above | Per-cache override, with `<NAME>` one of `CATEGORIES`, `CATEGORY_BY_ID`, `ACTIVITY_BY_ID`, `LOCATIONS`, `LOCATION_BY_ID` |
+
+Caffeine statistics are on, and the caches are registered with Micrometer (`cache.gets` with `result=hit|miss`, `cache.puts`, `cache.evictions`, `cache.size`). The actuator still exposes only `health` and `info`, so these metrics are not public; they are available to any metrics endpoint or registry added later.
+
+**Limitation.** The cache is per instance. With several catalog-service replicas, each one has its own cache, so an update made through one replica becomes visible on the others only after their entry's TTL expires (at most `CACHE_TTL_SECONDS`). A shared cache such as Redis or Apache Ignite would remove that limitation.
+
 ## 4. Configure the Frontend
 
 Inside the `frontend` directory, create a local `.env.local` file.
