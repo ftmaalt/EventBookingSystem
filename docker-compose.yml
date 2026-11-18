@@ -84,6 +84,8 @@ services:
     environment:
       <<: *service-env
       FILE_UPLOAD_DIR: /app/uploads
+      SEED_ENABLED: ${SEED_ENABLED:-false}
+      SEED_PASSWORD: ${SEED_PASSWORD:-}
     volumes:
       - auth-uploads:/app/uploads
     depends_on: *service-depends
