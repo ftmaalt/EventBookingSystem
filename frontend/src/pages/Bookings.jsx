@@ -39,7 +39,6 @@ function BookingCard({ booking, detail, onCancel }) {
       <div className="booking-price">
         <strong>{formatMoney(booking.totalPrice)}</strong>
         <StatusPill status={booking.status} />
-        <small>Payment: {labelize(booking.paymentStatus)}</small>
         {booking.status === "CONFIRMED" && (
           <button className="danger-button" onClick={() => onCancel(booking.id)}>
             Cancel

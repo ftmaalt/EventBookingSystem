@@ -29,7 +29,7 @@ public class RateLimitService {
         String normalizedIp = normalizeIp(ipAddress);
         String normalizedEmail = normalizeEmail(email);
 
-        if (!allowRequest(ipRequests, ipAddress) || !(allowRequest(emailRequests, email))) {
+        if (!allowRequest(ipRequests, normalizedIp) || !allowRequest(emailRequests, normalizedEmail)) {
             throw new RateLimitExceededException("Sorry. You cannot access the system at the moment, please try again in a moment");
         }
 

@@ -58,9 +58,6 @@ public class AuthService {
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setRole(UserRole.USER);
         user.setStatus(UserStatus.PENDING_VERIFICATION);
-        user.setStrikeCount((short) 0);
-        user.setConsecutiveViolations((short) 0);
-        user.setMustChangePassword(false);
 
         usersRepository.save(user);
         String verificationToken = tokenService.generateToken(user, TokenType.EMAIL_VERIFICATION);

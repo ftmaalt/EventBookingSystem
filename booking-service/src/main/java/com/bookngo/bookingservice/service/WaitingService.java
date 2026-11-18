@@ -67,8 +67,7 @@ public class WaitingService {
         if (!"USER".equals(user.role())) {
             throw new AccessDeniedException("Only customers can join the waitlist.");
         }
-        if (bookingsRepository.existsByUserIdAndSession_IdAndStatusIn(user.id(), sessionId,
-                List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT))) {
+        if (bookingsRepository.existsByUserIdAndSession_IdAndStatus(user.id(), sessionId, BookingStatus.CONFIRMED)) {
             throw new BusinessConflictsException("You already have an active booking for this session.");
         }
         if (waitlistRepository.existsByUserIdAndSessionIdAndStatus(user.id(), sessionId, WaitListStatus.WAITING)) {
@@ -138,8 +137,7 @@ public class WaitingService {
             if (session.getSpotsLeft() <= 0) {
                 break;
             }
-            if (bookingsRepository.existsByUserIdAndSession_IdAndStatusIn(entry.getUserId(), session.getId(),
-                    List.of(BookingStatus.CONFIRMED, BookingStatus.PENDING_PAYMENT))) {
+            if (bookingsRepository.existsByUserIdAndSession_IdAndStatus(entry.getUserId(), session.getId(), BookingStatus.CONFIRMED)) {
                 logger.warn("Expiring waitlist entry {}: user {} already has an active booking.", entry.getEntryId(), entry.getUserId());
                 entry.setStatus(WaitListStatus.EXPIRED);
                 waitlistRepository.save(entry);
@@ -155,7 +153,6 @@ public class WaitingService {
             booking.setStatus(BookingStatus.CONFIRMED);
             booking.setBookingType(BookingType.INDIVIDUAL);
             booking.setSubtotal(subtotal);
-            booking.setDiscountPercent(BigDecimal.ZERO);
             booking.setTotalPrice(subtotal);
             booking.setCreatedBy("SYSTEM_WAITLIST");
             booking.setUpdatedBy("SYSTEM_WAITLIST");

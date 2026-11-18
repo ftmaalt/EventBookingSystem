@@ -8,14 +8,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 public interface BookingsRepository extends JpaRepository<Bookings, Long> {
     List<Bookings> findBySession_Id(Long sessionId);
     Optional<Bookings> findByUserIdAndSession_IdAndStatus(Long userId, Long sessionId, BookingStatus status);
-    boolean existsByUserIdAndSession_IdAndStatusIn(Long userId, Long sessionId, Collection<BookingStatus> statuses);
+    boolean existsByUserIdAndSession_IdAndStatus(Long userId, Long sessionId, BookingStatus status);
     @Query("SELECT b FROM Bookings b WHERE b.userId = :userId AND (:status IS NULL OR b.status = :status)")
     Page<Bookings> findMyBookings(@Param("userId") Long userId, @Param("status") BookingStatus status, Pageable pageable);
 }

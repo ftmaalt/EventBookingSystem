@@ -5,6 +5,8 @@ import com.bookngo.authservice.dto.request.*;
 import com.bookngo.authservice.dto.response.GenericMessageResponse;
 import com.bookngo.authservice.dto.response.LoginResponse;
 import com.bookngo.authservice.service.AuthService;
+import com.bookngo.authservice.service.RateLimitService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
+    private final RateLimitService rateLimitService;
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
     @PostMapping("/register")
@@ -33,8 +36,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         logger.info("Login request received");
+        rateLimitService.checkRateLimit(httpRequest.getRemoteAddr(), request.getEmail());
         return ResponseEntity.ok(authService.login(request));
     }
 

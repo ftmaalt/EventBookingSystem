@@ -20,7 +20,6 @@ final class MessageTemplates {
             case WAITLIST_ALLOCATED -> "A seat opened up! Your waitlist spot for " + title
                     + " is now a confirmed booking (#" + r.bookingId() + ").";
             case BOOKING_CANCELLED -> "Your booking #" + r.bookingId() + " for " + title + " was cancelled.";
-            case BOOKING_REMINDER -> "Reminder: " + title + " starts in " + or(r.timeFrame(), "a short while") + ".";
             case SESSION_CANCELLED -> "The session for " + title + " has been cancelled. Reason: "
                     + or(r.reason(), "unforeseen circumstances") + ".";
             case NEW_PROVIDER_APPLICATION -> "New provider application from " + or(r.businessName(), "a provider")
@@ -44,10 +43,6 @@ final class MessageTemplates {
                             + bookingDetails(r, title) + "\nPlease arrive on time for your session." + SIGN_OFF);
             case BOOKING_CANCELLED -> new EmailContent("Booking Cancelled BID#" + r.bookingId(),
                     "Hello,\n\nYour booking has been cancelled.\n\n" + bookingDetails(r, title) + SIGN_OFF);
-            case BOOKING_REMINDER -> new EmailContent("Booking Reminder - Session Starts in " + or(r.timeFrame(), "a short while"),
-                    "Hello,\n\nThis is a reminder that your booking for " + title + " starts in "
-                            + or(r.timeFrame(), "a short while") + ".\n\n" + bookingDetails(r, title)
-                            + "\nPlease arrive on time for your session." + SIGN_OFF);
             case SESSION_CANCELLED -> new EmailContent("Important Update: Session Cancelled - Ref #" + r.bookingId(),
                     "Hello,\n\nWe regret to inform you that your upcoming booking for \"" + title
                             + "\" has been CANCELLED.\n\n" + bookingDetails(r, title) + "Reason            : "

@@ -144,9 +144,6 @@ class AuthServiceTest {
         user.setPasswordHash(passwordEncoder.encode("CorrectPassword123!"));
         user.setRole(UserRole.USER);
         user.setStatus(UserStatus.ACTIVE);
-        user.setStrikeCount((short) 0);
-        user.setConsecutiveViolations((short) 0);
-        user.setMustChangePassword(false);
 
         usersRepository.save(user);
 

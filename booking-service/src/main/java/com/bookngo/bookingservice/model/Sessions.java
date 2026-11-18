@@ -2,7 +2,6 @@ package com.bookngo.bookingservice.model;
 
 import com.bookngo.bookingservice.model.enums.SessionStatus;
 import jakarta.persistence.*;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;

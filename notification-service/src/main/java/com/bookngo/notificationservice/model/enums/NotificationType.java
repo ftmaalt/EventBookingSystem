@@ -4,7 +4,6 @@ public enum NotificationType {
     BOOKING_CONFIRMED("booking-confirmed", true),
     WAITLIST_ALLOCATED("waitlist-allocated", true),
     BOOKING_CANCELLED("booking-cancelled", true),
-    BOOKING_REMINDER("booking-reminder", true),
     SESSION_CANCELLED("session-cancelled", true),
     EMAIL_VERIFICATION("email-verification", false),
     PASSWORD_RESET("password-reset", false),

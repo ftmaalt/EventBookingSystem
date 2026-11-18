@@ -2,10 +2,6 @@ package com.bookngo.catalogservice.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-
-import java.util.List;
 
 @Data
 @Entity
@@ -24,10 +20,4 @@ public class Category {
 
     @Column(nullable = false)
     private Boolean active = true;
-
-    //    --- Relationship Mapping ---
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    @OneToMany(mappedBy = "category")
-    private List<Activities> activities;
 }
