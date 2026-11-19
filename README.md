@@ -6,11 +6,11 @@
 [Kafka events](docs/kafka-events.md) ·
 [Phase 1 – Project 2](docs/phase-1-project2.md) ·
 [Phase 2 – Project 3](docs/phase-2-project3.md)
+---
 **Project:** [Trello user stories](https://trello.com/b/WOpNyReb/project2-user-stories) ·
 [Trello Project 4 plan](https://trello.com/b/Pr7szEG4/project-4-plan) ·
 [Jenkins setup](jenkins/README.md) ·
-[Google Maps setup](frontend/MAPS.md) ·
-[GitHub](https://github.com/ftmaalt/EventBookingSystem)
+
 
 ---
 
