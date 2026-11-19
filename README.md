@@ -123,6 +123,98 @@ Prerequisites: Docker with Compose, Node.js 18+ (frontend and seed script).
 
 Swagger UI per service: `http://localhost:8081/swagger-ui/index.html` (auth), `8082` (catalog), `8083` (booking), `8084` (notification), `8085` (compliance).
 
+## Database Design & ERD
+
+One PostgreSQL database with one schema per service. Solid lines are foreign keys inside a service. Dashed lines are ID-only references across services (no foreign key).
+
+```mermaid
+erDiagram
+    USERS ||--o| PROVIDER_PROFILES : has
+    USERS ||--o{ PROVIDER_APPLICATIONS : submits
+    CATEGORIES ||--o{ ACTIVITIES : groups
+    LOCATIONS ||--o{ ACTIVITIES : hosts
+    ACTIVITIES ||..o{ SESSIONS : "scheduled as"
+    SESSIONS ||--o{ BOOKINGS : receives
+    SESSIONS ||--o{ WAITLIST : queues
+    USERS ||..o{ BOOKINGS : "makes"
+    USERS ||..o{ WAITLIST : "joins"
+    BOOKINGS ||..o{ VIOLATIONS : "relates to"
+    USERS ||..o{ VIOLATIONS : "commits"
+    USERS ||..o{ PENALTIES : "owes"
+    USERS ||..o{ NOTIFICATIONS : "receives"
+
+    USERS {
+        bigint id PK
+        string email UK
+        string role
+        string status
+    }
+    PROVIDER_PROFILES {
+        bigint provider_id PK
+        bigint user_id FK
+        string business_name
+    }
+    PROVIDER_APPLICATIONS {
+        bigint application_id PK
+        string status
+        bigint reviewed_by FK
+    }
+    CATEGORIES {
+        bigint category_id PK
+        string category_name UK
+    }
+    LOCATIONS {
+        bigint id PK
+        double latitude
+        double longitude
+        bigint provider_id
+    }
+    ACTIVITIES {
+        bigint id PK
+        string title
+        numeric price_per_person
+        bigint category_id FK
+        bigint location_id FK
+    }
+    SESSIONS {
+        bigint id PK
+        int capacity
+        int spots_left
+        string status
+        bigint version
+        bigint activity_id
+    }
+    BOOKINGS {
+        bigint booking_id PK
+        int participants
+        string status
+        bigint user_id
+        bigint session_id FK
+    }
+    WAITLIST {
+        bigint entry_id PK
+        string status
+        timestamp joined_at
+        bigint session_id FK
+    }
+    VIOLATIONS {
+        bigint id PK
+        string type
+        boolean excused
+    }
+    PENALTIES {
+        bigint id PK
+        smallint strike_number
+        string status
+    }
+    NOTIFICATIONS {
+        bigint id PK
+        string type
+        boolean is_read
+    }
+```
+
+Key rules enforced by the schema: a partial unique index on `bookings(user_id, session_id)` for `CONFIRMED` bookings prevents duplicate bookings, and `sessions.spots_left` is protected by a row lock during booking.
 ## Tests
 
 ```bash
