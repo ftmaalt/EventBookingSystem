@@ -5,22 +5,17 @@ import com.bookngo.complianceservice.repository.ViolationCounterRepository;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import io.restassured.http.ContentType;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.web.servlet.MockMvc;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static io.restassured.RestAssured.given;
+import static org.junit.Assert.assertEquals;
 
 public class ViolationSteps {
 
     @Autowired
     private CustomerContext customer;
-
-    @Autowired
-    private MockMvc mockMvc;
 
     @Autowired
     private ViolationCounterRepository counterRepository;
@@ -29,19 +24,19 @@ public class ViolationSteps {
     private JdbcTemplate jdbcTemplate;
 
     @When("an admin reports an excused no-show for the customer")
-    public void anAdminReportsAnExcusedNoShow() throws Exception {
+    public void anAdminReportsAnExcusedNoShow() {
         reportNoShow(true);
     }
 
     @When("an admin reports {int} unexcused no-show(s) for the customer")
-    public void anAdminReportsUnexcusedNoShows(int count) throws Exception {
+    public void anAdminReportsUnexcusedNoShows(int count) {
         for (int i = 0; i < count; i++) {
             reportNoShow(false);
         }
     }
 
     @Given("the customer has received their first strike")
-    public void theCustomerHasReceivedTheirFirstStrike() throws Exception {
+    public void theCustomerHasReceivedTheirFirstStrike() {
         anAdminReportsUnexcusedNoShows(3);
     }
 
@@ -54,7 +49,7 @@ public class ViolationSteps {
 
     @Then("the violation is recorded")
     public void theViolationIsRecorded() {
-        Integer violations = jdbcTemplate.queryForObject(
+        int violations = jdbcTemplate.queryForObject(
                 "select count(*) from compliance.violations where user_id = ?", Integer.class, customer.customerId());
         assertEquals(1, violations);
     }
@@ -67,13 +62,16 @@ public class ViolationSteps {
         assertEquals(violations, counter.getConsecutiveViolations());
     }
 
-    private void reportNoShow(boolean excused) throws Exception {
+    private void reportNoShow(boolean excused) {
         String body = """
                 {"type": "NO_SHOW", "excused": %s, "userId": %d}""".formatted(excused, customer.customerId());
-        mockMvc.perform(post("/api/violations")
-                        .header("Authorization", customer.adminToken())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isCreated());
+        given()
+                .header("Authorization", customer.adminToken())
+                .contentType(ContentType.JSON)
+                .body(body)
+        .when()
+                .post("/api/violations")
+        .then()
+                .statusCode(201);
     }
 }

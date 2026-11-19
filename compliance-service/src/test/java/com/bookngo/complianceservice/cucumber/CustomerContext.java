@@ -1,17 +1,23 @@
 package com.bookngo.complianceservice.cucumber;
 
 import io.cucumber.spring.ScenarioScope;
+import io.restassured.response.Response;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
 import java.util.concurrent.ThreadLocalRandom;
 
+/**
+ * One fresh customer per scenario. No proxy (proxyMode = NO): the mocked AuthClient reads and
+ * updates this object from the app's HTTP threads, where a scenario-scoped proxy can't be used.
+ */
 @Component
-@ScenarioScope
+@ScenarioScope(proxyMode = ScopedProxyMode.NO)
 public class CustomerContext {
 
     @Value("${app.jwt.secret}")
@@ -19,8 +25,9 @@ public class CustomerContext {
 
     private final long customerId = ThreadLocalRandom.current().nextLong(1_000_000_000L, 9_000_000_000L);
     private final long adminId = customerId + 1;
-    private String accountStatus = "ACTIVE";
-    private int lastPaymentStatus;
+    private volatile String accountStatus = "ACTIVE";
+    // the last HTTP reply, shared so a @When in one step class can be checked by a @Then in another
+    private Response response;
 
     public long customerId() {
         return customerId;
@@ -38,12 +45,12 @@ public class CustomerContext {
         this.accountStatus = accountStatus;
     }
 
-    public int lastPaymentStatus() {
-        return lastPaymentStatus;
+    public Response response() {
+        return response;
     }
 
-    public void setLastPaymentStatus(int lastPaymentStatus) {
-        this.lastPaymentStatus = lastPaymentStatus;
+    public void setResponse(Response response) {
+        this.response = response;
     }
 
     public String adminToken() {
