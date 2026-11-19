@@ -17,6 +17,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Steps for penalties: checking what was issued and paying through {@code PUT /api/penalties/{id}/pay}.
+ */
 public class PenaltySteps {
 
     @Autowired
@@ -37,6 +40,9 @@ public class PenaltySteps {
         assertTrue(penalties().isEmpty());
     }
 
+    /**
+     * Pays the customer's only penalty as the customer and stores the response.
+     */
     @Given("the customer has paid the penalty")
     @When("the customer pays the penalty")
     @When("the customer pays the penalty again")
@@ -63,10 +69,16 @@ public class PenaltySteps {
         assertEquals(PenaltyStatus.PAID, onlyPenalty().getStatus());
     }
 
+    /**
+     * @return all penalties of this scenario's customer, newest first
+     */
     private List<Penalty> penalties() {
         return penaltiesRepository.findByUserIdOrderByCreatedAtDesc(customer.customerId());
     }
 
+    /**
+     * @return the customer's penalty, failing the step unless there is exactly one
+     */
     private Penalty onlyPenalty() {
         List<Penalty> penalties = penalties();
         assertEquals(1, penalties.size());

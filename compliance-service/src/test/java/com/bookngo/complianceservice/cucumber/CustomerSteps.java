@@ -16,6 +16,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Steps that set up the customer's account in the mocked auth-service and check status changes.
+ * Also removes the scenario's database rows after each scenario.
+ */
 public class CustomerSteps {
 
     @Autowired
@@ -27,6 +31,9 @@ public class CustomerSteps {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    /**
+     * Makes the mocked auth-service return this scenario's customer and remember status changes.
+     */
     @Given("a customer with an active account")
     public void aCustomerWithAnActiveAccount() {
         long id = customer.customerId();
@@ -62,6 +69,9 @@ public class CustomerSteps {
         assertEquals("BLACKLISTED", customer.accountStatus());
     }
 
+    /**
+     * Deletes the violations, penalties and counters created for this scenario's customer.
+     */
     @After
     public void deleteScenarioData() {
         long id = customer.customerId();

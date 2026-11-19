@@ -12,6 +12,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import static io.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 
+/**
+ * Steps for reporting violations through {@code POST /api/violations} and checking strike counters.
+ */
 public class ViolationSteps {
 
     @Autowired
@@ -40,6 +43,11 @@ public class ViolationSteps {
         anAdminReportsUnexcusedNoShows(3);
     }
 
+    /**
+     * Stores a strike counter directly in the database, skipping the violations that would cause it.
+     *
+     * @param strikes number of strikes the customer starts with
+     */
     @Given("the customer already has {int} strikes")
     public void theCustomerAlreadyHasStrikes(int strikes) {
         ViolationCounter counter = new ViolationCounter(customer.customerId());
@@ -62,6 +70,11 @@ public class ViolationSteps {
         assertEquals(violations, counter.getConsecutiveViolations());
     }
 
+    /**
+     * Reports a no-show for the customer as an admin and expects {@code 201 Created}.
+     *
+     * @param excused whether the no-show is excused
+     */
     private void reportNoShow(boolean excused) {
         String body = """
                 {"type": "NO_SHOW", "excused": %s, "userId": %d}""".formatted(excused, customer.customerId());

@@ -143,8 +143,7 @@
             <artifactId>spring-boot-starter-kafka-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- BDD tests: Cucumber reads the .feature files, REST Assured calls the running app,
-             JUnit 4 starts the run. The three Cucumber libraries share one version (cucumber-bom). -->
+        <!-- Cucumber BDD tests (JUnit 4 runner, REST Assured); versions from cucumber-bom -->
         <dependency>
             <groupId>io.cucumber</groupId>
             <artifactId>cucumber-java</artifactId>
@@ -172,7 +171,7 @@
             <version>4.13.2</version>
             <scope>test</scope>
         </dependency>
-        <!-- lets Maven Surefire (JUnit Platform) also run the JUnit 4 Cucumber runner -->
+        <!-- runs the JUnit 4 Cucumber runner on the JUnit Platform -->
         <dependency>
             <groupId>org.junit.vintage</groupId>
             <artifactId>junit-vintage-engine</artifactId>

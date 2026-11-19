@@ -10,8 +10,11 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
- * Starts the real compliance-service on a random port so REST Assured has something to hit.
- * auth-service and booking-service are other microservices, so they are replaced with mocks.
+ * Spring configuration shared by all Cucumber scenarios.
+ *
+ * <p>Starts the full compliance-service on a random port so the step definitions can call it over
+ * HTTP with REST Assured. The clients for auth-service and booking-service are replaced with
+ * Mockito mocks because those services are not running during the tests.</p>
  */
 @CucumberContextConfiguration
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -26,6 +29,9 @@ public class CucumberSpringConfiguration {
     @MockitoBean
     private BookingClient bookingClient;
 
+    /**
+     * Points REST Assured at the application started for this test run. Runs before every scenario.
+     */
     @Before
     public void pointRestAssuredAtTheApp() {
         RestAssured.baseURI = "http://localhost";

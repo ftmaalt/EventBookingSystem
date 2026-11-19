@@ -5,10 +5,13 @@ import io.cucumber.junit.CucumberOptions;
 import org.junit.runner.RunWith;
 
 /**
- * The class JUnit launches. It hands control to Cucumber and tells it:
- * features - where the stories live,
- * glue     - where the Java lives (step definitions + Spring setup),
- * plugin   - how the results are printed.
+ * JUnit 4 entry point for the compliance-service Cucumber scenarios.
+ *
+ * <ul>
+ *   <li>{@code features}: location of the Gherkin {@code .feature} files.</li>
+ *   <li>{@code glue}: package containing the step definitions, hooks and Spring configuration.</li>
+ *   <li>{@code plugin}: console output plus an HTML report in {@code target/cucumber-report.html}.</li>
+ * </ul>
  */
 @RunWith(Cucumber.class)
 @CucumberOptions(
