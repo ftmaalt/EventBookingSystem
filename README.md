@@ -4,9 +4,6 @@
 [Architecture](docs/architecture.md) ·
 [Deployment](docs/deployment.md) ·
 [Kafka events](docs/kafka-events.md) ·
-[Caching](docs/caching.md) ·
-[Demo data](docs/seed-data.md) ·
-[Database & ERD](docs/database-erd.md) ·
 [Phase 1 – Project 2](docs/phase-1-project2.md) ·
 [Phase 2 – Project 3](docs/phase-2-project3.md)
 **Project:** [Trello user stories](https://trello.com/b/WOpNyReb/project2-user-stories) ·
