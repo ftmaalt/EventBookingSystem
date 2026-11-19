@@ -1,17 +1,23 @@
 package com.bookngo.complianceservice.cucumber;
 
-import org.junit.platform.suite.api.ConfigurationParameter;
-import org.junit.platform.suite.api.IncludeEngines;
-import org.junit.platform.suite.api.SelectClasspathResource;
-import org.junit.platform.suite.api.Suite;
+import io.cucumber.junit.Cucumber;
+import io.cucumber.junit.CucumberOptions;
+import org.junit.runner.RunWith;
 
-import static io.cucumber.junit.platform.engine.Constants.GLUE_PROPERTY_NAME;
-import static io.cucumber.junit.platform.engine.Constants.PLUGIN_PROPERTY_NAME;
-
-@Suite
-@IncludeEngines("cucumber")
-@SelectClasspathResource("features")
-@ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = "com.bookngo.complianceservice.cucumber")
-@ConfigurationParameter(key = PLUGIN_PROPERTY_NAME, value = "pretty")
+/**
+ * JUnit 4 entry point for the compliance-service Cucumber scenarios.
+ *
+ * <ul>
+ *   <li>{@code features}: location of the Gherkin {@code .feature} files.</li>
+ *   <li>{@code glue}: package containing the step definitions, hooks and Spring configuration.</li>
+ *   <li>{@code plugin}: console output plus an HTML report in {@code target/cucumber-report.html}.</li>
+ * </ul>
+ */
+@RunWith(Cucumber.class)
+@CucumberOptions(
+        features = "src/test/resources/features",
+        glue = "com.bookngo.complianceservice.cucumber",
+        plugin = {"pretty", "html:target/cucumber-report.html"}
+)
 public class RunCucumberTest {
 }

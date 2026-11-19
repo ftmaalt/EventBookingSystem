@@ -6,24 +6,24 @@ import com.bookngo.complianceservice.repository.PenaltiesRepository;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import io.restassured.response.Response;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static io.restassured.RestAssured.given;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
+/**
+ * Steps for penalties: checking what was issued and paying through {@code PUT /api/penalties/{id}/pay}.
+ */
 public class PenaltySteps {
 
     @Autowired
     private CustomerContext customer;
-
-    @Autowired
-    private MockMvc mockMvc;
 
     @Autowired
     private PenaltiesRepository penaltiesRepository;
@@ -40,19 +40,24 @@ public class PenaltySteps {
         assertTrue(penalties().isEmpty());
     }
 
+    /**
+     * Pays the customer's only penalty as the customer and stores the response.
+     */
     @Given("the customer has paid the penalty")
     @When("the customer pays the penalty")
     @When("the customer pays the penalty again")
-    public void theCustomerPaysThePenalty() throws Exception {
-        int status = mockMvc.perform(put("/api/penalties/{id}/pay", onlyPenalty().getId())
-                        .header("Authorization", customer.customerToken()))
-                .andReturn().getResponse().getStatus();
-        customer.setLastPaymentStatus(status);
+    public void theCustomerPaysThePenalty() {
+        Response response = given()
+                .header("Authorization", customer.customerToken())
+                .pathParam("id", onlyPenalty().getId())
+        .when()
+                .put("/api/penalties/{id}/pay");
+        customer.setResponse(response);
     }
 
     @Then("the penalty is marked as paid")
     public void thePenaltyIsMarkedAsPaid() {
-        assertEquals(200, customer.lastPaymentStatus());
+        assertEquals(200, customer.response().getStatusCode());
         Penalty penalty = onlyPenalty();
         assertEquals(PenaltyStatus.PAID, penalty.getStatus());
         assertNotNull(penalty.getPaidAt());
@@ -60,14 +65,20 @@ public class PenaltySteps {
 
     @Then("the payment is rejected because the penalty is already paid")
     public void thePaymentIsRejected() {
-        assertEquals(409, customer.lastPaymentStatus());
+        assertEquals(409, customer.response().getStatusCode());
         assertEquals(PenaltyStatus.PAID, onlyPenalty().getStatus());
     }
 
+    /**
+     * @return all penalties of this scenario's customer, newest first
+     */
     private List<Penalty> penalties() {
         return penaltiesRepository.findByUserIdOrderByCreatedAtDesc(customer.customerId());
     }
 
+    /**
+     * @return the customer's penalty, failing the step unless there is exactly one
+     */
     private Penalty onlyPenalty() {
         List<Penalty> penalties = penalties();
         assertEquals(1, penalties.size());

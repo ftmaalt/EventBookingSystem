@@ -1,5 +1,13 @@
 name: bookngo
 
+x-logging: &default-logging
+  driver: awslogs
+  options:
+    awslogs-region: ${AWS_REGION:-us-east-1}
+    awslogs-group: ${CW_LOG_GROUP:-bookngo}
+    awslogs-create-group: "true"
+    tag: "{{.Name}}"
+
 x-service-env: &service-env
   DB_URL: jdbc:postgresql://${RDS_HOST:?set RDS_HOST in .env}:5432/bookngo?sslmode=require
   DB_USERNAME: ${DB_USERNAME:-postgres}
@@ -40,12 +48,15 @@ services:
       timeout: 10s
       retries: 10
     restart: unless-stopped
+    logging: *default-logging
 
   auth-service:
     image: ftmam/bookngo-auth-service:${IMAGE_TAG:-latest}
     environment:
       <<: *service-env
       FILE_UPLOAD_DIR: /app/uploads
+      SEED_ENABLED: ${SEED_ENABLED:-false}
+      SEED_PASSWORD: ${SEED_PASSWORD:-}
     volumes:
       - auth-uploads:/app/uploads
     depends_on: *service-depends
@@ -56,6 +67,7 @@ services:
       retries: 10
       start_period: 90s
     restart: unless-stopped
+    logging: *default-logging
 
   catalog-service:
     image: ftmam/bookngo-catalog-service:${IMAGE_TAG:-latest}
@@ -70,6 +82,7 @@ services:
       retries: 10
       start_period: 90s
     restart: unless-stopped
+    logging: *default-logging
 
   booking-service:
     image: ftmam/bookngo-booking-service:${IMAGE_TAG:-latest}
@@ -87,6 +100,7 @@ services:
       retries: 10
       start_period: 90s
     restart: unless-stopped
+    logging: *default-logging
 
   notification-service:
     image: ftmam/bookngo-notification-service:${IMAGE_TAG:-latest}
@@ -104,6 +118,7 @@ services:
       retries: 10
       start_period: 90s
     restart: unless-stopped
+    logging: *default-logging
 
   compliance-service:
     image: ftmam/bookngo-compliance-service:${IMAGE_TAG:-latest}
@@ -124,6 +139,7 @@ services:
       retries: 10
       start_period: 90s
     restart: unless-stopped
+    logging: *default-logging
 
   gateway:
     image: nginx:1.27-alpine
@@ -148,6 +164,7 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    logging: *default-logging
 
 volumes:
   kafka-data:
